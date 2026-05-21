@@ -5,10 +5,13 @@ export default function FraudPage() {
     <div className="space-y-4">
       <div>
         <div className="text-2xl md:text-3xl font-black tracking-tight text-safe-ink">Regulatory Center</div>
+        <div className="mt-1 text-sm font-semibold text-slate-500">
+          Overview of national compliance, certifications, and flagged incidents.
+        </div>
       </div>
 
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-3">
-        <div className="lg:col-span-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(2,6,23,0.04)] flex flex-col justify-between">
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="lg:col-span-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(2,6,23,0.04)] flex flex-col justify-between">
           <div>
             <div className="flex items-start justify-between gap-3">
               <div className="text-[11px] font-black uppercase tracking-widest text-slate-500">National Compliance Score</div>
@@ -39,7 +42,7 @@ export default function FraudPage() {
           </div>
         </div>
 
-        <div className="lg:col-span-8 rounded-2xl border border-red-200 bg-red-50 p-4 shadow-[0_10px_30px_rgba(2,6,23,0.04)] relative overflow-hidden">
+        <div className="lg:col-span-8 rounded-2xl border border-red-200 bg-red-50 p-5 shadow-[0_10px_30px_rgba(2,6,23,0.04)] relative overflow-hidden">
           <div className="absolute -right-10 -top-10 h-48 w-48 rounded-full bg-red-500/10" />
           <div className="relative">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -61,7 +64,7 @@ export default function FraudPage() {
               {[
                 {
                   icon: 'gavel',
-                  title: 'DOT Audit Imminent · Region 4',
+                  title: 'DOT Audit Imminent - Region 4',
                   desc: 'Vehicle maintenance logs missing for 12 units in fleet terminal B.',
                 },
                 {
@@ -84,7 +87,7 @@ export default function FraudPage() {
           </div>
         </div>
 
-        <div className="lg:col-span-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(2,6,23,0.04)]">
+        <div className="lg:col-span-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(2,6,23,0.04)]">
           <div className="flex items-center justify-between">
             <div className="text-lg font-black tracking-tight text-safe-ink">Certification Renewals (Q3)</div>
             <span className="material-symbols-outlined text-slate-500" aria-hidden="true">
@@ -118,7 +121,7 @@ export default function FraudPage() {
         </div>
 
         <div className="lg:col-span-6 rounded-2xl border border-slate-200 bg-white shadow-[0_10px_30px_rgba(2,6,23,0.04)] overflow-hidden">
-          <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+          <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
             <div className="text-[11px] font-black uppercase tracking-widest text-slate-500">Flagged Regulatory Issues</div>
             <button type="button" className="text-xs font-black text-safe-ink hover:underline">
               View All
@@ -128,7 +131,7 @@ export default function FraudPage() {
             <table className="w-full text-left border-collapse">
               <tbody className="divide-y divide-slate-200 text-sm">
                 {[
-                  { dot: 'bg-red-500', title: 'HOS Violation · ID 8492', meta: 'Driver: M. Jenkins', status: 'Unresolved', tone: 'bad' },
+                  { dot: 'bg-red-500', title: 'HOS Violation - ID 8492', meta: 'Driver: M. Jenkins', status: 'Unresolved', tone: 'bad' },
                   { dot: 'bg-amber-400', title: 'Weight Limit Warning', meta: 'Unit: TRK-442', status: 'Investigating', tone: 'warn' },
                   { dot: 'bg-amber-400', title: 'Insurance Lapse Imminent', meta: 'Fleet: Northeast Div', status: 'Pending', tone: 'warn' },
                   { dot: 'bg-slate-300', title: 'Routine Audit Follow-up', meta: 'Facility: HQ', status: 'Closed', tone: 'neutral' },

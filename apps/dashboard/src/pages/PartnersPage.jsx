@@ -48,7 +48,7 @@ export default function PartnersPage() {
         name: 'Levy Mwanawasa Hospital',
         subtitle: 'Class A Medical Facility',
         kindIcon: 'local_hospital',
-        status: 'Live · v2.4',
+        status: 'Live - v2.4',
         uptime: { value: '99.9%', tone: 'good' },
         volume: 'ZMW 4.2M',
         cta: 'Manage',
@@ -58,7 +58,7 @@ export default function PartnersPage() {
         name: 'RTSA Database Sync',
         subtitle: 'Transport Authority',
         kindIcon: 'account_balance',
-        status: 'Live · SOAP',
+        status: 'Live - SOAP',
         uptime: { value: '92.4% (Degraded)', tone: 'warn' },
         volume: '142k Records',
         cta: 'Manage',
@@ -68,7 +68,7 @@ export default function PartnersPage() {
         name: 'Autoworld Central',
         subtitle: 'Certified Repair Center',
         kindIcon: 'car_repair',
-        status: 'Live · v3.0',
+        status: 'Live - v3.0',
         uptime: { value: '100%', tone: 'good' },
         volume: 'ZMW 850k',
         cta: 'Manage',
@@ -89,10 +89,13 @@ export default function PartnersPage() {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <div className="text-2xl md:text-3xl font-black tracking-tight text-safe-ink">Ecosystem Hub</div>
+          <div className="mt-1 text-sm font-semibold text-slate-500">
+            Manage integrated facilities, state authorities, and financial partners.
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -113,7 +116,7 @@ export default function PartnersPage() {
         </div>
       </div>
 
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <MetricCard label="Active Partners" value="142" sub="+12% MoM" icon="domain" />
         <MetricCard label="API Health Score" value="99.8%" sub="Optimal (30d)" icon="monitor_heart" tone="good" />
         <MetricCard label="MTD Settlement Volume" value="ZMW 14.2M" sub="Across 3,421 claims" icon="account_balance_wallet" />
@@ -227,7 +230,7 @@ export default function PartnersPage() {
             <button type="button" className="h-9 w-9 rounded-xl border border-slate-200 bg-white text-xs font-black text-safe-ink">
               3
             </button>
-            <span className="px-2 text-slate-400 text-sm font-black">…</span>
+            <span className="px-2 text-slate-400 text-sm font-black">...</span>
             <button type="button" className="h-9 w-9 rounded-xl border border-slate-200 bg-white text-slate-700 grid place-items-center">
               <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
                 chevron_right

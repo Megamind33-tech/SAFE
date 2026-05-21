@@ -36,8 +36,8 @@ export default function DocumentsPage() {
         previewUrl: 'https://placehold.co/1200x675/png?text=Evidence+Image',
         claimId: 'CL-2023-8991',
         uploadedBy: 'Sarah Jenkins (Adjuster)',
-        location: 'GPS: 40.7128° N, 74.0060° W',
-        dimensions: '4032 × 3024 px',
+        location: 'GPS: 40.7128 N, 74.0060 W',
+        dimensions: '4032 x 3024 px',
         aiSummary:
           'Image exhibits patterns consistent with frontal impact collision at moderate speed. Primary damage isolated to bumper fascia, grille, and passenger-side headlamp assembly.',
         aiTags: ['Front Bumper', 'Headlight (R)', 'Grille'],
@@ -70,7 +70,7 @@ export default function DocumentsPage() {
         claimId: 'CL-2023-8991',
         uploadedBy: 'Agent Upload',
         location: 'N/A',
-        dimensions: '1920 × 1080 px',
+        dimensions: '1920 x 1080 px',
         aiSummary: 'Video analysis in progress (object detection + timeline extraction).',
         aiTags: ['Dashcam', 'Timeline'],
       },
@@ -86,7 +86,7 @@ export default function DocumentsPage() {
         claimId: 'CL-2023-8991',
         uploadedBy: 'Agent Upload',
         location: 'N/A',
-        dimensions: '4032 × 3024 px',
+        dimensions: '4032 x 3024 px',
         aiSummary: 'Secondary damage visible on rear quarter panel; no clear wheel misalignment in this frame.',
         aiTags: ['Rear Quarter', 'Panel'],
       },
@@ -114,12 +114,13 @@ export default function DocumentsPage() {
   const selected = files.find((f) => f.id === selectedId) || files[0];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-col gap-2">
         <div className="text-2xl md:text-3xl font-black tracking-tight text-safe-ink">Document & Media Center</div>
+        <div className="text-sm font-semibold text-slate-500">Operational hub for evidence, reports, and claim attachments.</div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)_380px] gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)_380px] gap-4">
         <aside className="rounded-2xl border border-slate-200 bg-white shadow-[0_10px_30px_rgba(2,6,23,0.04)] overflow-hidden">
           <div className="p-4 border-b border-slate-200">
             <button
@@ -311,7 +312,7 @@ export default function DocumentsPage() {
             </div>
           </div>
 
-          <div className="p-4 space-y-3.5 overflow-auto">
+          <div className="p-5 space-y-5 overflow-auto">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden aspect-video">
               {selected?.previewUrl ? (
                 <img src={selected.previewUrl} alt="" className="h-full w-full object-cover" />
@@ -327,18 +328,18 @@ export default function DocumentsPage() {
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <div className="grid grid-cols-3 gap-y-3 text-xs">
                   <div className="text-slate-500 font-semibold">Claim ID</div>
-                  <div className="col-span-2 font-black text-safe-ink">{selected?.claimId || '—'}</div>
+                  <div className="col-span-2 font-black text-safe-ink">{selected?.claimId || '--'}</div>
                   <div className="text-slate-500 font-semibold">Uploaded By</div>
-                  <div className="col-span-2 font-semibold text-slate-700">{selected?.uploadedBy || '—'}</div>
+                  <div className="col-span-2 font-semibold text-slate-700">{selected?.uploadedBy || '--'}</div>
                   <div className="text-slate-500 font-semibold">Location</div>
-                  <div className="col-span-2 font-semibold text-slate-700">{selected?.location || '—'}</div>
+                  <div className="col-span-2 font-semibold text-slate-700">{selected?.location || '--'}</div>
                   <div className="text-slate-500 font-semibold">Dimensions</div>
-                  <div className="col-span-2 font-semibold text-slate-700">{selected?.dimensions || '—'}</div>
+                  <div className="col-span-2 font-semibold text-slate-700">{selected?.dimensions || '--'}</div>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[20px] text-safe-ink" aria-hidden="true">
                   memory

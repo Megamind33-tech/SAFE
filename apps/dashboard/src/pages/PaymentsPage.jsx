@@ -2,13 +2,14 @@ import React from 'react';
 
 export default function PaymentsPage() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
         <div className="text-2xl md:text-3xl font-black tracking-tight text-safe-ink">Billing & Plans</div>
+        <div className="mt-1 text-sm font-semibold text-slate-500">Subscriptions, invoices, payment history, and plan changes.</div>
       </div>
 
-      <section className="grid grid-cols-1 xl:grid-cols-3 gap-3">
-        <div className="xl:col-span-2 rounded-2xl border border-slate-200 bg-safe-ink p-4 text-white shadow-[0_10px_30px_rgba(2,6,23,0.14)] relative overflow-hidden">
+      <section className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div className="xl:col-span-2 rounded-2xl border border-slate-200 bg-safe-ink p-5 text-white shadow-[0_10px_30px_rgba(2,6,23,0.14)] relative overflow-hidden">
           <div className="absolute -right-10 -top-10 h-44 w-44 rounded-full bg-safe-electric/20 blur-2xl" />
           <div className="relative">
             <div className="flex items-start justify-between gap-3">
@@ -21,7 +22,7 @@ export default function PaymentsPage() {
               </span>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <div className="text-xs font-semibold text-white/70">Next billing date</div>
                 <div className="mt-1 text-sm font-black">15 Nov 2023</div>
@@ -46,7 +47,7 @@ export default function PaymentsPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(2,6,23,0.04)]">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(2,6,23,0.04)]">
           <div className="flex items-center justify-between">
             <div className="text-lg font-black tracking-tight text-safe-ink">Payment History</div>
             <button type="button" className="text-xs font-black text-safe-ink hover:underline">
@@ -56,9 +57,9 @@ export default function PaymentsPage() {
 
           <div className="mt-4 divide-y divide-slate-200 rounded-2xl border border-slate-200 overflow-hidden">
             {[
-               { title: 'Fleet Pro · Monthly', date: '15 Oct 2023', amount: 'ZMW 4,500', status: 'Paid', icon: 'credit_card' },
-               { title: 'Fleet Pro · Monthly', date: '15 Sep 2023', amount: 'ZMW 4,500', status: 'Paid', icon: 'account_balance' },
-               { title: 'Fleet Pro · Monthly', date: '15 Aug 2023', amount: 'ZMW 4,500', status: 'Paid', icon: 'credit_card' },
+              { title: 'Fleet Pro - Monthly', date: '15 Oct 2023', amount: 'ZMW 4,500', status: 'Paid', icon: 'credit_card' },
+              { title: 'Fleet Pro - Monthly', date: '15 Sep 2023', amount: 'ZMW 4,500', status: 'Paid', icon: 'account_balance' },
+              { title: 'Fleet Pro - Monthly', date: '15 Aug 2023', amount: 'ZMW 4,500', status: 'Paid', icon: 'credit_card' },
             ].map((tx) => (
               <div key={tx.date} className="p-4 bg-white hover:bg-slate-50 transition-colors flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
@@ -84,11 +85,12 @@ export default function PaymentsPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(2,6,23,0.04)]">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(2,6,23,0.04)]">
         <div className="text-lg font-black tracking-tight text-safe-ink">Available Plans</div>
+        <div className="mt-1 text-sm font-semibold text-slate-500">Switch plans for fleet size, features, and custom integrations.</div>
 
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-3">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="text-lg font-black text-safe-ink">Starter</div>
             <div className="mt-1 text-sm font-semibold text-slate-500">For small fleets up to 5 vehicles.</div>
             <div className="mt-4 text-2xl font-black text-safe-ink">
@@ -109,7 +111,7 @@ export default function PaymentsPage() {
             </button>
           </div>
 
-          <div className="rounded-2xl border-2 border-safe-electric bg-white p-3 relative overflow-hidden">
+          <div className="rounded-2xl border-2 border-safe-electric bg-white p-4 relative overflow-hidden">
             <div className="absolute top-3 right-3 rounded-full bg-safe-electric px-3 py-1 text-[10px] font-black uppercase tracking-widest text-safe-ink">
               Recommended
             </div>

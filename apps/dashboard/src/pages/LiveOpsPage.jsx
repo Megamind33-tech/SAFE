@@ -64,7 +64,7 @@ function FieldOpsView() {
           </div>
           <div>
             <div className="text-sm font-black text-safe-ink">Agent J. Smith</div>
-            <div className="text-xs font-semibold text-slate-500">Unit 42 · Sector Alpha</div>
+            <div className="text-xs font-semibold text-slate-500">Unit 42 - Sector Alpha</div>
           </div>
         </div>
 
@@ -194,7 +194,7 @@ function FieldOpsView() {
                 </span>
                 <div>
                   <div className="text-sm font-black text-safe-ink">Severe Weather Warning</div>
-                  <div className="text-xs font-semibold text-slate-500">Sector Alpha · 2 miles</div>
+                  <div className="text-xs font-semibold text-slate-500">Sector Alpha - 2 miles</div>
                 </div>
               </div>
               <div className="text-xs font-black text-slate-600">14:00</div>
@@ -335,8 +335,8 @@ function IncidentCommandView() {
         <div className="p-4 space-y-4">
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
             <div className="text-[11px] font-black uppercase tracking-widest text-slate-500">Location Data</div>
-            <div className="mt-2 text-sm font-semibold text-slate-700">Weather: Raining · Visibility Low</div>
-            <div className="mt-1 text-xs font-semibold text-slate-500">Lat: 39.1023 · Lng: -76.8834</div>
+            <div className="mt-2 text-sm font-semibold text-slate-700">Weather: Raining, Visibility Low</div>
+            <div className="mt-1 text-xs font-semibold text-slate-500">Lat: 39.1023, Lng: -76.8834</div>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
@@ -345,9 +345,9 @@ function IncidentCommandView() {
             </div>
             <div className="p-2 space-y-2">
               {[
-                { title: 'Highway Patrol (Unit 4B)', meta: '2.1 mi · ETA 4 mins', icon: 'local_police', action: 'Dispatch', primary: true },
-                { title: 'County EMS', meta: '4.5 mi · ETA 9 mins', icon: 'medical_services', action: 'Alert' },
-                { title: 'Heavy Tow (Class C)', meta: '12.0 mi · ETA 25 mins', icon: 'agriculture', action: 'Request' },
+                { title: 'Highway Patrol (Unit 4B)', meta: '2.1 mi, ETA 4 mins', icon: 'local_police', action: 'Dispatch', primary: true },
+                { title: 'County EMS', meta: '4.5 mi, ETA 9 mins', icon: 'medical_services', action: 'Alert' },
+                { title: 'Heavy Tow (Class C)', meta: '12.0 mi, ETA 25 mins', icon: 'agriculture', action: 'Request' },
               ].map((r) => (
                 <div key={r.title} className="flex items-center justify-between gap-2 rounded-xl px-2 py-2 hover:bg-slate-50">
                   <div className="flex items-center gap-2 min-w-0">
@@ -395,10 +395,11 @@ function IncidentCommandView() {
 export default function LiveOpsPage() {
   const [mode, setMode] = useState('field');
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="text-2xl md:text-3xl font-black tracking-tight text-safe-ink">Operations</div>
+          <div className="mt-1 text-sm font-semibold text-slate-500">Field agent activity and incident command workflows.</div>
         </div>
         <Segmented
           value={mode}

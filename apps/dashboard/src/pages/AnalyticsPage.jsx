@@ -5,9 +5,10 @@ export default function AnalyticsPage() {
     <div className="space-y-4">
       <div>
         <div className="text-2xl md:text-3xl font-black tracking-tight text-safe-ink">Executive Analytics</div>
+        <div className="mt-1 text-sm font-semibold text-slate-500">Real-time performance and risk monitoring.</div>
       </div>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
           { label: 'Safety Index', value: '94.2', sub: '+1.4% QoQ', icon: 'health_and_safety', tone: 'good' },
           { label: 'Active Premium', value: '$24.8M', sub: '+5.2% QoQ', icon: 'account_balance', tone: 'good' },
@@ -64,11 +65,12 @@ export default function AnalyticsPage() {
         ))}
       </section>
 
-      <section className="grid grid-cols-1 xl:grid-cols-3 gap-3">
-        <div className="xl:col-span-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(2,6,23,0.04)]">
+      <section className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div className="xl:col-span-2 rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(2,6,23,0.04)]">
           <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
             <div>
               <div className="text-sm font-black text-safe-ink">Incident Volume vs Resolution</div>
+              <div className="text-xs font-semibold text-slate-500">Q3 2023 (current)</div>
             </div>
             <button type="button" className="h-9 w-9 rounded-xl grid place-items-center text-slate-500 hover:bg-slate-50" title="More">
               <span className="material-symbols-outlined" aria-hidden="true">
@@ -109,14 +111,15 @@ export default function AnalyticsPage() {
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white shadow-[0_10px_30px_rgba(2,6,23,0.04)] overflow-hidden">
-          <div className="p-4 border-b border-slate-200 bg-slate-50">
+          <div className="px-5 py-4 border-b border-slate-200 bg-slate-50">
             <div className="text-sm font-black text-safe-ink">Regional Highlights</div>
+            <div className="text-xs font-semibold text-slate-500">Risk, performance, and volume indicators</div>
           </div>
           <div className="p-4 space-y-2">
             {[
               { code: 'NE', name: 'North East Corridor', note: 'Highest claim volume', trend: '+12%', tone: 'bad' },
               { code: 'SW', name: 'South West Transit', note: 'Safety target exceeded', trend: '-4%', tone: 'good' },
-              { code: 'MW', name: 'Midwest Logistics', note: 'Stable performance', trend: '—', tone: 'neutral' },
+              { code: 'MW', name: 'Midwest Logistics', note: 'Stable performance', trend: '--', tone: 'neutral' },
             ].map((r) => (
               <div key={r.code} className="rounded-2xl border border-slate-200 bg-white px-3 py-3 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors">
                 <div className="flex items-center gap-3 min-w-0">
