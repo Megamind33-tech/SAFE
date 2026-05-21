@@ -49,3 +49,49 @@ dashboardRouter.get('/fraud/flags', async (_req, res) => {
   res.json({ flags });
 });
 
+dashboardRouter.get('/payouts', async (_req, res) => {
+  const payouts = await prisma.payout.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: 50,
+    include: { claim: true },
+  });
+  res.json({ payouts });
+});
+
+dashboardRouter.post('/claims/:id/approve', requireRole(['admin', 'super_admin']), async (req, res) => {
+  const claimId = String(req.params.id);
+  const claim = await prisma.claim.findUnique({ where: { id: claimId } });
+  if (!claim) {
+    res.status(404).json({ error: 'Claim not found' });
+    return;
+  }
+
+  const updated = await prisma.claim.update({
+    where: { id: claimId },
+    data: { status: 'approved' },
+  });
+
+  const payout = await prisma.payout.upsert({
+    where: { claimId },
+    create: { claimId, amount: 1200, currency: 'ZMW', status: 'pending' },
+    update: { status: 'pending' },
+  });
+
+  res.json({ claim: updated, payout });
+});
+
+dashboardRouter.post('/claims/:id/reject', requireRole(['admin', 'super_admin']), async (req, res) => {
+  const claimId = String(req.params.id);
+  const claim = await prisma.claim.findUnique({ where: { id: claimId } });
+  if (!claim) {
+    res.status(404).json({ error: 'Claim not found' });
+    return;
+  }
+
+  const updated = await prisma.claim.update({
+    where: { id: claimId },
+    data: { status: 'rejected' },
+  });
+
+  res.json({ claim: updated });
+});

@@ -36,6 +36,12 @@ enum ClaimStatus {
   paid
 }
 
+enum PayoutStatus {
+  pending
+  succeeded
+  failed
+}
+
 model User {
   id           String   @id @default(cuid())
   createdAt    DateTime @default(now())
@@ -195,6 +201,23 @@ model Claim {
 
   policeReference String?
   hospitalSlipUrl String?
+
+  payout Payout?
+}
+
+model Payout {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  claimId   String   @unique
+  claim     Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  amount    Int
+  currency  String   @default("ZMW")
+  status    PayoutStatus @default(pending)
+
+  reference String?
 }
 
 model QRCode {
