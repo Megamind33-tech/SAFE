@@ -11,6 +11,8 @@ import FraudPage from './pages/FraudPage.jsx';
 import SupportPage from './pages/SupportPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import DashboardLoginPage from './pages/DashboardLoginPage.jsx';
+import PartnersPage from './pages/PartnersPage.jsx';
+import DocumentsPage from './pages/DocumentsPage.jsx';
 
 export default function App() {
   return (
@@ -19,7 +21,9 @@ export default function App() {
         <Route path="/login" element={<DashboardLoginPage />} />
         <Route element={<DashboardShell />}>
           <Route index element={<DashboardOverviewPage />} />
+          <Route path="/partners" element={<PartnersPage />} />
           <Route path="/claims" element={<ClaimsPage />} />
+          <Route path="/documents" element={<DocumentsPage />} />
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/payments" element={<PaymentsPage />} />
           <Route path="/analytics" element={<AnalyticsPage />} />
@@ -33,4 +37,3 @@ export default function App() {
     </BrowserRouter>
   );
 }
-

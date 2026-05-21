@@ -3,6 +3,8 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
   Building2,
+  FolderOpen,
+  Handshake,
   FileText,
   LifeBuoy,
   Shield,
@@ -14,12 +16,14 @@ import {
 
 const nav = [
   { to: '/', label: 'Dashboard', icon: BarChart3 },
+  { to: '/partners', label: 'Partners', icon: Handshake },
   { to: '/claims', label: 'Claims', icon: FileText },
-  { to: '/customers', label: 'Customers', icon: Users },
-  { to: '/payments', label: 'Payments', icon: WalletCards },
-  { to: '/analytics', label: 'Reports', icon: Building2 },
-  { to: '/live-ops', label: 'Live Ops', icon: Shield },
-  { to: '/fraud', label: 'Fraud', icon: ShieldAlert },
+  { to: '/documents', label: 'Documents', icon: FolderOpen },
+  { to: '/customers', label: 'Drivers', icon: Users },
+  { to: '/payments', label: 'Billing', icon: WalletCards },
+  { to: '/analytics', label: 'Analytics', icon: Building2 },
+  { to: '/live-ops', label: 'Operations', icon: Shield },
+  { to: '/fraud', label: 'Compliance', icon: ShieldAlert },
   { to: '/support', label: 'Support', icon: LifeBuoy },
   { to: '/settings', label: 'Settings', icon: SlidersHorizontal },
 ];
@@ -31,7 +35,7 @@ export default function DashboardShell() {
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="flex">
         <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white">
-          <div className="px-5 py-5">
+          <div className="px-4 py-3">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-safe-ink text-safe-cloud grid place-items-center shadow-sm">
                 <span className="text-safe-electric font-black tracking-wide">S</span>
@@ -43,7 +47,7 @@ export default function DashboardShell() {
             </div>
           </div>
 
-          <nav className="flex-1 px-3 pb-6">
+          <nav className="flex-1 px-2.5 pb-4">
             {nav.map(({ to, label, icon: Icon }) => (
               <NavLink
                 key={to}
@@ -62,7 +66,7 @@ export default function DashboardShell() {
             ))}
           </nav>
 
-          <div className="px-3 pb-5">
+          <div className="px-2.5 pb-4">
             <button
               type="button"
               onClick={() => navigate('/claims')}
@@ -75,7 +79,7 @@ export default function DashboardShell() {
 
         <div className="flex-1 min-w-0">
           <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur">
-            <div className="px-5 md:px-8 h-16 flex items-center justify-between gap-4">
+            <div className="px-4 md:px-6 h-12 flex items-center justify-between gap-4">
               <div className="text-sm font-semibold text-safe-ink">SAFE Dashboard</div>
               <div className="hidden md:flex items-center gap-3 text-xs font-semibold text-slate-500">
                 <span className="rounded-full bg-slate-100 px-3 py-1">API: Shared Backend</span>
@@ -91,7 +95,7 @@ export default function DashboardShell() {
             </div>
           </header>
 
-          <main className="px-5 md:px-8 py-6">
+          <main className="px-4 md:px-6 py-4">
             <Outlet />
           </main>
         </div>
@@ -99,4 +103,3 @@ export default function DashboardShell() {
     </div>
   );
 }
-

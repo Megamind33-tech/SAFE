@@ -66,7 +66,7 @@ button {
 }
 
 .screen.padded {
-  padding: 16px 16px 104px;
+  padding: 10px 12px 84px;
 }
 
 .top-bar,
@@ -105,7 +105,7 @@ button {
 }
 
 .page-heading {
-  margin: 16px 0 22px;
+  margin: 10px 0 12px;
 }
 
 .page-heading h1,
@@ -811,7 +811,7 @@ button {
 
 .mobility-hero {
   position: relative;
-  min-height: 462px;
+  min-height: 380px;
   padding: 28px 18px 16px;
   overflow: hidden;
 }
@@ -911,7 +911,7 @@ button {
 }
 
 .active-cover-card {
-  margin-top: 66px;
+  margin-top: 28px;
   border-radius: 30px;
   padding: 18px;
   overflow: hidden;
@@ -1144,7 +1144,7 @@ button {
 
 .premium-action-card {
   position: relative;
-  min-height: 132px;
+  min-height: 110px;
   border: 1px solid rgba(255,255,255,.1);
   border-radius: 28px;
   display: flex;
@@ -1152,7 +1152,7 @@ button {
   align-items: flex-start;
   justify-content: flex-end;
   gap: 6px;
-  padding: 14px;
+  padding: 10px;
   text-align: left;
   color: #fff;
   background:
@@ -1324,7 +1324,7 @@ button {
 
 .plan-list {
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
 
 .plan-card {
@@ -1332,11 +1332,11 @@ button {
   border: 1px solid rgba(189, 202, 190, 0.72);
   background: var(--surface-card);
   border-radius: 8px;
-  padding: 16px;
+  padding: 12px;
   display: grid;
   grid-template-columns: 62px 1fr 32px;
   align-items: start;
-  gap: 14px;
+  gap: 10px;
   text-align: left;
   color: var(--text);
   box-shadow: var(--soft-shadow);
@@ -1528,15 +1528,15 @@ button {
 
 .method-card {
   width: 100%;
-  min-height: 72px;
+  min-height: 60px;
   border: 1px solid transparent;
   background: var(--surface-card);
   border-radius: 8px;
   display: grid;
   grid-template-columns: 58px 1fr 28px;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  gap: 10px;
+  padding: 10px;
   text-align: left;
   box-shadow: var(--soft-shadow);
 }
@@ -1595,7 +1595,7 @@ button {
 
 .payment-dock {
   position: relative;
-  margin: 24px -16px 0;
+  margin: 14px -12px 0;
   padding: 16px;
   border-radius: 16px;
   z-index: 1;
@@ -2116,7 +2116,7 @@ button {
 
 .settings-list button {
   width: 100%;
-  min-height: 58px;
+  min-height: 48px;
   border: 0;
   border-radius: 8px;
   background: var(--surface-card);

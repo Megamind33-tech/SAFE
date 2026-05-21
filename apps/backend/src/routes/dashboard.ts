@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
+import { hashPassword } from '../lib/auth.js';
 
 export const dashboardRouter = Router();
 
@@ -9,12 +10,16 @@ dashboardRouter.use(requireAuth);
 dashboardRouter.use(requireRole(['admin', 'super_admin', 'transport_partner', 'insurance_partner']));
 
 dashboardRouter.get('/metrics', async (_req, res) => {
-  const [users, activeCovers, claimsPending, fraudFlags] = await Promise.all([
+  const [users, activeCovers, claimsPending, fraudFlags, purchases] = await Promise.all([
     prisma.user.count(),
     prisma.tripCover.count({ where: { status: 'active' } }),
     prisma.claim.count({ where: { status: { in: ['submitted', 'processing'] } } }),
     prisma.fraudFlag.count(),
+    prisma.tripCover.count(),
   ]);
+
+  // Simulate scans as purchases + some failed/started checkouts
+  const scans = purchases + 14;
 
   res.json({
     metrics: {
@@ -22,6 +27,8 @@ dashboardRouter.get('/metrics', async (_req, res) => {
       activeCovers,
       claimsPending,
       fraudFlags,
+      purchases,
+      scans,
     },
   });
 });
@@ -39,7 +46,10 @@ dashboardRouter.get('/claims', async (_req, res) => {
   const claims = await prisma.claim.findMany({
     orderBy: { createdAt: 'desc' },
     take: 50,
-    include: { tripCover: { include: { vehicle: true, route: true } } },
+    include: {
+      tripCover: { include: { vehicle: true, route: true } },
+      passengerUser: { include: { passengerProfile: true } },
+    },
   });
   res.json({ claims });
 });
@@ -94,4 +104,116 @@ dashboardRouter.post('/claims/:id/reject', requireRole(['admin', 'super_admin'])
   });
 
   res.json({ claim: updated });
+});
+
+dashboardRouter.get('/drivers', async (_req, res) => {
+  const drivers = await prisma.driverProfile.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: {
+      user: {
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          isActive: true,
+        },
+      },
+      vehicles: {
+        include: {
+          route: true,
+        },
+      },
+    },
+  });
+  res.json({ drivers });
+});
+
+dashboardRouter.post('/drivers', async (req, res) => {
+  const { fullName, phone, email, password, licenseNumber, plateNumber } = req.body;
+
+  if (!fullName || !phone || !password) {
+    res.status(400).json({ error: 'fullName, phone, and password are required' });
+    return;
+  }
+
+  const passwordHash = await hashPassword(password);
+
+  try {
+    const user = await prisma.user.create({
+      data: {
+        email: email || null,
+        phone,
+        passwordHash,
+        role: 'driver',
+        driverProfile: {
+          create: {
+            fullName,
+            licenseNumber,
+          },
+        },
+      },
+      include: {
+        driverProfile: true,
+      },
+    });
+
+    const driverProfileId = user.driverProfile?.id;
+
+    let vehicle = null;
+    if (plateNumber && driverProfileId) {
+      vehicle = await prisma.vehicle.findUnique({ where: { plateNumber } });
+      if (vehicle) {
+        vehicle = await prisma.vehicle.update({
+          where: { id: vehicle.id },
+          data: { driverId: driverProfileId },
+        });
+      } else {
+        let routeId = 'route-matero-town';
+        const defaultRoute = await prisma.route.findUnique({ where: { id: routeId } });
+        if (!defaultRoute) {
+          const newRoute = await prisma.route.create({
+            data: { id: routeId, origin: 'Matero', destination: 'Town' },
+          });
+          routeId = newRoute.id;
+        }
+
+        vehicle = await prisma.vehicle.create({
+          data: {
+            plateNumber,
+            busId: plateNumber.replace(/\s+/g, '-'),
+            routeId,
+            driverId: driverProfileId,
+          },
+        });
+      }
+    }
+
+    const updatedProfile = await prisma.driverProfile.findUnique({
+      where: { id: driverProfileId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            phone: true,
+            isActive: true,
+          },
+        },
+        vehicles: {
+          include: {
+            route: true,
+          },
+        },
+      },
+    });
+
+    res.json({ driver: updatedProfile });
+  } catch (err: any) {
+    if (String(err?.code) === 'P2002') {
+      res.status(409).json({ error: 'User with this phone/email or plate number already exists' });
+      return;
+    }
+    console.error('Failed to onboard driver:', err);
+    res.status(500).json({ error: 'Failed to onboard driver' });
+  }
 });

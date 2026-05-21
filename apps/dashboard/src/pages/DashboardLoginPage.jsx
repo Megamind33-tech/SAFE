@@ -26,12 +26,9 @@ export default function DashboardLoginPage() {
 
   return (
     <div className="min-h-screen grid place-items-center bg-slate-50 px-4">
-      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_18px_60px_rgba(2,6,23,0.08)]">
+      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_18px_60px_rgba(2,6,23,0.08)]">
         <div className="text-sm font-extrabold tracking-wide text-safe-ink">SAFE Dashboard</div>
         <div className="mt-1 text-2xl font-black tracking-tight text-safe-ink">Admin login</div>
-        <div className="mt-2 text-sm font-semibold text-slate-500">
-          This login is for staff, partners, and insurance operators. Passengers never use this.
-        </div>
 
         <form onSubmit={submit} className="mt-6 space-y-4">
           <label className="block">

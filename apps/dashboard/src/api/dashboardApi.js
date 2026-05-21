@@ -50,7 +50,24 @@ export async function dashboardClaims(token) {
   return request('/api/dashboard/claims', { token });
 }
 
+export async function approveClaim(token, id) {
+  return request(`/api/dashboard/claims/${id}/approve`, { method: 'POST', token });
+}
+
+export async function rejectClaim(token, id) {
+  return request(`/api/dashboard/claims/${id}/reject`, { method: 'POST', token });
+}
+
 export async function dashboardVehicles(token) {
   return request('/api/dashboard/vehicles', { token });
 }
+
+export async function dashboardDrivers(token) {
+  return request('/api/dashboard/drivers', { token });
+}
+
+export async function onboardDriver(token, driverData) {
+  return request('/api/dashboard/drivers', { method: 'POST', token, body: driverData });
+}
+
 

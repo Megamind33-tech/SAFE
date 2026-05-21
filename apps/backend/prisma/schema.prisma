@@ -84,6 +84,9 @@ model DriverProfile {
   userId    String   @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  fullName  String?
+  licenseNumber String?
+
   transportPartnerId String?
   transportPartner   TransportPartner? @relation(fields: [transportPartnerId], references: [id])
 
