@@ -1,0 +1,251 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  passenger
+  driver
+  transport_partner
+  insurance_partner
+  admin
+  super_admin
+}
+
+enum TripCoverStatus {
+  active
+  expired
+  cancelled
+}
+
+enum PaymentStatus {
+  pending
+  succeeded
+  failed
+}
+
+enum ClaimStatus {
+  submitted
+  processing
+  approved
+  rejected
+  paid
+}
+
+model User {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  role         Role     @default(passenger)
+  isActive     Boolean  @default(true)
+
+  email        String?  @unique
+  phone        String?  @unique
+  passwordHash String
+
+  passengerProfile PassengerProfile?
+  driverProfile    DriverProfile?
+
+  passengerTripCovers TripCover[] @relation("PassengerTripCovers")
+  passengerClaims     Claim[]     @relation("PassengerClaims")
+  fraudFlags          FraudFlag[]
+
+  notifications Notification[]
+  auditLogs     AuditLog[] @relation("AuditActor")
+}
+
+model PassengerProfile {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fullName  String?
+}
+
+model DriverProfile {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  transportPartnerId String?
+  transportPartner   TransportPartner? @relation(fields: [transportPartnerId], references: [id])
+
+  vehicles Vehicle[]
+}
+
+model TransportPartner {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name      String
+
+  drivers   DriverProfile[]
+  vehicles  Vehicle[]
+}
+
+model InsurancePartner {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name      String
+}
+
+model Vehicle {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plateNumber String @unique
+  busId       String? @unique
+
+  routeId   String?
+  route     Route?   @relation(fields: [routeId], references: [id])
+
+  transportPartnerId String?
+  transportPartner   TransportPartner? @relation(fields: [transportPartnerId], references: [id])
+
+  driverId  String?
+  driver    DriverProfile? @relation(fields: [driverId], references: [id])
+
+  qrCodes   QRCode[]
+  tripCovers TripCover[]
+}
+
+model Route {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  origin      String
+  destination String
+
+  vehicles  Vehicle[]
+  tripCovers TripCover[]
+}
+
+model TripCover {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  passengerUserId String
+  passengerUser   User @relation("PassengerTripCovers", fields: [passengerUserId], references: [id], onDelete: Cascade)
+
+  vehicleId String?
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
+
+  routeId   String?
+  route     Route? @relation(fields: [routeId], references: [id])
+
+  plan      String
+  status    TripCoverStatus @default(active)
+
+  amount    Int
+  currency  String @default("ZMW")
+
+  startedAt DateTime @default(now())
+  endsAt    DateTime
+
+  payment   Payment?
+  claims    Claim[]
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tripCoverId String @unique
+  tripCover   TripCover @relation(fields: [tripCoverId], references: [id], onDelete: Cascade)
+
+  method    String
+  status    PaymentStatus @default(pending)
+
+  amount    Int
+  currency  String @default("ZMW")
+  reference String?
+}
+
+model Claim {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tripCoverId String
+  tripCover   TripCover @relation(fields: [tripCoverId], references: [id], onDelete: Cascade)
+
+  passengerUserId String
+  passengerUser   User @relation("PassengerClaims", fields: [passengerUserId], references: [id], onDelete: Cascade)
+
+  status     ClaimStatus @default(submitted)
+  description String
+
+  policeReference String?
+  hospitalSlipUrl String?
+}
+
+model QRCode {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  code      String   @unique
+  isActive  Boolean  @default(true)
+
+  vehicleId String?
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
+}
+
+model FraudFlag {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  severity  String
+  reason    String
+
+  userId    String?
+  user      User? @relation(fields: [userId], references: [id])
+
+  claimId   String?
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId    String
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title     String
+  body      String
+
+  readAt    DateTime?
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  actorUserId String?
+  actorUser   User? @relation("AuditActor", fields: [actorUserId], references: [id])
+
+  action    String
+  entityType String
+  entityId  String?
+  meta      String?
+}

@@ -1,0 +1,17 @@
+{
+  "name": "safe",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:mobile": "npm --workspace apps/mobile run dev",
+    "build:mobile": "npm --workspace apps/mobile run build",
+    "preview:mobile": "npm --workspace apps/mobile run preview",
+    "dev:dashboard": "npm --workspace apps/dashboard run dev",
+    "build:dashboard": "npm --workspace apps/dashboard run build",
+    "preview:dashboard": "npm --workspace apps/dashboard run preview",
+    "dev:backend": "npm --workspace apps/backend run dev",
+    "start:backend": "npm --workspace apps/backend run start"
+  }
+}

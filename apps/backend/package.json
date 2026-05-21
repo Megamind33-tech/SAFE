@@ -1,0 +1,35 @@
+{
+  "name": "safe-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "init:env": "node scripts/writeLocalEnv.mjs",
+    "setup": "npm run init:env && node scripts/ensureSqliteFile.mjs && prisma migrate dev && npm run seed",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc -p tsconfig.json",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "node scripts/ensureSqliteFile.mjs && prisma migrate dev",
+    "prisma:studio": "node scripts/ensureSqliteFile.mjs && prisma studio",
+    "seed": "node scripts/ensureSqliteFile.mjs && tsx src/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.10.1",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.18",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^22.15.32",
+    "prisma": "^6.10.1",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 430 720" role="img" aria-label="Illustrated Lusaka minibus commute scene">
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#f5d79a"/>
+      <stop offset="0.5" stop-color="#d7e5c7"/>
+      <stop offset="1" stop-color="#7aa06e"/>
+    </linearGradient>
+    <linearGradient id="road" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#4a544f"/>
+      <stop offset="1" stop-color="#1d2522"/>
+    </linearGradient>
+    <linearGradient id="busBody" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#f8fbf4"/>
+      <stop offset="0.48" stop-color="#dfe7df"/>
+      <stop offset="1" stop-color="#aab7aa"/>
+    </linearGradient>
+    <linearGradient id="shade" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#0a1610" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0a1610" stop-opacity="0.9"/>
+    </linearGradient>
+    <pattern id="woven" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M0 20h40M20 0v40" stroke="#ffffff" stroke-opacity="0.12" stroke-width="2"/>
+      <path d="M0 0l40 40M40 0L0 40" stroke="#008751" stroke-opacity="0.16" stroke-width="1.5"/>
+    </pattern>
+  </defs>
+
+  <rect width="430" height="720" fill="url(#sky)"/>
+  <rect width="430" height="720" fill="url(#woven)" opacity="0.42"/>
+  <circle cx="336" cy="86" r="55" fill="#f7b733" opacity="0.72"/>
+  <circle cx="336" cy="86" r="82" fill="#f7b733" opacity="0.16"/>
+
+  <path d="M0 238c56-40 104-38 154-13 47 23 91 14 129-15 55-41 101-37 147-10v520H0z" fill="#5f8f55" opacity="0.72"/>
+  <path d="M0 264c65-30 133-26 189 3 48 25 105 28 159 5 34-14 59-14 82-7v455H0z" fill="#3e7344" opacity="0.62"/>
+
+  <g opacity="0.76">
+    <rect x="34" y="190" width="42" height="118" fill="#6d766d"/>
+    <rect x="86" y="160" width="64" height="148" fill="#768176"/>
+    <rect x="162" y="204" width="52" height="104" fill="#5d695f"/>
+    <rect x="268" y="172" width="48" height="136" fill="#6f7a72"/>
+    <rect x="325" y="144" width="74" height="164" fill="#626e67"/>
+    <g fill="#cdd7ce" opacity="0.42">
+      <rect x="42" y="204" width="8" height="16"/>
+      <rect x="59" y="204" width="8" height="16"/>
+      <rect x="96" y="178" width="10" height="18"/>
+      <rect x="117" y="178" width="10" height="18"/>
+      <rect x="338" y="162" width="10" height="18"/>
+      <rect x="361" y="162" width="10" height="18"/>
+      <rect x="338" y="196" width="10" height="18"/>
+      <rect x="361" y="196" width="10" height="18"/>
+    </g>
+  </g>
+
+  <g transform="translate(0 255)">
+    <rect x="12" y="94" width="120" height="78" rx="4" fill="#6d3f22"/>
+    <path d="M7 94h130l-24-35H32z" fill="#008751"/>
+    <path d="M32 59h28l-18 35H7z" fill="#de2010"/>
+    <path d="M60 59h28L74 94H42z" fill="#f7a800"/>
+    <path d="M88 59h25l24 35H74z" fill="#111111"/>
+    <rect x="28" y="112" width="30" height="60" fill="#3a2517"/>
+    <rect x="70" y="113" width="42" height="28" fill="#f4e6bd"/>
+
+    <rect x="286" y="106" width="124" height="66" rx="5" fill="#5d3721"/>
+    <path d="M276 106h142l-31-40H310z" fill="#0b7f49"/>
+    <path d="M310 66h31l-23 40h-42z" fill="#de2010"/>
+    <path d="M341 66h28l-10 40h-41z" fill="#f7a800"/>
+    <path d="M369 66h18l31 40h-59z" fill="#111111"/>
+    <rect x="307" y="122" width="34" height="50" fill="#3a2517"/>
+    <rect x="350" y="122" width="38" height="26" fill="#f4e6bd"/>
+  </g>
+
+  <g transform="translate(24 268)">
+    <path d="M48 102c-22-2-38-18-37-39 1-25 24-37 45-26 7-29 42-43 69-25 23 15 27 50 8 69 24 2 39 20 36 42-4 28-31 39-57 27-14 21-48 19-61 0-20 13-49-4-46-27 2-12 12-20 43-21z" fill="#1d6d3a"/>
+    <path d="M82 117c4 54-8 90-31 125h35c19-41 25-82 23-125z" fill="#6b4427"/>
+  </g>
+
+  <path d="M-22 720L150 390h130l172 330z" fill="url(#road)"/>
+  <path d="M211 418l-7 302h23l-6-302z" fill="#f9c74f" opacity="0.68"/>
+  <path d="M0 468c64-42 117-51 180-37 86 19 169-8 250-54v343H0z" fill="#1f5f3d" opacity="0.62"/>
+
+  <g transform="translate(70 353)">
+    <ellipse cx="152" cy="178" rx="150" ry="31" fill="#07100c" opacity="0.36"/>
+    <path d="M23 58c10-34 39-50 82-52h144c40 0 73 25 82 64l14 66c4 20-11 40-32 40H36c-20 0-34-19-31-38z" fill="url(#busBody)"/>
+    <path d="M52 34h180c44 0 72 17 83 54l5 16H31l5-20c6-26 15-41 16-50z" fill="#006b3f"/>
+    <path d="M57 45h176c33 0 54 12 63 38H43c3-15 8-28 14-38z" fill="#b7dbe0"/>
+    <path d="M46 100h278l8 36H38z" fill="#008751"/>
+    <path d="M38 136h294l5 25H33z" fill="#f7a800"/>
+    <rect x="77" y="53" width="65" height="46" rx="6" fill="#203a42" opacity="0.62"/>
+    <rect x="154" y="53" width="61" height="46" rx="6" fill="#203a42" opacity="0.62"/>
+    <rect x="229" y="53" width="54" height="46" rx="6" fill="#203a42" opacity="0.62"/>
+    <rect x="118" y="113" width="93" height="24" rx="4" fill="#111"/>
+    <text x="164" y="130" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="800" fill="#fff">LUSAKA</text>
+    <circle cx="80" cy="173" r="29" fill="#111"/>
+    <circle cx="80" cy="173" r="13" fill="#d6ddd7"/>
+    <circle cx="274" cy="173" r="29" fill="#111"/>
+    <circle cx="274" cy="173" r="13" fill="#d6ddd7"/>
+    <rect x="272" y="111" width="40" height="21" rx="4" fill="#f2f7ef"/>
+    <rect x="21" y="111" width="39" height="21" rx="4" fill="#f2f7ef"/>
+    <path d="M15 74c-18 13-24 37-4 51 12-22 22-36 39-51z" fill="#f8fbf4"/>
+  </g>
+
+  <rect y="0" width="430" height="720" fill="url(#shade)"/>
+  <rect x="0" y="0" width="430" height="9" fill="#008751"/>
+  <rect x="0" y="9" width="430" height="5" fill="#de2010"/>
+  <rect x="0" y="14" width="430" height="5" fill="#111111"/>
+  <rect x="0" y="19" width="430" height="5" fill="#f7a800"/>
+</svg>
