@@ -6,16 +6,16 @@ import {
   Siren, Smartphone, Star, Upload, User, WalletCards,
 } from 'lucide-react';
 import SafeMap from './components/SafeMap.jsx';
-import safeLogo from './assets/brand/safe-logo-full.png';
-import busStopCover from './assets/cover/bus-stop-cover.png';
-import verifiedBusShield from './assets/transport/verified-bus-shield.png';
 import BusIllustration from './components/BusIllustration.jsx';
 import { AirtelLogo, MtnLogo, VisaMcLogo, SecurePaymentIllustration } from './components/PaymentLogos.jsx';
-import {
-  buyCover, confirmPayment, clearToken, createClaim, loadToken, login, me,
-  registerPassenger, saveToken, activeCover, coverHistory, listClaims,
-  verifyVehicle, getCoverProducts, getServerTime,
-} from './api/safeApi.js';
+import { getToken, setToken, removeToken } from './services/client.js';
+import * as authService from './services/auth.service.js';
+import * as vehicleService from './services/vehicle.service.js';
+import * as coverService from './services/cover.service.js';
+import * as paymentService from './services/payment.service.js';
+import * as claimsService from './services/claims.service.js';
+import { getServerTime } from './services/time.service.js';
+import { ASSETS } from './config/assets.js';
 
 const PAYMENT_METHODS = [
   { id: 'airtel', name: 'Airtel Money', detail: 'Pay with Airtel Money', icon: Smartphone, accent: 'red' },
@@ -25,7 +25,7 @@ const PAYMENT_METHODS = [
 
 function App() {
   const [screen, setScreen] = useState('splash');
-  const [session, setSession] = useState(() => ({ token: loadToken(), user: null, ready: false }));
+  const [session, setSession] = useState(() => ({ token: getToken(), user: null, ready: false }));
 
   const [coverState, setCoverState] = useState(null);
   const [history, setHistory] = useState([]);
@@ -42,11 +42,13 @@ function App() {
 
   const adjustedNow = () => Date.now() + serverOffset;
 
-  const refreshData = useCallback(async (token) => {
-    if (!token) return;
+  const refreshData = useCallback(async () => {
+    if (!getToken()) return;
     try {
       const [ac, h, cl] = await Promise.all([
-        activeCover(token), coverHistory(token), listClaims(token),
+        coverService.getActiveCover(),
+        coverService.getCoverHistory(),
+        claimsService.listClaims(),
       ]);
       setCoverState(ac?.cover || null);
       if (ac?.serverTime) setServerOffset(new Date(ac.serverTime).getTime() - Date.now());
@@ -56,7 +58,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    getCoverProducts().then(d => {
+    coverService.getCoverProducts().then(d => {
       setProducts(d?.products || []);
       if (d?.products?.[0]) setSelectedProductId(d.products[0].id);
     }).catch(() => {});
@@ -66,26 +68,26 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const t = loadToken();
+    const t = getToken();
     if (!t) { setSession({ token: '', user: null, ready: true }); return; }
-    me(t).then(d => {
+    authService.getMe().then(d => {
       setSession({ token: t, user: d.user, ready: true });
-      refreshData(t);
+      refreshData();
     }).catch(() => {
-      clearToken();
+      removeToken();
       setSession({ token: '', user: null, ready: true });
     });
   }, []);
 
   useEffect(() => {
-    if (session.token) refreshData(session.token);
+    if (session.token) refreshData();
   }, [session.token]);
 
   useEffect(() => {
     if (!coverState?.endsAt) { setCountdown(''); return; }
     const tick = () => {
       const diff = new Date(coverState.endsAt).getTime() - adjustedNow();
-      if (diff <= 0) { setCountdown('Expired'); refreshData(session.token); return; }
+      if (diff <= 0) { setCountdown('Expired'); refreshData(); return; }
       const h = Math.floor(diff / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
       const s = Math.floor((diff % 60000) / 1000);
@@ -172,7 +174,7 @@ function NavBtn({ icon: Icon, label, active, onClick }) {
 function SplashScreen({ goTo }) {
   return (
     <div className="splash-screen">
-      <img src={safeLogo} alt="SAFE" className="splash-logo" />
+      <img src={ASSETS.brand.logoFull} alt="SAFE" className="splash-logo" />
       <h1 className="splash-title">SAFE</h1>
       <p className="splash-sub">You ride. We protect.</p>
       <div className="splash-actions">
@@ -193,8 +195,8 @@ function LoginScreen({ goTo, setSession }) {
   const submit = async (e) => {
     e.preventDefault(); setErr(''); setBusy(true);
     try {
-      const d = await login({ identifier: id, password: pw });
-      saveToken(d.token);
+      const d = await authService.login({ identifier: id, password: pw });
+      setToken(d.token);
       setSession({ token: d.token, user: d.user, ready: true });
       goTo('home');
     } catch (e) { setErr(e.message); } finally { setBusy(false); }
@@ -202,7 +204,7 @@ function LoginScreen({ goTo, setSession }) {
 
   return (
     <form className="auth-screen" onSubmit={submit}>
-      <img src={safeLogo} alt="SAFE" className="auth-logo" />
+      <img src={ASSETS.brand.logoFull} alt="SAFE" className="auth-logo" />
       <h1 className="auth-title">Welcome back</h1>
       <p className="auth-subtitle">Log in to your SAFE account</p>
       <div className="form-group">
@@ -230,8 +232,8 @@ function SignupScreen({ goTo, setSession }) {
   const submit = async (e) => {
     e.preventDefault(); setErr(''); setBusy(true);
     try {
-      const d = await registerPassenger({ phone, password: pw, fullName: name });
-      saveToken(d.token);
+      const d = await authService.register({ phone, password: pw, fullName: name });
+      setToken(d.token);
       setSession({ token: d.token, user: d.user, ready: true });
       goTo('home');
     } catch (e) { setErr(e.message); } finally { setBusy(false); }
@@ -239,7 +241,7 @@ function SignupScreen({ goTo, setSession }) {
 
   return (
     <form className="auth-screen" onSubmit={submit}>
-      <img src={safeLogo} alt="SAFE" className="auth-logo" />
+      <img src={ASSETS.brand.logoFull} alt="SAFE" className="auth-logo" />
       <h1 className="auth-title">Join SAFE</h1>
       <p className="auth-subtitle">Create your account to get protected</p>
       <div className="form-group">
@@ -379,7 +381,7 @@ function ScannerModal({ session, setScannedVehicle, goTo, onClose }) {
     if (!plate.trim()) { setErr('Enter a plate number'); return; }
     setErr(''); setBusy(true);
     try {
-      const d = await verifyVehicle(session.token, { plateNumber: plate.trim() });
+      const d = await vehicleService.verifyByPlate(plate.trim());
       setScannedVehicle(d);
       onClose();
       goTo('choose');
@@ -389,7 +391,7 @@ function ScannerModal({ session, setScannedVehicle, goTo, onClose }) {
   const scanQR = async () => {
     setErr(''); setBusy(true);
     try {
-      const d = await verifyVehicle(session.token, { qrCode: 'SAFE-LSK-2481' });
+      const d = await vehicleService.verifyByQR('SAFE-LSK-2481');
       setScannedVehicle(d);
       onClose();
       goTo('choose');
@@ -446,7 +448,7 @@ function ChooseScreen({ goTo, products, selectedProductId, setSelectedProductId,
       </div>
 
       {scannedVehicle && (
-        <div className="verified-card">
+        <div className="verified-card anim-fade-up">
           <div className="verified-card-left">
             <div className="verified-dot" />
             <div>
@@ -456,17 +458,17 @@ function ChooseScreen({ goTo, products, selectedProductId, setSelectedProductId,
               )}
             </div>
           </div>
-          <img src={verifiedBusShield} alt="Verified" style={{ width: 48, height: 48, objectFit: 'contain' }} />
+          <img src={ASSETS.transport.verifiedBusShield} alt="Verified" style={{ width: 48, height: 48, objectFit: 'contain' }} />
         </div>
       )}
 
-      <div className="banner-card">
+      <div className="banner-card anim-fade-up anim-delay-1">
         <div className="banner-card-text">
           <h3>Travel worry-free.</h3>
           <p>You choose the cover, we've got you covered.</p>
         </div>
         <div className="banner-card-illust">
-          <img src={busStopCover} alt="SAFE commuter cover" style={{ width: 130, height: 'auto', objectFit: 'contain', opacity: 0.9 }} />
+          <img src={ASSETS.transport.busStopCover} alt="SAFE commuter cover" style={{ width: 130, height: 'auto', objectFit: 'contain', opacity: 0.9 }} />
         </div>
       </div>
 
@@ -477,7 +479,7 @@ function ChooseScreen({ goTo, products, selectedProductId, setSelectedProductId,
         </div>
       ) : (
         products.map((p, i) => (
-          <button className={`product-card ${selectedProductId === p.id ? 'selected' : ''}`} key={p.id} type="button" onClick={() => setSelectedProductId(p.id)}>
+          <button className={`product-card ${selectedProductId === p.id ? 'selected' : ''} anim-fade-up anim-delay-${i + 2}`} key={p.id} type="button" onClick={() => setSelectedProductId(p.id)}>
             <div className={`product-icon ${i === 0 ? 'basic' : i === 1 ? 'plus' : 'daily'}`}>
               {iconForIndex(i)}
             </div>
@@ -533,14 +535,14 @@ function PaymentScreen({ goTo, selectedProduct, paymentMethod, setPaymentMethod,
   const pay = async () => {
     setErr(''); setBusy(true); setStage('processing');
     try {
-      const buy = await buyCover(session.token, {
+      const buy = await coverService.purchaseCover({
         coverProductId: selectedProduct.id,
         vehicleId: scannedVehicle?.vehicle?.id,
         paymentMethod,
       });
       setStage('confirming');
-      await confirmPayment(session.token, buy.payment.id);
-      await refreshData(session.token);
+      await paymentService.confirmPayment(buy.payment.id);
+      await refreshData();
       goTo('activeCover');
     } catch (e) { setErr(e.message); setStage(''); } finally { setBusy(false); }
   };
@@ -565,7 +567,7 @@ function PaymentScreen({ goTo, selectedProduct, paymentMethod, setPaymentMethod,
         </div>
       </div>
 
-      <div className="summary-card">
+      <div className="summary-card anim-fade-up">
         <h3>Trip Summary</h3>
         <div className="summary-row"><Bus size={16} /><span>Route</span><strong>{scannedVehicle?.route ? `${scannedVehicle.route.origin} → ${scannedVehicle.route.destination}` : 'Lusaka commute'}</strong></div>
         <div className="summary-row"><MapPin size={16} /><span>Vehicle</span><strong>{scannedVehicle?.vehicle?.plateNumber || 'Not selected'}</strong></div>
@@ -576,7 +578,7 @@ function PaymentScreen({ goTo, selectedProduct, paymentMethod, setPaymentMethod,
 
       <div className="section-head"><h2>Payment Method</h2></div>
       {PAYMENT_METHODS.map(m => (
-        <button className={`method-card ${paymentMethod===m.id ? 'selected' : ''}`} key={m.id} type="button" onClick={() => setPaymentMethod(m.id)}>
+        <button className={`method-card ${paymentMethod===m.id ? 'selected' : ''} anim-fade-up`} key={m.id} type="button" onClick={() => setPaymentMethod(m.id)}>
           <div className="method-logo">{LOGO_MAP[m.id]}</div>
           <div className="method-info"><strong>{m.name}</strong><small>{m.detail}</small></div>
           <div className="method-radio">{paymentMethod===m.id && <Check size={12} />}</div>
@@ -585,7 +587,7 @@ function PaymentScreen({ goTo, selectedProduct, paymentMethod, setPaymentMethod,
 
       {err && <div className="error-banner">{err}</div>}
 
-      <div className="payment-total-row">
+      <div className="payment-total-row anim-fade-up">
         <span className="payment-total-label">Total</span>
         <strong className="payment-total-price">K{selectedProduct.price}</strong>
       </div>
@@ -637,7 +639,7 @@ function ActiveCoverScreen({ goTo, coverState, countdown }) {
 
       {!coverState ? (
         <div className="empty-state" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <img src={busStopCover} alt="Get covered" style={{ width: 180, height: 'auto', margin: '0 auto 16px', opacity: 0.85 }} />
+          <img src={ASSETS.transport.busStopCover} alt="Get covered" style={{ width: 180, height: 'auto', margin: '0 auto 16px', opacity: 0.85 }} />
           <p>No active cover</p>
           <small>Protect your next trip with SAFE</small>
           <button className="btn-primary" type="button" onClick={() => goTo('choose')} style={{ marginTop: 20, width: 'auto', padding: '12px 32px' }}>
@@ -660,7 +662,7 @@ function ActiveCoverScreen({ goTo, coverState, countdown }) {
               )}
             </div>
             <div className="cover-hero-right">
-              <img src={verifiedBusShield} alt="Protected vehicle" style={{ width: 130, height: 'auto', objectFit: 'contain' }} />
+              <img src={ASSETS.transport.verifiedBusShield} alt="Protected vehicle" style={{ width: 130, height: 'auto', objectFit: 'contain' }} />
             </div>
           </div>
 
@@ -855,12 +857,12 @@ function ClaimSubmitScreen({ goTo, session, coverState, history, refreshData }) 
     if (!coverId) { setErr('No cover to claim against'); return; }
     setErr(''); setBusy(true);
     try {
-      await createClaim(session.token, {
+      await claimsService.submitClaim({
         tripCoverId: coverId,
         description: desc.trim(),
         policeReference: police.trim() || undefined,
       });
-      await refreshData(session.token);
+      await refreshData();
       setDone(true);
     } catch (e) { setErr(e.message); } finally { setBusy(false); }
   };
@@ -939,7 +941,7 @@ function ProfileScreen({ goTo, session, setSession, history, claims, coverState,
         <button className="menu-item" type="button" onClick={() => goTo('claim')}><Siren size={18} /><span>My Claims</span><ChevronRight size={16} /></button>
         <button className="menu-item" type="button" onClick={() => goTo('help')}><ShieldCheck size={18} /><span>Help & Safety</span><ChevronRight size={16} /></button>
         <button className="menu-item danger" type="button" onClick={() => {
-          clearToken();
+          removeToken();
           setSession({ token: '', user: null, ready: true });
           goTo('splash');
         }}>
