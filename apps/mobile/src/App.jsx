@@ -1,59 +1,19 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
-  AlertTriangle,
-  ArrowLeft,
-  ArrowRight,
-  BadgeCheck,
-  Bell,
-  Bus,
-  Check,
-  CheckCircle2,
-  ChevronRight,
-  CircleUserRound,
-  Clock3,
-  CreditCard,
-  FileText,
-  HelpCircle,
-  HeartPulse,
-  Home,
-  Info,
-  Lock,
-  Mail,
-  MapPin,
-  MessageCircle,
-  Menu,
-  Navigation2,
-  Plus,
-  Radio,
-  RefreshCcw,
-  Search,
-  Send,
-  Share2,
-  Shield,
-  ShieldCheck,
-  Siren,
-  Smartphone,
-  Upload,
-  User,
-  WalletCards,
+  AlertTriangle, ArrowLeft, ArrowRight, Bell, Bus, Check, CheckCircle2,
+  ChevronRight, CircleUserRound, Clock, CreditCard, FileText, HeartPulse,
+  Home, Lock, LogOut, MapPin, QrCode, Search, Send, Shield, ShieldCheck,
+  Siren, Smartphone, Upload, User, WalletCards,
 } from 'lucide-react';
-import zambiaScene from './assets/zambia-commute-scene.svg';
+import SafeMap from './components/SafeMap.jsx';
 import safeLogo from './assets/SAFE_app_icon_master_3D_1024.png';
-import safeRoadBackground from './assets/safe-road-background.png';
-import shareTrackMap from './assets/share-track-map.png';
-import lusakaNightAerial from './assets/lusaka-night-aerial.png';
-import iconCamera from './assets/icons/camera-premium.png';
-import iconLink from './assets/icons/link-premium.png';
-import iconMobile from './assets/icons/mobile-premium.png';
-import iconPhoneRinging from './assets/icons/phone-ringing-premium.png';
-import iconShield from './assets/icons/sheild-premium.png';
-import iconTravel from './assets/icons/travel-premium.png';
-import iconWallet from './assets/icons/wallet-premium.png';
-import { buyCover, confirmPayment, clearToken, createClaim, loadToken, login, me, registerPassenger, saveToken, activeCover, coverHistory, listClaims, verifyVehicle, getCoverProducts, getServerTime } from './api/safeApi.js';
+import {
+  buyCover, confirmPayment, clearToken, createClaim, loadToken, login, me,
+  registerPassenger, saveToken, activeCover, coverHistory, listClaims,
+  verifyVehicle, getCoverProducts, getServerTime,
+} from './api/safeApi.js';
 
-const bgImage = zambiaScene;
-
-const paymentMethods = [
+const PAYMENT_METHODS = [
   { id: 'airtel', name: 'Airtel Money', detail: 'Pay with Airtel Money', icon: Smartphone, accent: 'red' },
   { id: 'mtn', name: 'MTN Mobile Money', detail: 'Pay with MTN MoMo', icon: WalletCards, accent: 'yellow' },
   { id: 'card', name: 'Visa / Mastercard', detail: 'Card payment', icon: CreditCard, accent: 'blue' },
@@ -61,1694 +21,840 @@ const paymentMethods = [
 
 function App() {
   const [screen, setScreen] = useState('splash');
-  const [selectedProductId, setSelectedProductId] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('airtel');
-  const [claimText, setClaimText] = useState('');
-  const [claimSent, setClaimSent] = useState(false);
-  const [policeReference, setPoliceReference] = useState('');
-  const [hospitalSlipUrl, setHospitalSlipUrl] = useState('');
-  const [historyReturn, setHistoryReturn] = useState('active');
   const [session, setSession] = useState(() => ({ token: loadToken(), user: null, ready: false }));
 
-  const [activeCoverState, setActiveCoverState] = useState(null);
+  const [coverState, setCoverState] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [claims, setClaims] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [serverOffset, setServerOffset] = useState(0);
+
+  const [selectedProductId, setSelectedProductId] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState('airtel');
   const [scannedVehicle, setScannedVehicle] = useState(null);
-  const [coversHistory, setCoversHistory] = useState([]);
-  const [claimsList, setClaimsList] = useState([]);
-  const [coverProducts, setCoverProducts] = useState([]);
-  const [serverTimeOffset, setServerTimeOffset] = useState(0);
 
-  const [showScannerModal, setShowScannerModal] = useState(false);
-  const [scannerType, setScannerType] = useState('qr');
-  const [plateInput, setPlateInput] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [countdown, setCountdown] = useState('');
 
-  const [countdown, setCountdown] = useState('00:00:00');
+  const adjustedNow = () => Date.now() + serverOffset;
 
-  const getAdjustedNow = () => Date.now() + serverTimeOffset;
-
-  const refreshPassengerData = async (token) => {
+  const refreshData = useCallback(async (token) => {
     if (!token) return;
     try {
-      const [activeRes, historyRes, claimsRes] = await Promise.all([
-        activeCover(token),
-        coverHistory(token),
-        listClaims(token),
+      const [ac, h, cl] = await Promise.all([
+        activeCover(token), coverHistory(token), listClaims(token),
       ]);
-      setActiveCoverState(activeRes?.cover || null);
-      if (activeRes?.serverTime) {
-        const serverMs = new Date(activeRes.serverTime).getTime();
-        setServerTimeOffset(serverMs - Date.now());
-      }
-      setCoversHistory(historyRes?.covers || []);
-      setClaimsList(claimsRes?.claims || []);
-    } catch (err) {
-      console.error('Failed to load passenger data:', err);
-    }
-  };
+      setCoverState(ac?.cover || null);
+      if (ac?.serverTime) setServerOffset(new Date(ac.serverTime).getTime() - Date.now());
+      setHistory(h?.covers || []);
+      setClaims(cl?.claims || []);
+    } catch (e) { console.error(e); }
+  }, []);
 
   useEffect(() => {
-    getCoverProducts().then(data => {
-      setCoverProducts(data?.products || []);
-      if (data?.products?.length > 0 && !selectedProductId) {
-        setSelectedProductId(data.products[0].id);
-      }
+    getCoverProducts().then(d => {
+      setProducts(d?.products || []);
+      if (d?.products?.[0]) setSelectedProductId(d.products[0].id);
     }).catch(() => {});
-
-    getServerTime().then(data => {
-      if (data?.serverTime) {
-        setServerTimeOffset(new Date(data.serverTime).getTime() - Date.now());
-      }
+    getServerTime().then(d => {
+      if (d?.serverTime) setServerOffset(new Date(d.serverTime).getTime() - Date.now());
     }).catch(() => {});
   }, []);
 
   useEffect(() => {
-    const token = loadToken();
-    if (!token) {
+    const t = loadToken();
+    if (!t) { setSession({ token: '', user: null, ready: true }); return; }
+    me(t).then(d => {
+      setSession({ token: t, user: d.user, ready: true });
+      refreshData(t);
+    }).catch(() => {
+      clearToken();
       setSession({ token: '', user: null, ready: true });
-      return;
-    }
-
-    me(token)
-      .then((data) => {
-        setSession({ token, user: data.user ?? null, ready: true });
-        refreshPassengerData(token);
-      })
-      .catch(() => {
-        clearToken();
-        setSession({ token: '', user: null, ready: true });
-      });
+    });
   }, []);
 
   useEffect(() => {
-    if (session.token) {
-      refreshPassengerData(session.token);
-    } else {
-      setActiveCoverState(null);
-      setCoversHistory([]);
-      setClaimsList([]);
-    }
+    if (session.token) refreshData(session.token);
   }, [session.token]);
 
   useEffect(() => {
-    if (!activeCoverState?.endsAt) {
-      setCountdown('00:00:00');
-      return;
-    }
-
-    const updateTimer = () => {
-      const endsAt = new Date(activeCoverState.endsAt);
-      const diff = endsAt.getTime() - getAdjustedNow();
-      if (diff <= 0) {
-        setCountdown('00:00:00');
-        refreshPassengerData(session.token);
-        return;
-      }
-      const hours = Math.floor(diff / 3600000);
-      const minutes = Math.floor((diff % 3600000) / 60000);
-      const seconds = Math.floor((diff % 60000) / 1000);
-      setCountdown([
-        String(hours).padStart(2, '0'),
-        String(minutes).padStart(2, '0'),
-        String(seconds).padStart(2, '0')
-      ].join(':'));
+    if (!coverState?.endsAt) { setCountdown(''); return; }
+    const tick = () => {
+      const diff = new Date(coverState.endsAt).getTime() - adjustedNow();
+      if (diff <= 0) { setCountdown('Expired'); refreshData(session.token); return; }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setCountdown(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);
     };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
-  }, [activeCoverState?.endsAt, serverTimeOffset]);
+    tick();
+    const iv = setInterval(tick, 1000);
+    return () => clearInterval(iv);
+  }, [coverState?.endsAt, serverOffset]);
 
   const selectedProduct = useMemo(
-    () => coverProducts.find((p) => p.id === selectedProductId) ?? coverProducts[0] ?? null,
-    [selectedProductId, coverProducts]
+    () => products.find(p => p.id === selectedProductId) || products[0] || null,
+    [selectedProductId, products]
   );
 
-  const goHome = () => setScreen('home');
-  const goCover = () => setScreen('active');
-  const goClaims = () => setScreen('claim');
-  const goProfile = () => setScreen('profile');
-  const openHistory = (returnTo = 'active') => {
-    setHistoryReturn(returnTo);
-    setScreen('history');
-  };
-  const showBottomNav = !['splash', 'onboarding1', 'onboarding2', 'onboarding3', 'login', 'signup', 'chat', 'offline'].includes(screen);
+  const userName = session.user?.passengerProfile?.fullName || '';
+  const firstName = userName.split(' ')[0] || 'there';
+  const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 17 ? 'Good afternoon' : 'Good evening';
 
-  const screenProps = {
-    selectedProduct,
-    claimSent,
-    claimText,
-    policeReference,
-    setPoliceReference,
-    hospitalSlipUrl,
-    setHospitalSlipUrl,
-    historyReturn,
-    openHistory,
-    paymentMethod,
-    selectedProductId,
-    setClaimSent,
-    setClaimText,
-    setPaymentMethod,
-    setScreen,
-    setSelectedProductId,
-    session,
-    setSession,
-    auth: {
-      login,
-      registerPassenger,
-      saveToken,
-    },
-    activeCoverState,
-    countdown,
-    scannedVehicle,
-    setScannedVehicle,
-    coversHistory,
-    claimsList,
-    coverProducts,
-    refreshPassengerData,
-    setShowScannerModal,
-    setScannerType,
+  const navTab = (() => {
+    if (screen === 'home') return 'home';
+    if (['choose','payment','activeCover','coverDetail'].includes(screen)) return 'cover';
+    if (['claim','claimSubmit'].includes(screen)) return 'claims';
+    if (['history'].includes(screen)) return 'trips';
+    return 'account';
+  })();
+  const showNav = !['splash','login','signup'].includes(screen);
+
+  const goTo = (s) => setScreen(s);
+
+  const props = {
+    session, setSession, goTo, coverState, countdown, scannedVehicle, setScannedVehicle,
+    history, claims, products, selectedProductId, setSelectedProductId, selectedProduct,
+    paymentMethod, setPaymentMethod, refreshData, setShowScanner, firstName, greeting, userName,
   };
 
   return (
     <div className="app-shell">
-      <style>{`
-        @keyframes scan {
-          0% { top: 0%; }
-          50% { top: 100%; }
-          100% { top: 0%; }
-        }
-        .animate-scan {
-          animation: scan 2s linear infinite;
-        }
-      `}</style>
+      {screen === 'splash' && <SplashScreen {...props} />}
+      {screen === 'login' && <LoginScreen {...props} />}
+      {screen === 'signup' && <SignupScreen {...props} />}
+      {screen === 'home' && <HomeScreen {...props} />}
+      {screen === 'choose' && <ChooseScreen {...props} />}
+      {screen === 'payment' && <PaymentScreen {...props} />}
+      {screen === 'activeCover' && <ActiveCoverScreen {...props} />}
+      {screen === 'history' && <HistoryScreen {...props} />}
+      {screen === 'claim' && <ClaimListScreen {...props} />}
+      {screen === 'claimSubmit' && <ClaimSubmitScreen {...props} />}
+      {screen === 'profile' && <ProfileScreen {...props} />}
+      {screen === 'help' && <HelpScreen {...props} />}
 
-      <div className="phone-frame relative">
-        {screen === 'splash' && <SplashScreen {...screenProps} />}
-        {screen === 'onboarding1' && <OnboardingOne {...screenProps} />}
-        {screen === 'onboarding2' && <OnboardingTwo {...screenProps} />}
-        {screen === 'onboarding3' && <OnboardingThree {...screenProps} />}
-        {screen === 'login' && <LoginScreen {...screenProps} />}
-        {screen === 'signup' && <SignupScreen {...screenProps} />}
-        {screen === 'home' && <HomeScreen {...screenProps} />}
-        {screen === 'choose' && <ChooseCoverScreen {...screenProps} />}
-        {screen === 'payment' && <PaymentScreen {...screenProps} />}
-        {screen === 'active' && <ActiveCoverScreen {...screenProps} />}
-        {screen === 'history' && <HistoryScreen {...screenProps} />}
-        {screen === 'claim' && <ClaimScreen {...screenProps} />}
-        {screen === 'profile' && <ProfileScreen {...screenProps} />}
-        {screen === 'profilePayments' && <ProfilePaymentMethodsScreen {...screenProps} />}
-        {screen === 'notifications' && <NotificationsScreen {...screenProps} />}
-        {screen === 'helpSafety' && <HelpSafetyScreen {...screenProps} />}
-        {screen === 'chat' && <ChatScreen {...screenProps} />}
-        {screen === 'offline' && <OfflineScreen {...screenProps} />}
-        {showBottomNav && <BottomNav current={navState(screen)} onHome={goHome} onCover={goCover} onClaims={goClaims} onProfile={goProfile} />}
-        
-        {/* Minibus Verification Scanner Modal Overlay */}
-        {showScannerModal && (
-          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md z-[60] flex flex-col justify-end">
-            <div className="bg-slate-900 border-t border-slate-800 rounded-t-[32px] p-6 pb-8 space-y-6 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-              {/* Header */}
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-white font-black text-lg tracking-tight">
-                    {scannerType === 'qr' ? 'Verify Minibus QR' : 'Enter Minibus Plate'}
-                  </h2>
-                  <p className="text-slate-400 text-[11px] font-semibold mt-0.5">
-                    {scannerType === 'qr' ? 'Scan the code near the passenger door' : 'Input the vehicle registration number'}
-                  </p>
-                </div>
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    setShowScannerModal(false);
-                    setError('');
-                  }}
-                  className="h-8 w-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
+      {showNav && (
+        <nav className="bottom-nav">
+          <NavBtn icon={Home} label="Home" active={navTab==='home'} onClick={() => goTo('home')} />
+          <NavBtn icon={Clock} label="Trips" active={navTab==='trips'} onClick={() => goTo('history')} />
+          <button className="nav-item scan-btn" type="button" onClick={() => setShowScanner(true)}>
+            <QrCode size={22} />
+            <span>Scan</span>
+          </button>
+          <NavBtn icon={FileText} label="Claims" active={navTab==='claims'} onClick={() => goTo('claim')} />
+          <NavBtn icon={User} label="Account" active={navTab==='account'} onClick={() => goTo('profile')} />
+        </nav>
+      )}
 
-              {/* Main Content */}
-              <div className="space-y-4">
-                {scannerType === 'qr' ? (
-                  <div className="space-y-4">
-                    {/* Visual Scan Area */}
-                    <div className="relative h-44 rounded-2xl border border-emerald-500/30 bg-emerald-950/10 overflow-hidden flex flex-col items-center justify-center">
-                      <div className="absolute inset-x-0 top-0 h-[2px] bg-emerald-400 shadow-[0_0_12px_#34d399] animate-scan" />
-                      
-                      <div className="relative p-4 rounded-2xl border border-dashed border-emerald-400/40 animate-pulse">
-                        <ShieldCheck size={38} className="text-emerald-400" />
-                      </div>
-                      <span className="text-[9px] font-black tracking-widest text-emerald-400 mt-3 uppercase animate-pulse">
-                        Positioning sensor active
-                      </span>
-                    </div>
-
-                    {/* Detected Vehicles List */}
-                    <div className="space-y-2">
-                      <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase block">
-                        Detected Nearby Vehicles
-                      </span>
-                      <button
-                        type="button"
-                        className="w-full flex items-center justify-between p-3.5 bg-slate-800/60 border border-slate-700 hover:border-emerald-500/50 rounded-2xl transition-all text-left"
-                        onClick={async () => {
-                          setError('');
-                          try {
-                            const data = await verifyVehicle(session.token, { qrCode: 'SAFE-LSK-2481' });
-                            setScannedVehicle(data);
-                            setScreen('choose');
-                            setShowScannerModal(false);
-                          } catch (e) {
-                            setError(e.message || 'Failed to verify vehicle');
-                          }
-                        }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="h-10 w-10 bg-emerald-500/10 text-emerald-400 rounded-xl flex items-center justify-center">
-                            <Bus size={20} />
-                          </span>
-                          <div>
-                            <strong className="block text-white text-xs font-black">SAFE-LSK-2481</strong>
-                            <small className="block text-slate-400 text-[10px] font-bold">Matero ➔ Town Route</small>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-black text-emerald-400 bg-emerald-950/50 border border-emerald-500/20 px-3 py-1 rounded-full uppercase">
-                          Select
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase block">
-                        Zambian Plate Number
-                      </span>
-                      <div className="relative flex items-center">
-                        <span className="absolute left-4 text-slate-400">
-                          <Bus size={18} />
-                        </span>
-                        <input
-                          type="text"
-                          placeholder="e.g. LSK 2481"
-                          value={plateInput}
-                          onChange={(e) => setPlateInput(e.target.value.toUpperCase())}
-                          className="w-full bg-slate-800 border border-slate-700 text-white rounded-2xl py-3.5 pl-12 pr-4 text-xs font-semibold focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 tracking-wider"
-                        />
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setError('');
-                        if (!plateInput.trim()) {
-                          setError('Please input a minibus plate number.');
-                          return;
-                        }
-                        setLoading(true);
-                        try {
-                          const data = await verifyVehicle(session.token, { plateNumber: plateInput.trim() });
-                          setScannedVehicle(data);
-                          setScreen('choose');
-                          setShowScannerModal(false);
-                        } catch (e) {
-                          setError(e.message || 'Failed to verify vehicle');
-                        } finally {
-                          setLoading(false);
-                        }
-                      }}
-                      className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs rounded-2xl transition-all shadow-[0_4px_16px_rgba(16,185,129,0.2)] active:scale-[0.98]"
-                      disabled={loading}
-                    >
-                      {loading ? 'Verifying...' : 'Verify & Continue'}
-                    </button>
-                  </div>
-                )}
-
-                {error && (
-                  <p className="text-[10px] font-bold text-red-400 bg-red-950/30 border border-red-500/20 px-3 py-2 rounded-xl text-center">
-                    ⚠️ {error}
-                  </p>
-                )}
-              </div>
-
-              {/* Footer Toggle */}
-              <div className="border-t border-slate-800 pt-4 text-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setScannerType(scannerType === 'qr' ? 'plate' : 'qr');
-                    setError('');
-                  }}
-                  className="text-xs font-black text-emerald-400 hover:underline tracking-wide"
-                >
-                  {scannerType === 'qr' ? 'Enter Minibus Plate Number' : 'Use QR Scanner Sim'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      {showScanner && <ScannerModal {...props} onClose={() => setShowScanner(false)} />}
     </div>
   );
 }
 
-function navState(screen) {
-  if (screen === 'home') return 'home';
-  if (['choose', 'payment', 'active', 'history'].includes(screen)) return 'cover';
-  if (screen === 'claim') return 'claims';
-  return 'profile';
-}
-
-function IconButton({ label, children, onClick, quiet = false }) {
+function NavBtn({ icon: Icon, label, active, onClick }) {
   return (
-    <button className={quiet ? 'icon-btn quiet' : 'icon-btn'} type="button" aria-label={label} onClick={onClick}>
-      {children}
+    <button className={`nav-item ${active ? 'active' : ''}`} type="button" onClick={onClick}>
+      <Icon size={20} strokeWidth={active ? 2.5 : 2} />
+      <span>{label}</span>
     </button>
   );
 }
 
-function TopBar({ onBack, title, action }) {
+/* ========== Splash ========== */
+function SplashScreen({ goTo }) {
   return (
-    <header className="top-bar">
-      <IconButton label="Go back" quiet onClick={onBack}>
-        <ArrowLeft size={22} />
-      </IconButton>
-      {title && <strong className="top-title">{title}</strong>}
-      <div className="top-action">{action}</div>
-    </header>
-  );
-}
-
-function BottomNav({ current, onHome, onCover, onClaims, onProfile }) {
-  const items = [
-    { id: 'home', label: 'Home', icon: Home, onClick: onHome },
-    { id: 'cover', label: 'Cover', icon: Shield, onClick: onCover },
-    { id: 'claims', label: 'Claims', icon: FileText, onClick: onClaims },
-    { id: 'profile', label: 'Profile', icon: User, onClick: onProfile },
-  ];
-
-  return (
-    <nav className="bottom-nav" aria-label="Primary">
-      {items.map((item) => {
-        const Icon = item.icon;
-        const active = current === item.id;
-        return (
-          <button className={`nav-item ${active ? 'active' : ''}`} key={item.id} type="button" onClick={item.onClick}>
-            <Icon size={22} strokeWidth={active ? 2.6 : 2} fill={active ? 'currentColor' : 'none'} />
-            <span>{item.label}</span>
-          </button>
-        );
-      })}
-    </nav>
-  );
-}
-
-function MiniStatusBar() {
-  return (
-    <div className="mini-status" aria-label="Phone status">
-      <strong>9:41</strong>
-      <span>
-        <Radio size={14} fill="currentColor" />
-        <Navigation2 size={14} fill="currentColor" />
-        <span className="battery-dot" />
-      </span>
+    <div className="splash-screen">
+      <img src={safeLogo} alt="SAFE" className="splash-logo" />
+      <h1 className="splash-title">SAFE</h1>
+      <p className="splash-sub">You ride. We protect.</p>
+      <div className="splash-actions">
+        <button className="btn-gold" type="button" onClick={() => goTo('signup')}>Get Started</button>
+        <button className="btn-ghost" type="button" onClick={() => goTo('login')}>Log In</button>
+      </div>
     </div>
   );
 }
 
-function SplashScreen({ setScreen }) {
-  return (
-    <main className="screen no-nav splash-screen">
-      <div className="splash-road" style={{ backgroundImage: `url(${safeRoadBackground})` }} />
-      <MiniStatusBar />
-      <section className="splash-content">
-        <div className="safe-shield-mark">
-          <img src={safeLogo} alt="SAFE logo" />
-        </div>
-        <h1>SAFE</h1>
-        <p><span>You ride.</span> We protect.</p>
-      </section>
-      <section className="splash-actions">
-        <button className="yellow-btn" type="button" onClick={() => setScreen('onboarding1')}>Get Started</button>
-        <button className="ghost-btn" type="button" onClick={() => setScreen('login')}>Log In</button>
-      </section>
-    </main>
-  );
-}
-
-function OnboardingShell({ body, children, highlight, onNext, setScreen, step, title }) {
-  return (
-    <main className="screen no-nav onboarding-screen">
-      <MiniStatusBar />
-      <div className="skip-row">
-        <button type="button" onClick={() => setScreen('signup')}>Skip</button>
-      </div>
-      <section className="onboarding-visual">
-        {children}
-      </section>
-      <section className="onboarding-copy">
-        <h1>{title}<br /><span>{highlight}</span></h1>
-        <p>{body}</p>
-      </section>
-      <footer className="onboarding-footer">
-        <div className="progress-dots" aria-label={`Step ${step} of 3`}>
-          {[1, 2, 3].map((item) => <span className={item === step ? 'active' : ''} key={item} />)}
-        </div>
-        <button className="next-round" type="button" aria-label="Next step" onClick={onNext}>
-          <ChevronRight size={24} />
-        </button>
-      </footer>
-    </main>
-  );
-}
-
-function OnboardingOne({ setScreen }) {
-  return (
-    <OnboardingShell
-      body="We're here to make every journey safer and more secure for you."
-      highlight="Every Ride"
-      onNext={() => setScreen('onboarding2')}
-      setScreen={setScreen}
-      step={1}
-      title="Safety First,"
-    >
-      <div className="illustration-circle driver">
-        <div className="driver-wheel" />
-        <div className="driver-face" />
-        <div className="driver-body" />
-        <div className="shield-badge"><ShieldCheck size={33} /></div>
-      </div>
-    </OnboardingShell>
-  );
-}
-
-function OnboardingTwo({ setScreen }) {
-  return (
-    <OnboardingShell
-      body="Real-time monitoring and instant alerts for your peace of mind."
-      highlight="Always On"
-      onNext={() => setScreen('onboarding3')}
-      setScreen={setScreen}
-      step={2}
-      title="Smart Protection"
-    >
-      <div className="illustration-circle smart">
-        <div className="city-bars"><span /><span /><span /><span /><span /></div>
-        <div className="phone-illustration">
-          <ShieldCheck size={46} />
-          <small />
-          <small />
-        </div>
-        <div className="check-badge"><Check size={26} /></div>
-      </div>
-    </OnboardingShell>
-  );
-}
-
-function OnboardingThree({ setScreen }) {
-  return (
-    <OnboardingShell
-      body="Share your trip and let your loved ones follow your journey in real time."
-      highlight="Stay Connected."
-      onNext={() => setScreen('signup')}
-      setScreen={setScreen}
-      step={3}
-      title="Share. Track."
-    >
-      <div className="illustration-circle map">
-        <img className="real-map-illustration" src={shareTrackMap} alt="Secure route tracking map" />
-      </div>
-    </OnboardingShell>
-  );
-}
-
-function LoginScreen({ setScreen, setSession, auth }) {
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
+/* ========== Auth ========== */
+function LoginScreen({ goTo, setSession }) {
+  const [id, setId] = useState('');
+  const [pw, setPw] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [err, setErr] = useState('');
+
+  const submit = async (e) => {
+    e.preventDefault(); setErr(''); setBusy(true);
+    try {
+      const d = await login({ identifier: id, password: pw });
+      saveToken(d.token);
+      setSession({ token: d.token, user: d.user, ready: true });
+      goTo('home');
+    } catch (e) { setErr(e.message); } finally { setBusy(false); }
+  };
 
   return (
-    <main className="screen no-nav auth-screen">
-      <div className="auth-bg" style={{ backgroundImage: `url(${safeRoadBackground})` }} />
-      <MiniStatusBar />
-      <section className="auth-card">
-        <img className="auth-logo" src={safeLogo} alt="SAFE logo" />
-        <p className="eyebrow">Welcome back</p>
-        <h1>Log in to SAFE</h1>
-
-        <form
-          className="auth-form"
-          onSubmit={async (event) => {
-            event.preventDefault();
-            setError('');
-            setBusy(true);
-            try {
-              const data = await auth.login({ identifier, password });
-              auth.saveToken(data.token);
-              setSession({ token: data.token, user: data.user ?? null, ready: true });
-              setScreen('home');
-            } catch (e) {
-              setError(e?.message || 'Login failed');
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <label>
-            <span>Phone or email</span>
-            <div className="auth-input">
-              <User size={18} />
-              <input value={identifier} onChange={(event) => setIdentifier(event.target.value)} placeholder="+260 or email address" />
-            </div>
-          </label>
-          <label>
-            <span>Password</span>
-            <div className="auth-input">
-              <Lock size={18} />
-              <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter password" type="password" />
-            </div>
-          </label>
-          {error ? <p className="auth-error">{error}</p> : null}
-          <button className="yellow-btn" type="submit" disabled={busy}>
-            {busy ? 'Logging in…' : 'Log In'}
-          </button>
-        </form>
-
-        <button className="text-link" type="button">Forgot password?</button>
-        <p className="auth-switch">New to SAFE? <button type="button" onClick={() => setScreen('signup')}>Create account</button></p>
-      </section>
-    </main>
+    <form className="auth-screen" onSubmit={submit}>
+      <img src={safeLogo} alt="SAFE" className="auth-logo" />
+      <h1 className="auth-title">Welcome back</h1>
+      <p className="auth-subtitle">Log in to your SAFE account</p>
+      <div className="form-group">
+        <label className="form-label">Phone or email</label>
+        <input className="form-input" value={id} onChange={e => setId(e.target.value)} placeholder="+260 or email" />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Password</label>
+        <input className="form-input" type="password" value={pw} onChange={e => setPw(e.target.value)} placeholder="Enter password" />
+      </div>
+      {err && <p className="form-error">{err}</p>}
+      <button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Logging in...' : 'Log In'}</button>
+      <p className="auth-switch">New to SAFE? <button type="button" onClick={() => goTo('signup')}>Create account</button></p>
+    </form>
   );
 }
 
-function SignupScreen({ setScreen, setSession, auth }) {
-  const [fullName, setFullName] = useState('');
+function SignupScreen({ goTo, setSession }) {
+  const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
+  const [pw, setPw] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [err, setErr] = useState('');
+
+  const submit = async (e) => {
+    e.preventDefault(); setErr(''); setBusy(true);
+    try {
+      const d = await registerPassenger({ phone, password: pw, fullName: name });
+      saveToken(d.token);
+      setSession({ token: d.token, user: d.user, ready: true });
+      goTo('home');
+    } catch (e) { setErr(e.message); } finally { setBusy(false); }
+  };
 
   return (
-    <main className="screen no-nav auth-screen signup-screen">
-      <div className="auth-bg" style={{ backgroundImage: `url(${safeRoadBackground})` }} />
-      <MiniStatusBar />
-      <section className="auth-card">
-        <img className="auth-logo" src={safeLogo} alt="SAFE logo" />
-        <p className="eyebrow">Create your account</p>
-        <h1>Join SAFE</h1>
-
-        <form
-          className="auth-form"
-          onSubmit={async (event) => {
-            event.preventDefault();
-            setError('');
-            setBusy(true);
-            try {
-              const data = await auth.registerPassenger({ phone, password, fullName });
-              auth.saveToken(data.token);
-              setSession({ token: data.token, user: data.user ?? null, ready: true });
-              setScreen('home');
-            } catch (e) {
-              setError(e?.message || 'Sign up failed');
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <label>
-            <span>Full name</span>
-            <div className="auth-input">
-              <User size={18} />
-              <input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Moses Banda" />
-            </div>
-          </label>
-          <label>
-            <span>Mobile number</span>
-            <div className="auth-input">
-              <Smartphone size={18} />
-              <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+260 97 000 0000" />
-            </div>
-          </label>
-          <label>
-            <span>Password</span>
-            <div className="auth-input">
-              <Lock size={18} />
-              <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Create password" type="password" />
-            </div>
-          </label>
-          {error ? <p className="auth-error">{error}</p> : null}
-          <button className="yellow-btn" type="submit" disabled={busy}>
-            {busy ? 'Creating…' : 'Create account'}
-          </button>
-        </form>
-
-        <p className="auth-switch">Already have an account? <button type="button" onClick={() => setScreen('login')}>Log in</button></p>
-      </section>
-    </main>
+    <form className="auth-screen" onSubmit={submit}>
+      <img src={safeLogo} alt="SAFE" className="auth-logo" />
+      <h1 className="auth-title">Join SAFE</h1>
+      <p className="auth-subtitle">Create your account to get protected</p>
+      <div className="form-group">
+        <label className="form-label">Full name</label>
+        <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="Enter your name" />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Phone number</label>
+        <input className="form-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+260 97 000 0000" />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Password</label>
+        <input className="form-input" type="password" value={pw} onChange={e => setPw(e.target.value)} placeholder="Create password (min 6 chars)" />
+      </div>
+      {err && <p className="form-error">{err}</p>}
+      <button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Creating...' : 'Create Account'}</button>
+      <p className="auth-switch">Already have an account? <button type="button" onClick={() => goTo('login')}>Log in</button></p>
+    </form>
   );
 }
 
-function HomeScreen({ setScreen, activeCoverState, countdown, setShowScannerModal, setScannerType, session, coversHistory }) {
-  const quickActions = [
-    { label: 'Scan QR', detail: 'Board faster', asset: iconCamera, action: () => { setScannerType('qr'); setShowScannerModal(true); }, tone: 'yellow' },
-    { label: 'Enter Vehicle', detail: 'Use plate number', asset: iconMobile, action: () => { setScannerType('plate'); setShowScannerModal(true); }, tone: 'blue' },
-    { label: 'Monthly Cover', detail: 'Commuter pass', asset: iconWallet, action: () => { setScannerType('plate'); setShowScannerModal(true); }, tone: 'navy' },
-    { label: 'SOS Emergency', detail: 'Fast claim help', asset: iconPhoneRinging, action: () => setScreen('claim'), tone: 'danger' },
-    { label: 'Share Trip', detail: 'Live route link', asset: iconLink, action: () => setScreen('chat'), tone: 'glass' },
-    { label: 'Verified Buses', detail: 'Nearby routes', asset: iconTravel, action: () => { setScannerType('qr'); setShowScannerModal(true); }, tone: 'glass' },
-  ];
-
+/* ========== Home ========== */
+function HomeScreen({ goTo, coverState, countdown, session, setShowScanner, firstName, greeting, history }) {
   return (
-    <main className="screen home-screen premium-home">
-      <section className="mobility-hero">
-        <div className="hero-environment" style={{ backgroundImage: `url(${lusakaNightAerial})` }} />
-        <header className="home-top-row">
-          <div className="home-identity">
-            <p>{`${new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 17 ? 'Good afternoon' : 'Good evening'}, ${session?.user?.passengerProfile?.fullName?.split(' ')[0] || 'there'}`}</p>
-            <strong>{activeCoverState ? 'SAFE active in motion' : 'Get protected today'}</strong>
+    <div className="screen no-pad">
+      <div className="home-map-area">
+        <SafeMap height="100%" />
+        <div className="home-top-bar">
+          <div className="home-greeting">
+            <p>{greeting}, {firstName}</p>
+            <strong>{coverState ? 'Protected' : 'Get covered'}</strong>
           </div>
           <div className="home-top-actions">
-            <button className="location-pill" type="button" aria-label="Current city">
-              <MapPin size={15} />
-              <span>Lusaka</span>
+            <button className="home-icon-btn" type="button" onClick={() => goTo('help')} aria-label="Help">
+              <Bell size={18} />
             </button>
-            <button className="notify-btn" type="button" aria-label="Notifications" onClick={() => setScreen('notifications')}>
-              <Bell size={19} />
-              <i />
+            <button className="home-icon-btn" type="button" onClick={() => goTo('profile')} aria-label="Profile">
+              <CircleUserRound size={18} />
             </button>
           </div>
-        </header>
+        </div>
+      </div>
 
-        {activeCoverState ? (
-          <section className="active-cover-card" aria-label="Active cover">
-            <div className="cover-card-glow" />
-            <div className="cover-card-head">
-              <span className="protection-status"><i />Protected</span>
-              <span className="cover-countdown">{countdown}</span>
-            </div>
-            <img className="cover-orb-icon" src={iconShield} alt="" />
-            <h1>{activeCoverState.route ? `${activeCoverState.route.origin} to ${activeCoverState.route.destination}` : 'Lusaka Commute'}</h1>
-            <p className="route-subtitle">Live commuter protection for this minibus trip</p>
+      <div className="home-bottom-sheet">
+        <div className="sheet-handle" />
 
-            <div className="cover-intel-grid">
-              <div><span>Vehicle</span><strong>{activeCoverState.vehicle?.plateNumber || 'LSK 2481'}</strong></div>
-              <div><span>Driver</span><strong>Verified</strong></div>
-              <div><span>Started</span><strong>{new Date(activeCoverState.startedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong></div>
-              <div><span>Cover</span><strong>{activeCoverState.plan === 'basic' ? 'Basic' : 'Plus'}</strong></div>
-            </div>
+        <button className="search-bar" type="button" onClick={() => setShowScanner(true)}>
+          <Search size={18} />
+          <span>Enter plate number or scan QR...</span>
+        </button>
 
-            <button className="share-trip-btn" type="button" onClick={() => setScreen('chat')}>
-              <Share2 size={18} />
-              <span>Share protected trip</span>
-              <ArrowRight size={17} />
-            </button>
-          </section>
-        ) : (
-          <section className="active-cover-card select-none" aria-label="Get covered">
-            <div className="cover-card-glow" />
-            <div className="cover-card-head">
-              <span className="protection-status bg-slate-800/80 border border-slate-700 text-slate-300"><i className="bg-slate-400" />Unprotected</span>
+        {coverState && (
+          <div className="active-cover-home">
+            <div className="cover-top">
+              <span className="cover-badge"><i /> Active</span>
+              <span className="cover-timer">{countdown || '--:--:--'}</span>
             </div>
-            <img className="cover-orb-icon opacity-40 grayscale" src={iconShield} alt="" />
-            <h1 className="text-xl font-black text-white">Secure Your Ride</h1>
-            <p className="route-subtitle text-slate-400 text-xs">Protect your current commute with instant accident medical coverage</p>
-            
-            <div className="flex gap-3 mt-5">
-              <button 
-                type="button"
-                onClick={() => { setScannerType('qr'); setShowScannerModal(true); }}
-                className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-lg active:scale-95 cursor-pointer"
-              >
-                <span className="p-0.5 bg-slate-950/10 rounded"><ShieldCheck size={14} /></span>
-                Scan QR Code
+            <div className="cover-details">
+              <span><MapPin size={12} /> {coverState.route ? `${coverState.route.origin} → ${coverState.route.destination}` : 'Lusaka'}</span>
+              <span><Bus size={12} /> {coverState.vehicle?.plateNumber || 'N/A'}</span>
+            </div>
+            <div className="cover-actions">
+              <button className="cover-action-btn" type="button" onClick={() => goTo('activeCover')}>
+                <ShieldCheck size={14} /> View Cover
               </button>
-              <button 
-                type="button"
-                onClick={() => { setScannerType('plate'); setShowScannerModal(true); }}
-                className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-xl transition-all border border-slate-700 hover:border-slate-600 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
-              >
-                <Bus size={14} />
-                Enter Plate
+              <button className="cover-action-btn danger" type="button" onClick={() => goTo('claimSubmit')}>
+                <Siren size={14} /> Emergency
               </button>
             </div>
-          </section>
+          </div>
         )}
-      </section>
 
-      <section className="home-content-flow">
-        <section className="live-route-panel">
-          <div className="section-title-row">
-            <div>
-              <p className="eyebrow">Live route intelligence</p>
-              <h2>Protected route map</h2>
-            </div>
-            <span className="route-live-pill"><i />Live</span>
-          </div>
-          <div className="route-map-surface" style={{ backgroundImage: `url(${shareTrackMap})` }}>
-            <div className="map-vignette" />
-            <span className="map-status-card">
-              <ShieldCheck size={17} />
-              <strong>Route secured</strong>
-            </span>
-            <span className="route-pulse-dot" />
-          </div>
-        </section>
+        <div className="quick-actions">
+          <button className="quick-action-btn primary" type="button" onClick={() => setShowScanner(true)}>
+            <QrCode size={20} />
+            Scan QR
+          </button>
+          <button className="quick-action-btn" type="button" onClick={() => {
+            if (coverState) goTo('activeCover');
+            else goTo('choose');
+          }}>
+            <Shield size={20} />
+            {coverState ? 'My Cover' : 'Buy Cover'}
+          </button>
+          <button className="quick-action-btn" type="button" onClick={() => goTo('history')}>
+            <Clock size={20} />
+            History
+          </button>
+        </div>
 
-        <section className="quick-action-section">
-          <div className="section-title-row">
-            <div>
-              <p className="eyebrow">Move faster</p>
-              <h2>Quick actions</h2>
+        {!coverState && (
+          <div>
+            <div className="section-head">
+              <h2>Protect your trip</h2>
+              <p>Choose a cover plan to get started</p>
             </div>
+            <button className="btn-primary" type="button" onClick={() => goTo('choose')} style={{ marginBottom: 16 }}>
+              <ShieldCheck size={18} /> Buy Trip Cover
+            </button>
           </div>
-          <div className="premium-action-grid">
-            {quickActions.map((action) => {
-              return (
-                <button className={`premium-action-card ${action.tone}`} key={action.label} type="button" onClick={action.action}>
-                  <span><img src={action.asset} alt="" /></span>
-                  <strong>{action.label}</strong>
-                  <small>{action.detail}</small>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+        )}
 
-        <section className="trust-activity-panel">
-          <div className="section-title-row">
-            <div>
-              <p className="eyebrow">Your activity</p>
-              <h2>Your SAFE journey</h2>
+        {history.length > 0 && (
+          <div>
+            <div className="section-head">
+              <h2>Recent trips</h2>
             </div>
+            {history.slice(0,3).map(c => (
+              <div className="history-card" key={c.id}>
+                <div className="history-date">
+                  <strong>{new Date(c.startedAt || c.createdAt).getDate()}</strong>
+                  <small>{['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][new Date(c.startedAt || c.createdAt).getMonth()]}</small>
+                </div>
+                <div className="history-info">
+                  <span className="history-route">{c.route ? `${c.route.origin} → ${c.route.destination}` : c.plan}</span>
+                  <span className="history-meta">{c.vehicle?.plateNumber || ''} · K{c.amount} · {c.status}</span>
+                </div>
+                <span className={`badge ${c.status === 'active' ? 'active' : c.status === 'expired' ? 'expired' : 'pending'}`}>
+                  {c.status}
+                </span>
+              </div>
+            ))}
           </div>
-          <div className="activity-grid">
-            <div><strong>{coversHistory.length}</strong><span>trips covered</span></div>
-            <div><strong>{coversHistory.filter(c => c.status === 'active').length}</strong><span>active covers</span></div>
-            <div><strong>{activeCoverState ? '1' : '0'}</strong><span>protected now</span></div>
-            <div><strong>Lusaka</strong><span>coverage area</span></div>
-          </div>
-        </section>
-      </section>
-    </main>
+        )}
+      </div>
+    </div>
   );
 }
 
+/* ========== Scanner Modal ========== */
+function ScannerModal({ session, setScannedVehicle, goTo, onClose }) {
+  const [plate, setPlate] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
 
-function ChooseCoverScreen({ selectedProductId, setSelectedProductId, setScreen, scannedVehicle, coverProducts }) {
+  const verify = async () => {
+    if (!plate.trim()) { setErr('Enter a plate number'); return; }
+    setErr(''); setBusy(true);
+    try {
+      const d = await verifyVehicle(session.token, { plateNumber: plate.trim() });
+      setScannedVehicle(d);
+      onClose();
+      goTo('choose');
+    } catch (e) { setErr(e.message); } finally { setBusy(false); }
+  };
+
+  const scanQR = async () => {
+    setErr(''); setBusy(true);
+    try {
+      const d = await verifyVehicle(session.token, { qrCode: 'SAFE-LSK-2481' });
+      setScannedVehicle(d);
+      onClose();
+      goTo('choose');
+    } catch (e) { setErr(e.message); } finally { setBusy(false); }
+  };
+
   return (
-    <main className="screen padded">
-      <TopBar onBack={() => setScreen('home')} />
-      <section className="page-heading">
-        <h1>Choose your cover</h1>
-        {scannedVehicle && (
-          <div className="mt-3.5 inline-flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 border border-slate-700 rounded-full select-none">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[11px] font-black text-slate-300">
-              Verified Minibus: <strong className="text-white">{scannedVehicle.vehicle?.plateNumber}</strong> ({scannedVehicle.route ? `${scannedVehicle.route.origin} ➔ ${scannedVehicle.route.destination}` : 'Lusaka'})
+    <div className="scanner-modal" onClick={onClose}>
+      <div className="scanner-sheet" onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div>
+            <h2>Verify Minibus</h2>
+            <p className="scanner-sub">Enter plate number or scan QR code</p>
+          </div>
+          <button type="button" onClick={onClose} style={{ background: 'var(--border-light)', border: 'none', width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', fontSize: 16 }}>✕</button>
+        </div>
+
+        <input
+          className="plate-input"
+          value={plate}
+          onChange={e => setPlate(e.target.value.toUpperCase())}
+          placeholder="e.g. LSK 2481"
+        />
+
+        {err && <div className="error-banner" style={{ marginTop: 12 }}>{err}</div>}
+
+        <button className="btn-primary" type="button" onClick={verify} disabled={busy} style={{ marginTop: 16 }}>
+          {busy ? 'Verifying...' : 'Verify & Continue'}
+        </button>
+
+        <div style={{ textAlign: 'center', marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+          <button type="button" onClick={scanQR} disabled={busy} style={{ background: 'none', border: 'none', color: 'var(--safe-green)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+            <QrCode size={14} style={{ verticalAlign: -2 }} /> Scan QR Code Instead
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ========== Choose Cover ========== */
+function ChooseScreen({ goTo, products, selectedProductId, setSelectedProductId, scannedVehicle }) {
+  return (
+    <div className="screen with-pad">
+      <div className="screen-header" style={{ margin: '-16px -16px 16px', padding: '12px 16px' }}>
+        <button className="back-btn" type="button" onClick={() => goTo('home')}><ArrowLeft size={18} /></button>
+        <span className="header-title">Choose Cover</span>
+      </div>
+
+      {scannedVehicle && (
+        <div className="summary-card" style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)' }} />
+            <span style={{ fontSize: 13, fontWeight: 700 }}>
+              Vehicle verified: {scannedVehicle.vehicle?.plateNumber}
             </span>
           </div>
-        )}
-      </section>
+          {scannedVehicle.route && (
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+              {scannedVehicle.route.origin} → {scannedVehicle.route.destination}
+            </p>
+          )}
+        </div>
+      )}
 
-      <section className="plan-list">
-        {coverProducts.map((product, i) => (
-          <button
-            className={`plan-card ${selectedProductId === product.id ? 'selected' : ''}`}
-            key={product.id}
-            type="button"
-            onClick={() => setSelectedProductId(product.id)}
-          >
-            <span className={`plan-shield ${i === 0 ? 'silver' : 'green'}`}>
-              <ShieldCheck size={38} />
-            </span>
-            <span className="plan-main">
-              <span className="plan-label">{product.name}</span>
-              <strong>K{product.price}</strong>
-              <span>{product.description}</span>
-              <span className="chips">
-                <span>Up to K{(product.coverageAmount || 0).toLocaleString()}</span>
-                <span><Clock3 size={14} /> {product.durationMinutes >= 60 ? `${Math.floor(product.durationMinutes / 60)}h` : `${product.durationMinutes}m`}</span>
-              </span>
-            </span>
-            <span className="checkmark">{selectedProductId === product.id ? <Check size={18} /> : <ChevronRight size={18} />}</span>
-          </button>
-        ))}
-      </section>
-
-      {coverProducts.length === 0 && (
-        <div className="empty-state" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
-          <Shield size={40} style={{ margin: '0 auto 1rem' }} />
+      {products.length === 0 ? (
+        <div className="empty-state">
+          <div className="safe-spinner" />
           <p>Loading cover products...</p>
         </div>
+      ) : (
+        products.map((p, i) => (
+          <button className={`product-card ${selectedProductId === p.id ? 'selected' : ''}`} key={p.id} type="button" onClick={() => setSelectedProductId(p.id)}>
+            <div className={`product-icon ${i === 0 ? 'basic' : i === 1 ? 'plus' : 'daily'}`}>
+              <ShieldCheck size={22} />
+            </div>
+            <div className="product-info">
+              <span className="product-name">{p.name}</span>
+              <span className="product-desc">{p.description}</span>
+              <div className="product-meta">
+                <span><Clock size={10} /> {p.durationMinutes >= 60 ? `${Math.floor(p.durationMinutes/60)}h` : `${p.durationMinutes}m`}</span>
+                <span><Shield size={10} /> Up to K{(p.coverageAmount||0).toLocaleString()}</span>
+              </div>
+            </div>
+            <span className="product-price">K{p.price}</span>
+            <div className="product-check">{selectedProductId === p.id && <Check size={14} />}</div>
+          </button>
+        ))
       )}
 
-      <button className="primary-btn sticky-cta" type="button" onClick={() => setScreen('payment')} disabled={!selectedProductId}>
-        <span>Continue to payment</span>
-        <ArrowRight size={18} />
+      <button className="btn-primary" type="button" onClick={() => goTo('payment')} disabled={!selectedProductId} style={{ marginTop: 8 }}>
+        Continue to Payment <ArrowRight size={16} />
       </button>
-    </main>
+    </div>
   );
 }
 
-function PaymentScreen({ selectedProduct, paymentMethod, session, setPaymentMethod, setScreen, scannedVehicle, refreshPassengerData }) {
+/* ========== Payment ========== */
+function PaymentScreen({ goTo, selectedProduct, paymentMethod, setPaymentMethod, session, scannedVehicle, refreshData }) {
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [paymentStage, setPaymentStage] = useState('ready');
+  const [err, setErr] = useState('');
+  const [stage, setStage] = useState('');
 
-  if (!selectedProduct) {
-    return (
-      <main className="screen padded payment-screen">
-        <TopBar onBack={() => setScreen('choose')} />
-        <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#94a3b8' }}>
-          <Shield size={40} style={{ margin: '0 auto 1rem' }} />
-          <p>No cover product selected. Go back and choose a plan.</p>
-        </div>
-      </main>
-    );
-  }
+  if (!selectedProduct) return (
+    <div className="screen with-pad">
+      <div className="screen-header" style={{ margin: '-16px -16px 16px', padding: '12px 16px' }}>
+        <button className="back-btn" type="button" onClick={() => goTo('choose')}><ArrowLeft size={18} /></button>
+        <span className="header-title">Payment</span>
+      </div>
+      <div className="empty-state"><Shield size={32} /><p>No cover product selected</p></div>
+    </div>
+  );
 
-  const durationLabel = selectedProduct.durationMinutes >= 60
-    ? `${Math.floor(selectedProduct.durationMinutes / 60)} hours`
-    : `${selectedProduct.durationMinutes} minutes`;
+  const dur = selectedProduct.durationMinutes >= 60 ? `${Math.floor(selectedProduct.durationMinutes/60)} hours` : `${selectedProduct.durationMinutes} min`;
+
+  const pay = async () => {
+    setErr(''); setBusy(true); setStage('processing');
+    try {
+      const buy = await buyCover(session.token, {
+        coverProductId: selectedProduct.id,
+        vehicleId: scannedVehicle?.vehicle?.id,
+        paymentMethod,
+      });
+      setStage('confirming');
+      await confirmPayment(session.token, buy.payment.id);
+      await refreshData(session.token);
+      goTo('activeCover');
+    } catch (e) { setErr(e.message); setStage(''); } finally { setBusy(false); }
+  };
 
   return (
-    <main className="screen padded payment-screen">
-      <div className="soft-visual" style={{ backgroundImage: `linear-gradient(180deg, rgba(248,249,250,.2), rgba(248,249,250,.9)), url(${bgImage})` }} />
-      <TopBar onBack={() => setScreen('choose')} />
-      <section className="page-heading with-lock">
-        <div>
-          <h1>Pay securely</h1>
-        </div>
-        <Lock size={28} />
-      </section>
+    <div className="screen with-pad">
+      <div className="screen-header" style={{ margin: '-16px -16px 16px', padding: '12px 16px' }}>
+        <button className="back-btn" type="button" onClick={() => goTo('choose')}><ArrowLeft size={18} /></button>
+        <span className="header-title">Confirm Payment</span>
+        <Lock size={18} className="header-action" />
+      </div>
 
-      <section className="summary-card">
-        <h2>Trip summary</h2>
-        <div className="summary-row"><Bus size={18} /><span>Route</span><strong>{scannedVehicle?.route ? `${scannedVehicle.route.origin} to ${scannedVehicle.route.destination}` : 'Lusaka commute'}</strong></div>
-        <div className="summary-row"><FileText size={18} /><span>Vehicle</span><strong>{scannedVehicle?.vehicle?.plateNumber || 'Not selected'}</strong></div>
-        <div className="summary-row"><ShieldCheck size={18} /><span>Cover plan</span><strong>{selectedProduct.name} (K{selectedProduct.price})</strong></div>
-        <div className="summary-row"><Clock3 size={18} /><span>Validity</span><strong>{durationLabel}</strong></div>
-        <div className="summary-row"><Shield size={18} /><span>Coverage</span><strong>Up to K{(selectedProduct.coverageAmount || 0).toLocaleString()}</strong></div>
-      </section>
+      <div className="summary-card">
+        <h3>Trip Summary</h3>
+        <div className="summary-row"><Bus size={16} /><span>Route</span><strong>{scannedVehicle?.route ? `${scannedVehicle.route.origin} → ${scannedVehicle.route.destination}` : 'Lusaka commute'}</strong></div>
+        <div className="summary-row"><MapPin size={16} /><span>Vehicle</span><strong>{scannedVehicle?.vehicle?.plateNumber || 'Not selected'}</strong></div>
+        <div className="summary-row"><ShieldCheck size={16} /><span>Cover</span><strong>{selectedProduct.name}</strong></div>
+        <div className="summary-row"><Clock size={16} /><span>Duration</span><strong>{dur}</strong></div>
+        <div className="summary-row"><Shield size={16} /><span>Coverage</span><strong>Up to K{(selectedProduct.coverageAmount||0).toLocaleString()}</strong></div>
+      </div>
 
-      <section className="payment-methods">
-        <h2>Choose payment method</h2>
-        {paymentMethods.map((method) => {
-          const Icon = method.icon;
-          const selected = paymentMethod === method.id;
-          return (
-            <button className={`method-card ${selected ? 'selected' : ''}`} key={method.id} type="button" onClick={() => setPaymentMethod(method.id)}>
-              <span className={`brand-mark ${method.accent}`}><Icon size={23} /></span>
-              <span>
-                <strong>{method.name}</strong>
-                <small>{method.detail}</small>
-              </span>
-              <span className="radio-dot">{selected && <Check size={14} />}</span>
-            </button>
-          );
-        })}
-      </section>
+      <div className="section-head"><h2>Payment method</h2></div>
+      {PAYMENT_METHODS.map(m => {
+        const Icon = m.icon;
+        return (
+          <button className={`method-card ${paymentMethod===m.id ? 'selected' : ''}`} key={m.id} type="button" onClick={() => setPaymentMethod(m.id)}>
+            <div className={`method-icon ${m.accent}`}><Icon size={20} /></div>
+            <div className="method-info"><strong>{m.name}</strong><small>{m.detail}</small></div>
+            <div className="method-radio">{paymentMethod===m.id && <Check size={12} />}</div>
+          </button>
+        );
+      })}
 
-      <section className="payment-dock">
-        <div><span>Total</span><strong>K{selectedProduct.price}</strong></div>
-        <button
-          className="primary-btn"
-          type="button"
-          disabled={busy}
-          onClick={async () => {
-            setError('');
-            if (!session?.token) {
-              setScreen('login');
-              return;
-            }
-            setBusy(true);
-            setPaymentStage('processing');
-            try {
-              const buyResult = await buyCover(session.token, {
-                coverProductId: selectedProduct.id,
-                vehicleId: scannedVehicle?.vehicle?.id,
-                paymentMethod,
-              });
+      {err && <div className="error-banner">{err}</div>}
 
-              setPaymentStage('confirming');
-              await confirmPayment(session.token, buyResult.payment.id);
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0 8px' }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)' }}>Total</span>
+        <strong style={{ fontSize: 22, fontWeight: 800 }}>K{selectedProduct.price}</strong>
+      </div>
 
-              await refreshPassengerData(session.token);
-              setScreen('active');
-            } catch (e) {
-              setError(e?.message || 'Payment failed');
-              setPaymentStage('ready');
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <Lock size={18} />
-          <span>{busy ? (paymentStage === 'confirming' ? 'Activating cover…' : 'Processing payment…') : `Pay K${selectedProduct.price}`}</span>
-        </button>
-      </section>
+      <button className="btn-primary" type="button" onClick={pay} disabled={busy}>
+        <Lock size={16} />
+        {busy ? (stage === 'confirming' ? 'Activating cover...' : 'Processing...') : `Pay K${selectedProduct.price}`}
+      </button>
 
-      {error ? <p className="payment-error">{error}</p> : null}
-      {paymentStage !== 'ready' && !error && (
-        <p style={{ textAlign: 'center', fontSize: '10px', color: '#94a3b8', marginTop: '8px' }}>Sandbox payment — no real money charged</p>
+      {stage && !err && (
+        <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>Sandbox payment — no real charge</p>
       )}
-    </main>
+    </div>
   );
 }
 
-function ActiveCoverScreen({ openHistory, setScreen, activeCoverState, countdown }) {
+/* ========== Active Cover ========== */
+function ActiveCoverScreen({ goTo, coverState, countdown }) {
+  const hasActive = coverState && countdown !== 'Expired';
   return (
-    <main className="screen active-screen">
-      <section className="cover-hero" style={{ backgroundImage: `linear-gradient(180deg, rgba(248,249,250,.88), rgba(248,249,250,.55), rgba(248,249,250,1)), url(${bgImage})` }}>
-        <header className="cover-top">
-          <IconButton label="Menu" quiet><Menu size={22} /></IconButton>
-          <strong>SAFE</strong>
-          <IconButton label="Notifications" quiet onClick={() => setScreen('notifications')}><Bell size={22} /></IconButton>
-        </header>
-        <div className="protected-lockup">
-          <div>
-            <h1>You're protected</h1>
+    <div className="screen with-pad active-cover-screen">
+      <div className="screen-header" style={{ margin: '-16px -16px 16px', padding: '12px 16px' }}>
+        <button className="back-btn" type="button" onClick={() => goTo('home')}><ArrowLeft size={18} /></button>
+        <span className="header-title">My Cover</span>
+      </div>
+
+      {!coverState ? (
+        <div className="empty-state" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <Shield size={40} />
+          <p>No active cover</p>
+          <small>Protect your next trip with SAFE</small>
+          <button className="btn-primary" type="button" onClick={() => goTo('choose')} style={{ marginTop: 20, width: 'auto', padding: '12px 32px' }}>
+            Buy Cover
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="cover-status-hero">
+            <div className={`cover-shield ${hasActive ? '' : 'inactive'}`}>
+              <ShieldCheck size={40} />
+            </div>
+            <h1 className="cover-status-title">{hasActive ? "You're Protected" : 'Cover Expired'}</h1>
+            <div className="cover-countdown-big">{countdown || '--:--:--'}</div>
+            {coverState.endsAt && (
+              <p className="cover-expires">
+                {hasActive ? `Expires at ${new Date(coverState.endsAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}` : 'This cover has expired'}
+              </p>
+            )}
           </div>
-          <span className="big-shield"><ShieldCheck size={116} /></span>
-        </div>
-      </section>
 
-      <section className="active-content">
-        <div className="timer-block">
-          <span>Cover active</span>
-          <strong>{countdown}</strong>
-          <small>remaining</small>
-        </div>
+          <div className="policy-grid">
+            <div className="policy-item"><span>Policy</span><strong>{coverState.policyNumber || 'N/A'}</strong></div>
+            <div className="policy-item"><span>Plan</span><strong>{coverState.plan}</strong></div>
+            <div className="policy-item"><span>Vehicle</span><strong>{coverState.vehicle?.plateNumber || 'N/A'}</strong></div>
+            <div className="policy-item"><span>Route</span><strong>{coverState.route ? `${coverState.route.origin} → ${coverState.route.destination}` : 'N/A'}</strong></div>
+          </div>
 
-        <section className="policy-card">
-          <div><span>Policy ID</span><strong>{activeCoverState?.policyNumber || 'N/A'}</strong></div>
-          <div><span>Vehicle</span><strong>{activeCoverState?.vehicle?.plateNumber || 'N/A'}</strong></div>
-          <div><span>Route</span><strong>{activeCoverState?.route ? `${activeCoverState.route.origin} to ${activeCoverState.route.destination}` : 'N/A'}</strong></div>
-          <div><span>Valid until</span><strong>{activeCoverState?.endsAt ? new Date(activeCoverState.endsAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A'}</strong></div>
-        </section>
-
-        <section className="stacked-actions">
-          <button className="secondary-btn" type="button" onClick={() => openHistory('active')}>
-            <FileText size={19} />
-            <span>View Policy</span>
-          </button>
-          <button className="danger-btn" type="button" onClick={() => setScreen('claim')}>
-            <Siren size={19} />
-            <span>Report Accident</span>
-          </button>
-        </section>
-      </section>
-    </main>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <button className="btn-secondary" type="button" onClick={() => goTo('history')} style={{ flex: 1 }}>
+              <FileText size={16} /> History
+            </button>
+            {hasActive && (
+              <button className="btn-danger" type="button" onClick={() => goTo('claimSubmit')} style={{ flex: 1 }}>
+                <Siren size={16} /> Report Incident
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
-function HistoryScreen({ historyReturn, setScreen, coversHistory, claimsList, session }) {
+/* ========== History ========== */
+function HistoryScreen({ goTo, history, claims }) {
   const [filter, setFilter] = useState('All');
 
-  const visibleItems = useMemo(() => {
-    const items = coversHistory.map((cover) => {
-      const date = new Date(cover.createdAt);
-      const day = String(date.getDate());
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const month = months[date.getMonth()];
-      const year = String(date.getFullYear());
-      
-      const route = cover.route ? `${cover.route.origin} to ${cover.route.destination}` : 'Lusaka Commute';
-      const vehicle = cover.vehicle?.plateNumber || 'LSK 2481';
-      const coverPlanName = `${cover.plan} (K${cover.amount})`;
-      
-      // Find matching claim
-      const claim = claimsList.find((c) => c.tripCoverId === cover.id);
-      let status = 'Expired';
-      let type = 'expired';
-      
-      if (claim) {
-        type = 'claim';
-        if (claim.status === 'submitted') status = 'Claim submitted';
-        else if (claim.status === 'processing') status = 'Processing';
-        else if (claim.status === 'approved') status = 'Approved';
-        else if (claim.status === 'rejected') status = 'Rejected';
-        else if (claim.status === 'paid') status = 'Paid';
-      } else {
-        const isCurrentlyActive = cover.status === 'active' && new Date(cover.endsAt).getTime() > Date.now();
-        if (isCurrentlyActive) {
-          status = 'Active';
-          type = 'active';
-        }
-      }
-      
-      return {
-        id: cover.id,
-        day,
-        month,
-        year,
-        route,
-        vehicle,
-        cover: coverPlanName,
-        status,
-        type,
-      };
+  const items = useMemo(() => {
+    let list = history.map(c => {
+      const claim = claims.find(cl => cl.tripCoverId === c.id);
+      return { ...c, claimStatus: claim?.status || null };
     });
-    
-    if (filter === 'All') return items;
-    if (filter === 'Active') return items.filter((item) => item.type === 'active');
-    if (filter === 'Expired') return items.filter((item) => item.type === 'expired');
-    if (filter === 'Claim') return items.filter((item) => item.type === 'claim');
-    return items;
-  }, [coversHistory, claimsList, filter]);
+    if (filter === 'Active') list = list.filter(c => c.status === 'active');
+    if (filter === 'Expired') list = list.filter(c => c.status === 'expired');
+    if (filter === 'Claims') list = list.filter(c => c.claimStatus);
+    return list;
+  }, [history, claims, filter]);
 
   return (
-    <main className="screen padded">
-      <header className="history-top">
-        <IconButton label="Back" quiet onClick={() => setScreen(historyReturn)}><ArrowLeft size={22} /></IconButton>
-        <div>
-          <IconButton label="Search" quiet><Search size={22} /></IconButton>
-          <span className="avatar">{(session?.user?.passengerProfile?.fullName || 'U')[0]}</span>
-        </div>
-      </header>
+    <div className="screen">
+      <div className="screen-header">
+        <button className="back-btn" type="button" onClick={() => goTo('home')}><ArrowLeft size={18} /></button>
+        <span className="header-title">Trip History</span>
+      </div>
 
-      <section className="page-heading">
-        <h1>My cover history</h1>
-      </section>
-
-      <section className="filter-row" aria-label="Cover filters">
-        {['All', 'Active', 'Expired', 'Claim'].map((item) => (
-          <button className={filter === item ? 'active' : ''} type="button" key={item} onClick={() => setFilter(item)}>
-            {item === 'Claim' ? 'Claims' : item}
-          </button>
+      <div className="filter-row">
+        {['All','Active','Expired','Claims'].map(f => (
+          <button className={`filter-chip ${filter===f ? 'active' : ''}`} key={f} type="button" onClick={() => setFilter(f)}>{f}</button>
         ))}
-      </section>
+      </div>
 
-      <section className="history-list">
-        {visibleItems.map((item) => (
-          <article className={`history-card ${item.type}`} key={`${item.day}-${item.vehicle}-${item.status}`}>
-            <div className="date-tile">
-              <strong>{item.day}</strong>
-              <span>{item.month}</span>
-              <small>{item.year}</small>
+      <div style={{ padding: '0 16px' }}>
+        {items.length === 0 ? (
+          <div className="empty-state"><Clock size={32} /><p>No trips yet</p><small>Your covered trips will appear here</small></div>
+        ) : items.map(c => {
+          const d = new Date(c.startedAt || c.createdAt);
+          const mos = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          return (
+            <div className="history-card" key={c.id}>
+              <div className="history-date">
+                <strong>{d.getDate()}</strong>
+                <small>{mos[d.getMonth()]}</small>
+              </div>
+              <div className="history-info">
+                <span className="history-route">{c.route ? `${c.route.origin} → ${c.route.destination}` : c.plan}</span>
+                <span className="history-meta">
+                  {c.vehicle?.plateNumber || ''} · K{c.amount} {c.policyNumber ? `· ${c.policyNumber}` : ''}
+                </span>
+              </div>
+              <span className={`badge ${c.status === 'active' ? 'active' : c.status === 'expired' ? 'expired' : 'pending'}`}>
+                {c.claimStatus || c.status}
+              </span>
             </div>
-            <div className="history-main">
-              <strong>{item.route}</strong>
-              <span>{item.vehicle}</span>
-              <span>{item.cover}</span>
-            </div>
-            <span className={`status-pill ${item.type}`}>
-              {item.type === 'active' && <CheckCircle2 size={14} />}
-              {item.type === 'claim' && <FileText size={14} />}
-              {item.type === 'expired' && <Lock size={14} />}
-              {item.status}
-            </span>
-          </article>
-        ))}
-      </section>
-    </main>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
-function ClaimScreen({
-  claimText,
-  session,
-  setClaimText,
-  claimSent,
-  setClaimSent,
-  policeReference,
-  setPoliceReference,
-  hospitalSlipUrl,
-  setHospitalSlipUrl,
-  setScreen,
-  openHistory,
-  activeCoverState,
-  coversHistory = [],
-}) {
+/* ========== Claim List ========== */
+function ClaimListScreen({ goTo, claims, coverState }) {
+  return (
+    <div className="screen">
+      <div className="screen-header">
+        <button className="back-btn" type="button" onClick={() => goTo('home')}><ArrowLeft size={18} /></button>
+        <span className="header-title">Claims</span>
+        {coverState && (
+          <button type="button" onClick={() => goTo('claimSubmit')} style={{ background: 'none', border: 'none', color: 'var(--safe-green)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+            + New
+          </button>
+        )}
+      </div>
+
+      <div style={{ padding: '0 16px' }}>
+        {claims.length === 0 ? (
+          <div className="empty-state">
+            <FileText size={32} />
+            <p>No claims submitted</p>
+            <small>You have not submitted any claims</small>
+          </div>
+        ) : claims.map(cl => (
+          <div className="history-card" key={cl.id}>
+            <div className="history-date">
+              <strong>{new Date(cl.createdAt).getDate()}</strong>
+              <small>{['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][new Date(cl.createdAt).getMonth()]}</small>
+            </div>
+            <div className="history-info">
+              <span className="history-route">{cl.tripCover?.plan || 'Claim'} · {cl.tripCover?.policyNumber || ''}</span>
+              <span className="history-meta">{cl.description?.slice(0,60)}{cl.description?.length > 60 ? '...' : ''}</span>
+            </div>
+            <span className={`badge ${cl.status === 'approved' ? 'active' : cl.status === 'rejected' ? 'danger' : 'pending'}`}>{cl.status}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ========== Claim Submit ========== */
+function ClaimSubmitScreen({ goTo, session, coverState, history, refreshData }) {
   const [step, setStep] = useState(1);
+  const [desc, setDesc] = useState('');
+  const [police, setPolice] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const chars = claimText.length;
+  const [err, setErr] = useState('');
+  const [done, setDone] = useState(false);
 
-  const activeCover = activeCoverState || coversHistory[0];
-  const activePolicyId = activeCover?.id ? `SAFE-${activeCover.id.slice(-8).toUpperCase()}` : trip.policy;
-  const activeVehicle = activeCover?.vehicle?.plateNumber || trip.vehicle;
+  const coverId = coverState?.id || history[0]?.id;
 
-  const handleFileChange = (event) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setHospitalSlipUrl(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
+  const submit = async () => {
+    if (!coverId) { setErr('No cover to claim against'); return; }
+    setErr(''); setBusy(true);
+    try {
+      await createClaim(session.token, {
+        tripCoverId: coverId,
+        description: desc.trim(),
+        policeReference: police.trim() || undefined,
+      });
+      await refreshData(session.token);
+      setDone(true);
+    } catch (e) { setErr(e.message); } finally { setBusy(false); }
   };
 
-  const triggerCameraMock = () => {
-    const mockSvgBase64 = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400"><rect width="300" height="400" fill="%23e6f4ea" rx="8"/><rect x="15" y="15" width="270" height="370" fill="none" stroke="%2334a853" stroke-width="2" stroke-dasharray="6 4"/><text x="150" y="50" font-family="sans-serif" font-size="20" font-weight="bold" fill="%230f5132" text-anchor="middle">LUSAKA GENERAL HOSPITAL</text><text x="150" y="80" font-family="sans-serif" font-size="12" fill="%23198754" text-anchor="middle">EMERGENCY WARD - ACCIDENT REPORT</text><line x1="30" y1="110" x2="270" y2="110" stroke="%2334a853" stroke-width="1.5"/><text x="40" y="140" font-family="sans-serif" font-size="11" font-weight="bold" fill="%23333">PATIENT: MOSES BANDA</text><text x="40" y="165" font-family="sans-serif" font-size="11" fill="%23555">ADMISSION DATE: 21 MAY 2026</text><text x="40" y="190" font-family="sans-serif" font-size="11" fill="%23555">DIAGNOSIS: MINOR BRUISES & CONTUSIONS</text><text x="40" y="215" font-family="sans-serif" font-size="11" fill="%23555">COVER LEVEL: SAFE ACTIVE COVER</text><line x1="30" y1="240" x2="270" y2="240" stroke="%2334a853" stroke-dasharray="3 3"/><text x="150" y="275" font-family="sans-serif" font-size="14" font-weight="bold" fill="%230f5132" text-anchor="middle">TOTAL CHARGES: ZMW 1,200</text><text x="150" y="300" font-family="sans-serif" font-size="10" fill="%23555" text-anchor="middle">STATUS: PAID IN FULL</text><rect x="60" y="330" width="180" height="40" fill="%23198754" rx="4"/><text x="150" y="355" font-family="sans-serif" font-size="11" font-weight="bold" fill="%23fff" text-anchor="middle">VERIFIED COMMUTER CLAIM</text></svg>';
-    setHospitalSlipUrl(mockSvgBase64);
-  };
-
-  const handleReset = () => {
-    setClaimText('');
-    setPoliceReference('');
-    setHospitalSlipUrl('');
-    setClaimSent(false);
-    setStep(1);
-  };
-
-  if (claimSent) {
-    return (
-      <main className="screen padded claim-screen success-view overflow-y-auto pb-24">
-        <MiniStatusBar />
-        <section className="success-hero text-center my-6">
-          <div className="success-icon-wrap flex justify-center mb-4 relative">
-            <div className="h-16 w-16 bg-emerald-500 text-white rounded-full grid place-items-center shadow-lg relative z-10 animate-bounce">
-              <ShieldCheck size={36} />
-            </div>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-20 w-20 bg-emerald-500/20 rounded-full blur-md" />
-          </div>
-          <h1 className="text-xl font-black text-safe-ink">Claim Submitted!</h1>
-          <p className="text-xs font-semibold text-slate-500 mt-1">Claim submitted for trip {activeVehicle}.</p>
-        </section>
-
-        <section className="claim-receipt-card bg-white border border-slate-200 rounded-2xl p-4 shadow-[0_8px_20px_rgba(0,0,0,0.03)] mb-5">
-          <div className="receipt-header border-b border-dashed border-slate-200 pb-3 flex justify-between items-center mb-3">
-            <strong className="text-xs font-black tracking-wider text-safe-ink">CLAIM RECEIPT</strong>
-            <span className="text-[10px] font-bold text-slate-400">Policy: {activePolicyId}</span>
-          </div>
-          <div className="receipt-body space-y-2 text-xs">
-            <div className="receipt-row flex justify-between">
-              <span className="text-slate-400 font-semibold">Incident Details</span>
-              <strong className="text-safe-ink font-bold max-w-[150px] truncate">{claimText.length > 40 ? claimText.slice(0, 37) + '...' : claimText}</strong>
-            </div>
-            {policeReference && (
-              <div className="receipt-row flex justify-between">
-                <span className="text-slate-400 font-semibold">RTSA / Police Ref</span>
-                <strong className="text-safe-ink font-bold">{policeReference}</strong>
-              </div>
-            )}
-            <div className="receipt-row flex justify-between">
-              <span className="text-slate-400 font-semibold">Hospital Slip</span>
-              <strong className="text-emerald-700 font-bold">{hospitalSlipUrl ? 'Attached (Verified)' : 'Not attached'}</strong>
-            </div>
-            <div className="receipt-row flex justify-between items-center pt-2 border-t border-slate-100">
-              <span className="text-slate-400 font-semibold">Status</span>
-              <span className="rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-700">Submitted</span>
-            </div>
-          </div>
-        </section>
-
-        <section className="timeline-tracker bg-white border border-slate-200 rounded-2xl p-4 shadow-[0_8px_20px_rgba(0,0,0,0.03)] mb-5">
-          <h3 className="text-xs font-black tracking-wider text-safe-ink mb-3 uppercase">Review Timeline</h3>
-          <div className="timeline-steps space-y-4">
-            <div className="timeline-step flex items-start gap-3">
-              <span className="bullet h-5 w-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">✓</span>
-              <div className="step-desc text-xs">
-                <strong className="block font-bold text-safe-ink">Claim Submitted</strong>
-                <small className="block text-[10px] font-semibold text-slate-400">Just now</small>
-              </div>
-            </div>
-            <div className="timeline-step flex items-start gap-3">
-              <span className="bullet h-5 w-5 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0 text-[12px] font-bold animate-pulse">!</span>
-              <div className="step-desc text-xs">
-                <strong className="block font-bold text-safe-ink">Operations Audit</strong>
-                <small className="block text-[10px] font-semibold text-slate-400">Review in progress (Under 24h)</small>
-              </div>
-            </div>
-            <div className="timeline-step flex items-start gap-3">
-              <span className="bullet h-5 w-5 rounded-full bg-slate-200 text-slate-400 flex items-center justify-center shrink-0 text-[10px] font-bold">3</span>
-              <div className="step-desc text-xs">
-                <strong className="block font-semibold text-slate-400">Insurance Payout</strong>
-                <small className="block text-[10px] font-semibold text-slate-400">Payout based on cover product</small>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <div className="sticky-double-cta grid grid-cols-2 gap-3 mt-6">
-          <button className="primary-btn flex items-center justify-center gap-2" type="button" onClick={() => openHistory('active')}>
-            <FileText size={18} />
-            <span>Track in History</span>
-          </button>
-          <button className="secondary-btn flex items-center justify-center gap-2 border border-slate-300 hover:bg-slate-50" type="button" onClick={handleReset}>
-            <RefreshCcw size={18} />
-            <span>New Claim</span>
-          </button>
-        </div>
-      </main>
-    );
-  }
+  if (done) return (
+    <div className="screen with-pad" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--success-bg)', color: 'var(--success)', display: 'grid', placeItems: 'center', marginBottom: 16 }}>
+        <CheckCircle2 size={32} />
+      </div>
+      <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>Claim Submitted</h2>
+      <p style={{ fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', marginBottom: 24 }}>Your claim has been submitted and is under review. We'll notify you of updates.</p>
+      <button className="btn-primary" type="button" onClick={() => goTo('claim')} style={{ width: 'auto', padding: '12px 32px' }}>View Claims</button>
+    </div>
+  );
 
   return (
-    <main className="screen padded claim-screen overflow-y-auto pb-24">
-      <TopBar 
-        onBack={() => {
-          if (step > 1) {
-            setStep(step - 1);
-          } else {
-            setScreen('active');
-          }
-        }} 
-        title={
-          step === 1 ? 'Describe Incident' :
-          step === 2 ? 'Attach Documents' : 'Police Reference'
-        }
-      />
-      
-      <section className="steps" aria-label="Claim progress">
-        <span className={step >= 1 ? 'active' : ''}>1</span>
-        <span className={step >= 2 ? 'active' : ''}>2</span>
-        <span className={step >= 3 ? 'active' : ''}>3</span>
-      </section>
+    <div className="screen with-pad">
+      <div className="screen-header" style={{ margin: '-16px -16px 16px', padding: '12px 16px' }}>
+        <button className="back-btn" type="button" onClick={() => step > 1 ? setStep(step-1) : goTo('claim')}><ArrowLeft size={18} /></button>
+        <span className="header-title">{step === 1 ? 'Describe Incident' : 'Police Reference'}</span>
+      </div>
 
-      {error && <p className="payment-error mb-4">{error}</p>}
+      <div className="claim-step-indicators">
+        <div className={`claim-step ${step >= 1 ? 'active' : ''}`} />
+        <div className={`claim-step ${step >= 2 ? 'active' : ''}`} />
+      </div>
+
+      {err && <div className="error-banner">{err}</div>}
 
       {step === 1 && (
-        <div className="step-container">
-          <section className="page-heading mb-4">
-            <h1>What happened?</h1>
-          </section>
-
-          <section className="claim-card vertical bg-white border border-slate-200 rounded-2xl p-4 shadow-[0_8px_20px_rgba(0,0,0,0.03)] mb-4">
-            <div className="claim-title-row flex items-center gap-3 mb-3 pb-2 border-b border-slate-100">
-              <span className="claim-icon note h-10 w-10 bg-amber-50 text-amber-500 rounded-xl grid place-items-center"><FileText size={20} /></span>
-              <div>
-                <strong className="block text-xs font-black text-safe-ink">Accident Narrative</strong>
-                <small className="block text-[10px] font-semibold text-slate-400">Min 10 characters required</small>
-              </div>
-            </div>
-            <label className="textarea-wrap block relative">
-              <textarea
-                maxLength={500}
-                value={claimText}
-                onChange={(event) => {
-                  setClaimText(event.target.value);
-                  setError('');
-                }}
-                className="w-full min-h-[140px] text-xs border border-slate-200 rounded-xl p-3 focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 resize-none"
-                placeholder="Describe the minibus journey, what time the accident happened, and any injuries sustained..."
-              />
-              <span className="absolute bottom-2 right-3 text-[9px] font-bold text-slate-400">{chars}/500</span>
-            </label>
-          </section>
-
-          <button 
-            className="primary-btn w-full flex items-center justify-center gap-2 mt-4" 
-            type="button"
-            disabled={chars < 10}
-            onClick={() => setStep(2)}
-          >
-            <span>Next: Upload Documents</span>
-            <ArrowRight size={18} />
+        <>
+          <div className="section-head"><h2>What happened?</h2><p>Describe the incident in detail (min 10 characters)</p></div>
+          <textarea className="claim-textarea" value={desc} onChange={e => setDesc(e.target.value)} maxLength={500} placeholder="Describe the accident, injuries, and circumstances..." />
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'right', marginTop: 4 }}>{desc.length}/500</p>
+          <button className="btn-primary" type="button" disabled={desc.length < 10} onClick={() => setStep(2)} style={{ marginTop: 16 }}>
+            Next <ArrowRight size={16} />
           </button>
-        </div>
+        </>
       )}
 
       {step === 2 && (
-        <div className="step-container">
-          <section className="page-heading mb-4">
-            <h1>Medical Documents</h1>
-          </section>
-
-          <div className="claim-list mb-4">
-            <div className="document-uploader bg-white border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center">
-              {hospitalSlipUrl ? (
-                <div className="image-preview-card relative">
-                  <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm max-h-[220px] bg-slate-50 flex justify-center items-center">
-                    <img src={hospitalSlipUrl} alt="Hospital Slip Preview" className="uploaded-slip object-contain max-h-[200px]" />
-                  </div>
-                  <div className="mt-3 flex justify-between items-center px-1">
-                    <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Hospital Slip Attached ✓</span>
-                    <button 
-                      type="button" 
-                      className="text-[10px] font-black text-red-600 hover:underline" 
-                      onClick={() => setHospitalSlipUrl('')}
-                    >
-                      Remove File
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="upload-dropzone">
-                  <div className="upload-icons flex justify-center mb-3">
-                    <span className="claim-icon medical h-12 w-12 bg-emerald-50 text-emerald-500 rounded-full grid place-items-center"><HeartPulse size={24} /></span>
-                  </div>
-                  <h3 className="text-xs font-black text-safe-ink">Hospital Admission Slip</h3>
-                  
-                  <input 
-                    type="file" 
-                    id="hospital-file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={handleFileChange}
-                  />
-                  
-                  <div className="upload-btn-row flex justify-center gap-3 mt-4">
-                    <label htmlFor="hospital-file" className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-black text-safe-ink cursor-pointer hover:bg-slate-50 inline-flex items-center gap-2">
-                      <Upload size={14} />
-                      <span>Choose File</span>
-                    </label>
-                    <button 
-                      type="button" 
-                      className="px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-black text-emerald-700 cursor-pointer hover:bg-emerald-100 inline-flex items-center gap-2"
-                      onClick={triggerCameraMock}
-                    >
-                      <Siren size={14} />
-                      <span>Simulate Camera</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <button 
-            className="primary-btn w-full flex items-center justify-center gap-2 mt-4" 
-            type="button"
-            onClick={() => setStep(3)}
-          >
-            <span>{hospitalSlipUrl ? 'Continue to Reference' : 'Skip & Continue'}</span>
-            <ArrowRight size={18} />
+        <>
+          <div className="section-head"><h2>Police / RTSA Reference</h2><p>Optional but speeds up approval</p></div>
+          <input className="form-input" value={police} onChange={e => setPolice(e.target.value)} placeholder="e.g. POL-18492-LSK" />
+          <button className="btn-primary" type="button" onClick={submit} disabled={busy} style={{ marginTop: 24 }}>
+            <Send size={16} /> {busy ? 'Submitting...' : 'Submit Claim'}
           </button>
-        </div>
+        </>
       )}
-
-      {step === 3 && (
-        <div className="step-container">
-          <section className="page-heading mb-4">
-            <h1>Police Reference</h1>
-          </section>
-
-          <section className="claim-card vertical bg-white border border-slate-200 rounded-2xl p-4 shadow-[0_8px_20px_rgba(0,0,0,0.03)] mb-4">
-            <div className="claim-title-row flex items-center gap-3 mb-3 pb-2 border-b border-slate-100">
-              <span className="claim-icon police h-10 w-10 bg-red-50 text-red-500 rounded-xl grid place-items-center"><Shield size={20} /></span>
-              <div>
-                <strong className="block text-xs font-black text-safe-ink">Police / RTSA Reference</strong>
-                <small className="block text-[10px] font-semibold text-slate-400">Optional but speeds up approval</small>
-              </div>
-            </div>
-            
-            <div className="input-wrap">
-              <input 
-                type="text" 
-                value={policeReference}
-                onChange={(event) => setPoliceReference(event.target.value)}
-                placeholder="e.g. POL-18492-LSK or RTSA-093"
-                className="w-full text-xs border border-slate-200 rounded-xl p-3 focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10"
-              />
-            </div>
-          </section>
-
-          <section className="summary-confirm-card bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-4">
-            <h4 className="text-[10px] font-black tracking-wider text-slate-500 uppercase mb-3 border-b border-slate-200 pb-1.5">Claim Preview Summary</h4>
-            <div className="space-y-2 text-xs">
-              <div className="summary-confirm-row flex justify-between">
-                <span className="text-slate-400 font-semibold">Active Policy ID</span>
-                <strong className="text-safe-ink font-bold">{activePolicyId}</strong>
-              </div>
-              <div className="summary-confirm-row flex justify-between">
-                <span className="text-slate-400 font-semibold">Narrative</span>
-                <strong className="text-safe-ink font-bold max-w-[150px] truncate">{claimText}</strong>
-              </div>
-              <div className="summary-confirm-row flex justify-between">
-                <span className="text-slate-400 font-semibold">Hospital Slip</span>
-                <strong className={hospitalSlipUrl ? 'text-emerald-700 font-bold' : 'text-slate-500 font-semibold'}>
-                  {hospitalSlipUrl ? 'Attached ✓' : 'Not Attached'}
-                </strong>
-              </div>
-              <div className="summary-confirm-row flex justify-between">
-                <span className="text-slate-400 font-semibold">Police Reference</span>
-                <strong className="text-safe-ink font-bold">{policeReference || 'None Provided'}</strong>
-              </div>
-            </div>
-          </section>
-
-          <button
-            className="primary-btn w-full flex items-center justify-center gap-2 mt-4"
-            type="button"
-            disabled={busy}
-            onClick={async () => {
-              setError('');
-              if (!session?.token) {
-                setScreen('login');
-                return;
-              }
-              setBusy(true);
-              try {
-                await createClaim(session.token, { 
-                  tripCoverId: activeCover?.id || undefined,
-                  description: claimText.trim(),
-                  policeReference: policeReference.trim() || undefined,
-                  hospitalSlipUrl: hospitalSlipUrl || undefined
-                });
-                setClaimSent(true);
-              } catch (e) {
-                setError(e?.message || 'Failed to submit claim');
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            <Send size={18} />
-            <span>{busy ? 'Submitting…' : 'Submit Claim'}</span>
-          </button>
-        </div>
-      )}
-    </main>
+    </div>
   );
 }
 
-function ProfileScreen({ openHistory, setScreen, coversHistory = [], claimsList = [], activeCoverState, session, setSession }) {
-  const fullName = session?.user?.passengerProfile?.fullName || 'SAFE User';
-  const phone = session?.user?.phone || '';
-  const planLabel = activeCoverState ? `K${activeCoverState.amount}` : 'None';
-
+/* ========== Profile ========== */
+function ProfileScreen({ goTo, session, setSession, history, claims, coverState, userName }) {
   return (
-    <main className="screen padded profile-screen">
-      <header className="profile-head">
-        <span className="profile-avatar"><CircleUserRound size={58} /></span>
-        <div>
-          <p className="eyebrow">SAFE member</p>
-          <h1>{fullName}</h1>
-          <span>{phone}</span>
-        </div>
-      </header>
+    <div className="screen">
+      <div className="screen-header">
+        <span className="header-title" style={{ flex: 1 }}>Account</span>
+      </div>
 
-      <section className="profile-stats">
-        <div><strong>{coversHistory.length}</strong><span>Trips covered</span></div>
-        <div><strong>{claimsList.length}</strong><span>Claim{claimsList.length !== 1 ? 's' : ''}</span></div>
-        <div><strong>{planLabel}</strong><span>Current plan</span></div>
-      </section>
+      <div className="profile-header">
+        <div className="profile-avatar"><CircleUserRound size={32} /></div>
+        <h2 className="profile-name">{userName || 'SAFE User'}</h2>
+        <p className="profile-phone">{session.user?.phone || session.user?.email || ''}</p>
+      </div>
 
-      <section className="settings-list">
-        <button type="button" onClick={() => openHistory('profile')}><FileText size={19} /><span>Cover history</span><ChevronRight size={18} /></button>
-        <button type="button" onClick={() => setScreen('profilePayments')}><WalletCards size={19} /><span>Payment methods</span><ChevronRight size={18} /></button>
-        <button type="button" onClick={() => setScreen('notifications')}><Bell size={19} /><span>Notifications</span><ChevronRight size={18} /></button>
-        <button type="button" onClick={() => setScreen('helpSafety')}><ShieldCheck size={19} /><span>Help and safety</span><ChevronRight size={18} /></button>
-        <button type="button" onClick={() => {
+      <div className="profile-stats">
+        <div className="profile-stat"><strong>{history.length}</strong><span>Trips</span></div>
+        <div className="profile-stat"><strong>{claims.length}</strong><span>Claims</span></div>
+        <div className="profile-stat"><strong>{coverState ? `K${coverState.amount}` : '—'}</strong><span>Active</span></div>
+      </div>
+
+      <div className="menu-list">
+        <button className="menu-item" type="button" onClick={() => goTo('history')}><FileText size={18} /><span>Cover History</span><ChevronRight size={16} /></button>
+        <button className="menu-item" type="button" onClick={() => goTo('claim')}><Siren size={18} /><span>My Claims</span><ChevronRight size={16} /></button>
+        <button className="menu-item" type="button" onClick={() => goTo('help')}><ShieldCheck size={18} /><span>Help & Safety</span><ChevronRight size={16} /></button>
+        <button className="menu-item danger" type="button" onClick={() => {
           clearToken();
           setSession({ token: '', user: null, ready: true });
-          setScreen('splash');
-        }} style={{ color: '#ef4444' }}><ArrowLeft size={19} /><span>Log out</span><ChevronRight size={18} /></button>
-      </section>
-    </main>
+          goTo('splash');
+        }}>
+          <LogOut size={18} /><span>Log out</span><ChevronRight size={16} />
+        </button>
+      </div>
+    </div>
   );
 }
 
-function ProfilePaymentMethodsScreen({ paymentMethod, setPaymentMethod, setScreen }) {
+/* ========== Help ========== */
+function HelpScreen({ goTo, coverState }) {
   return (
-    <main className="screen padded detail-screen">
-      <TopBar onBack={() => setScreen('profile')} title="Payment methods" action={<Plus size={21} />} />
-      <section className="page-heading compact">
-        <h1>How you pay</h1>
-      </section>
-      <section className="wallet-list">
-        {paymentMethods.map((method) => {
-          const Icon = method.icon;
-          const selected = paymentMethod === method.id;
-          return (
-            <button className={`wallet-card ${selected ? 'selected' : ''}`} key={method.id} type="button" onClick={() => setPaymentMethod(method.id)}>
-              <span className={`brand-mark ${method.accent}`}><Icon size={23} /></span>
-              <span>
-                <strong>{method.name}</strong>
-                <small>{method.detail}</small>
-              </span>
-              <span className="default-pill">{selected ? 'Default' : 'Use'}</span>
-            </button>
-          );
-        })}
-      </section>
-      <section className="secure-note">
-        <Lock size={20} />
-        <p>SAFE never stores your full card or mobile money PIN.</p>
-      </section>
-    </main>
-  );
-}
+    <div className="screen with-pad">
+      <div className="screen-header" style={{ margin: '-16px -16px 16px', padding: '12px 16px' }}>
+        <button className="back-btn" type="button" onClick={() => goTo('home')}><ArrowLeft size={18} /></button>
+        <span className="header-title">Help & Safety</span>
+      </div>
 
-function NotificationsScreen({ setScreen }) {
-  const [settings, setSettings] = useState({
-    cover: true,
-    claims: true,
-    payment: true,
-    safety: false,
-  });
+      <div style={{ textAlign: 'center', padding: '20px 0' }}>
+        <ShieldCheck size={40} style={{ color: 'var(--safe-green)', margin: '0 auto 12px' }} />
+        <h2 style={{ fontSize: 18, fontWeight: 700 }}>SAFE Support</h2>
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>We're here to help</p>
+      </div>
 
-  const rows = [
-    { id: 'cover', title: 'Cover reminders', detail: 'Expiry and renewal alerts', icon: ShieldCheck },
-    { id: 'claims', title: 'Claim updates', detail: 'Submission, review, and payout status', icon: FileText },
-    { id: 'payment', title: 'Payment receipts', detail: 'Successful purchases and failed attempts', icon: WalletCards },
-    { id: 'safety', title: 'Safety notices', detail: 'Route and connection updates', icon: Bell },
-  ];
-
-  return (
-    <main className="screen padded detail-screen">
-      <TopBar onBack={() => setScreen('profile')} title="Notifications" />
-      <section className="page-heading compact">
-        <h1>Stay updated</h1>
-      </section>
-      <section className="toggle-list">
-        {rows.map((row) => {
-          const Icon = row.icon;
-          const active = settings[row.id];
-          return (
-            <button
-              className="toggle-row"
-              key={row.id}
-              type="button"
-              onClick={() => setSettings((current) => ({ ...current, [row.id]: !current[row.id] }))}
-            >
-              <span className="row-icon"><Icon size={18} /></span>
-              <span><strong>{row.title}</strong><small>{row.detail}</small></span>
-              <span className={`switch ${active ? 'on' : ''}`}><i /></span>
-            </button>
-          );
-        })}
-      </section>
-    </main>
-  );
-}
-
-function HelpSafetyScreen({ setScreen }) {
-  return (
-    <main className="screen padded detail-screen help-screen">
-      <TopBar onBack={() => setScreen('profile')} title="Help and safety" />
-      <section className="help-hero">
-        <ShieldCheck size={44} />
-        <h1>SAFE support</h1>
-      </section>
-
-      <section className="help-grid">
-        <button type="button" className="help-card" onClick={() => setScreen('claim')}>
-          <Siren size={24} />
-          <span><strong>Report an accident</strong><small>Start a claim and upload documents.</small></span>
-          <ChevronRight size={18} />
+      <div className="menu-list">
+        {coverState && (
+          <button className="menu-item" type="button" onClick={() => goTo('claimSubmit')}>
+            <Siren size={18} /><span>Report an Accident</span><ChevronRight size={16} />
+          </button>
+        )}
+        <button className="menu-item" type="button" onClick={() => goTo('activeCover')}>
+          <Shield size={18} /><span>My Active Cover</span><ChevronRight size={16} />
         </button>
-        <button type="button" className="help-card" onClick={() => setScreen('active')}>
-          <Shield size={24} />
-          <span><strong>My active cover</strong><small>View policy, route, and expiry time.</small></span>
-          <ChevronRight size={18} />
+        <button className="menu-item" type="button" onClick={() => goTo('history')}>
+          <Clock size={18} /><span>Trip History</span><ChevronRight size={16} />
         </button>
-        <button type="button" className="help-card" onClick={() => setScreen('offline')}>
-          <AlertTriangle size={24} />
-          <span><strong>Connection help</strong><small>See the offline recovery screen.</small></span>
-          <ChevronRight size={18} />
+        <button className="menu-item" type="button" onClick={() => goTo('claim')}>
+          <FileText size={18} /><span>My Claims</span><ChevronRight size={16} />
         </button>
-      </section>
-
-      <section className="support-panel">
-        <h2>Need help now?</h2>
-        <button type="button" onClick={() => setScreen('chat')}><MessageCircle size={18} /> Chat with SAFE</button>
-        <button type="button"><Mail size={18} /> support@safe.co.zm</button>
-      </section>
-    </main>
-  );
-}
-
-function ChatScreen({ setScreen, session }) {
-  const userName = session?.user?.passengerProfile?.fullName?.split(' ')[0] || 'there';
-  const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      from: 'safe',
-      text: `Hi ${userName}. SAFE support is here. What do you need help with today?`,
-      time: 'Now',
-    },
-  ]);
-
-  const quickReplies = ['Start a claim', 'Payment issue', 'View cover', 'Offline help'];
-
-  const sendMessage = (event) => {
-    event.preventDefault();
-    const trimmed = message.trim();
-    if (!trimmed) return;
-    setMessages((current) => [
-      ...current,
-      { id: Date.now(), from: 'user', text: trimmed, time: 'Now' },
-      { id: Date.now() + 1, from: 'safe', text: 'Thanks. A SAFE agent will review this and guide you through the next step.', time: 'Now' },
-    ]);
-    setMessage('');
-  };
-
-  return (
-    <main className="screen no-nav chat-screen">
-      <header className="chat-top">
-        <IconButton label="Go back" quiet onClick={() => setScreen('helpSafety')}><ArrowLeft size={22} /></IconButton>
-        <div className="chat-title">
-          <span><MessageCircle size={18} /></span>
-          <div>
-            <strong>Chat with SAFE</strong>
-            <small>Usually replies instantly</small>
-          </div>
-        </div>
-        <IconButton label="Safety info" quiet onClick={() => setScreen('helpSafety')}><Info size={21} /></IconButton>
-      </header>
-
-      <section className="chat-messages" aria-label="Chat messages">
-        {messages.map((item) => (
-          <article className={`message-bubble ${item.from}`} key={item.id}>
-            <p>{item.text}</p>
-            <small>{item.time}</small>
-          </article>
-        ))}
-      </section>
-
-      <section className="quick-replies" aria-label="Quick replies">
-        {quickReplies.map((reply) => (
-          <button type="button" key={reply} onClick={() => setMessage(reply)}>{reply}</button>
-        ))}
-      </section>
-
-      <form className="chat-composer" onSubmit={sendMessage}>
-        <input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Type your message..." />
-        <button type="submit" aria-label="Send message"><Send size={18} /></button>
-      </form>
-    </main>
-  );
-}
-
-function OfflineScreen({ setScreen }) {
-  return (
-    <main className="screen no-nav offline-screen">
-      <div className="offline-backdrop" style={{ backgroundImage: `linear-gradient(180deg, rgba(4,17,40,.86), rgba(4,17,40,.94)), url(${bgImage})` }} />
-      <section className="offline-card">
-        <span className="offline-icon"><AlertTriangle size={58} /></span>
-        <h1>Connection Lost</h1>
-        <p>It looks like you're offline. Please check your internet connection to continue using SAFE.</p>
-        <button className="primary-btn" type="button" onClick={() => setScreen('helpSafety')}>
-          <RefreshCcw size={18} />
-          <span>Retry</span>
-        </button>
-        <button className="secondary-btn" type="button" onClick={() => setScreen('active')}>
-          <ShieldCheck size={18} />
-          <span>Go to My Cover</span>
-        </button>
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }
 
