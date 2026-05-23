@@ -17,12 +17,14 @@ enum Role {
 }
 
 enum TripCoverStatus {
+  pending_payment
   active
   expired
   cancelled
 }
 
 enum PaymentStatus {
+  initiated
   pending
   succeeded
   failed
@@ -60,6 +62,8 @@ model User {
   passengerTripCovers TripCover[] @relation("PassengerTripCovers")
   passengerClaims     Claim[]     @relation("PassengerClaims")
   fraudFlags          FraudFlag[]
+
+  qrScans         QRScan[] @relation("UserQRScans")
 
   notifications Notification[]
   auditLogs     AuditLog[] @relation("AuditActor")
@@ -130,6 +134,7 @@ model Vehicle {
   driver    DriverProfile? @relation(fields: [driverId], references: [id])
 
   qrCodes   QRCode[]
+  qrScans   QRScan[]
   tripCovers TripCover[]
 }
 
@@ -145,6 +150,20 @@ model Route {
   tripCovers TripCover[]
 }
 
+model CoverProduct {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  name             String
+  price            Int
+  currency         String   @default("ZMW")
+  durationMinutes  Int
+  coverageAmount   Int      @default(0)
+  description      String?
+  isActive         Boolean  @default(true)
+  tripCovers       TripCover[]
+}
+
 model TripCover {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
@@ -158,6 +177,11 @@ model TripCover {
 
   routeId   String?
   route     Route? @relation(fields: [routeId], references: [id])
+
+  coverProductId String?
+  coverProduct   CoverProduct? @relation(fields: [coverProductId], references: [id])
+
+  policyNumber  String?
 
   plan      String
   status    TripCoverStatus @default(active)
@@ -186,6 +210,7 @@ model Payment {
   amount    Int
   currency  String @default("ZMW")
   reference String?
+  paidAt    DateTime?
 }
 
 model Claim {
@@ -233,6 +258,20 @@ model QRCode {
 
   vehicleId String?
   vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
+
+  scans     QRScan[]
+}
+
+model QRScan {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  scannedByUserId  String
+  scannedByUser    User     @relation("UserQRScans", fields: [scannedByUserId], references: [id])
+  vehicleId        String?
+  vehicle          Vehicle? @relation(fields: [vehicleId], references: [id])
+  qrCodeId         String?
+  qrCode           QRCode?  @relation(fields: [qrCodeId], references: [id])
+  result           String   @default("valid")
 }
 
 model FraudFlag {
