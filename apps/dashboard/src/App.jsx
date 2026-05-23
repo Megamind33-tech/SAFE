@@ -13,6 +13,10 @@ import SettingsPage from './pages/SettingsPage.jsx';
 import DashboardLoginPage from './pages/DashboardLoginPage.jsx';
 import PartnersPage from './pages/PartnersPage.jsx';
 import DocumentsPage from './pages/DocumentsPage.jsx';
+import UsersPage from './pages/UsersPage.jsx';
+import CoversPage from './pages/CoversPage.jsx';
+import VehiclesPage from './pages/VehiclesPage.jsx';
+import QRScansPage from './pages/QRScansPage.jsx';
 
 export default function App() {
   return (
@@ -21,6 +25,8 @@ export default function App() {
         <Route path="/login" element={<DashboardLoginPage />} />
         <Route element={<DashboardShell />}>
           <Route index element={<DashboardOverviewPage />} />
+          <Route path="/users" element={<UsersPage />} />
+          <Route path="/covers" element={<CoversPage />} />
           <Route path="/partners" element={<PartnersPage />} />
           <Route path="/claims" element={<ClaimsPage />} />
           <Route path="/documents" element={<DocumentsPage />} />
@@ -28,6 +34,8 @@ export default function App() {
           <Route path="/payments" element={<PaymentsPage />} />
           <Route path="/analytics" element={<AnalyticsPage />} />
           <Route path="/live-ops" element={<LiveOpsPage />} />
+          <Route path="/vehicles" element={<VehiclesPage />} />
+          <Route path="/qr-scans" element={<QRScansPage />} />
           <Route path="/fraud" element={<FraudPage />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/settings" element={<SettingsPage />} />
