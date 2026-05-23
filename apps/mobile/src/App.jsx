@@ -3,10 +3,12 @@ import {
   AlertTriangle, ArrowLeft, ArrowRight, Bell, Bus, Check, CheckCircle2,
   ChevronRight, CircleUserRound, Clock, CreditCard, FileText, HeartPulse,
   Home, Lock, LogOut, MapPin, QrCode, Search, Send, Shield, ShieldCheck,
-  Siren, Smartphone, Upload, User, WalletCards,
+  Siren, Smartphone, Star, Upload, User, WalletCards,
 } from 'lucide-react';
 import SafeMap from './components/SafeMap.jsx';
 import safeLogo from './assets/SAFE_app_icon_master_3D_1024.png';
+import BusIllustration from './components/BusIllustration.jsx';
+import { AirtelLogo, MtnLogo, VisaMcLogo, SecurePaymentIllustration } from './components/PaymentLogos.jsx';
 import {
   buyCover, confirmPayment, clearToken, createClaim, loadToken, login, me,
   registerPassenger, saveToken, activeCover, coverHistory, listClaims,
@@ -137,9 +139,13 @@ function App() {
         <nav className="bottom-nav">
           <NavBtn icon={Home} label="Home" active={navTab==='home'} onClick={() => goTo('home')} />
           <NavBtn icon={Clock} label="Trips" active={navTab==='trips'} onClick={() => goTo('history')} />
-          <button className="nav-item scan-btn" type="button" onClick={() => setShowScanner(true)}>
-            <QrCode size={22} />
-            <span>Scan</span>
+          <button
+            className={`nav-item cover-btn ${navTab==='cover' ? 'active' : ''}`}
+            type="button"
+            onClick={() => { if (coverState) goTo('activeCover'); else goTo('choose'); }}
+          >
+            <ShieldCheck size={22} />
+            <span>Cover</span>
           </button>
           <NavBtn icon={FileText} label="Claims" active={navTab==='claims'} onClick={() => goTo('claim')} />
           <NavBtn icon={User} label="Account" active={navTab==='account'} onClick={() => goTo('profile')} />
@@ -424,6 +430,12 @@ function ScannerModal({ session, setScannedVehicle, goTo, onClose }) {
 
 /* ========== Choose Cover ========== */
 function ChooseScreen({ goTo, products, selectedProductId, setSelectedProductId, scannedVehicle }) {
+  const iconForIndex = (i) => {
+    if (i === 0) return <ShieldCheck size={22} />;
+    if (i === 1) return <Shield size={22} />;
+    return <Star size={22} />;
+  };
+
   return (
     <div className="screen with-pad">
       <div className="screen-header" style={{ margin: '-16px -16px 16px', padding: '12px 16px' }}>
@@ -432,20 +444,29 @@ function ChooseScreen({ goTo, products, selectedProductId, setSelectedProductId,
       </div>
 
       {scannedVehicle && (
-        <div className="summary-card" style={{ marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)' }} />
-            <span style={{ fontSize: 13, fontWeight: 700 }}>
-              Vehicle verified: {scannedVehicle.vehicle?.plateNumber}
-            </span>
+        <div className="verified-card">
+          <div className="verified-card-left">
+            <div className="verified-dot" />
+            <div>
+              <span className="verified-plate">{scannedVehicle.vehicle?.plateNumber || 'N/A'}</span>
+              {scannedVehicle.route && (
+                <span className="verified-route">{scannedVehicle.route.origin} → {scannedVehicle.route.destination}</span>
+              )}
+            </div>
           </div>
-          {scannedVehicle.route && (
-            <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-              {scannedVehicle.route.origin} → {scannedVehicle.route.destination}
-            </p>
-          )}
+          <div className="verified-badge"><ShieldCheck size={16} /></div>
         </div>
       )}
+
+      <div className="banner-card">
+        <div className="banner-card-text">
+          <h3>Travel worry-free.</h3>
+          <p>You choose the cover, we've got you covered.</p>
+        </div>
+        <div className="banner-card-illust">
+          <BusIllustration width={110} height={70} />
+        </div>
+      </div>
 
       {products.length === 0 ? (
         <div className="empty-state">
@@ -456,7 +477,7 @@ function ChooseScreen({ goTo, products, selectedProductId, setSelectedProductId,
         products.map((p, i) => (
           <button className={`product-card ${selectedProductId === p.id ? 'selected' : ''}`} key={p.id} type="button" onClick={() => setSelectedProductId(p.id)}>
             <div className={`product-icon ${i === 0 ? 'basic' : i === 1 ? 'plus' : 'daily'}`}>
-              <ShieldCheck size={22} />
+              {iconForIndex(i)}
             </div>
             <div className="product-info">
               <span className="product-name">{p.name}</span>
@@ -471,6 +492,16 @@ function ChooseScreen({ goTo, products, selectedProductId, setSelectedProductId,
           </button>
         ))
       )}
+
+      <div className="benefit-row">
+        <h4>Why choose SAFE?</h4>
+        <div className="benefit-items">
+          <div className="benefit-item"><div className="benefit-icon"><ShieldCheck size={16} /></div><span>Trusted protection</span></div>
+          <div className="benefit-item"><div className="benefit-icon"><Clock size={16} /></div><span>Fast & easy claims</span></div>
+          <div className="benefit-item"><div className="benefit-icon"><Smartphone size={16} /></div><span>24/7 support</span></div>
+          <div className="benefit-item"><div className="benefit-icon"><HeartPulse size={16} /></div><span>Your safety first</span></div>
+        </div>
+      </div>
 
       <button className="btn-primary" type="button" onClick={() => goTo('payment')} disabled={!selectedProductId} style={{ marginTop: 8 }}>
         Continue to Payment <ArrowRight size={16} />
@@ -512,12 +543,24 @@ function PaymentScreen({ goTo, selectedProduct, paymentMethod, setPaymentMethod,
     } catch (e) { setErr(e.message); setStage(''); } finally { setBusy(false); }
   };
 
+  const LOGO_MAP = { airtel: <AirtelLogo size={40} />, mtn: <MtnLogo size={40} />, card: <VisaMcLogo size={40} /> };
+
   return (
     <div className="screen with-pad">
       <div className="screen-header" style={{ margin: '-16px -16px 16px', padding: '12px 16px' }}>
         <button className="back-btn" type="button" onClick={() => goTo('choose')}><ArrowLeft size={18} /></button>
         <span className="header-title">Confirm Payment</span>
-        <Lock size={18} className="header-action" />
+        <span className="header-secure-tag"><ShieldCheck size={14} /> Secure Checkout</span>
+      </div>
+
+      <div className="secure-banner">
+        <div className="secure-banner-text">
+          <h4>Your payment is secure</h4>
+          <p>All transactions are encrypted and protected.</p>
+        </div>
+        <div className="secure-banner-illust">
+          <SecurePaymentIllustration width={90} height={60} />
+        </div>
       </div>
 
       <div className="summary-card">
@@ -529,29 +572,35 @@ function PaymentScreen({ goTo, selectedProduct, paymentMethod, setPaymentMethod,
         <div className="summary-row"><Shield size={16} /><span>Coverage</span><strong>Up to K{(selectedProduct.coverageAmount||0).toLocaleString()}</strong></div>
       </div>
 
-      <div className="section-head"><h2>Payment method</h2></div>
-      {PAYMENT_METHODS.map(m => {
-        const Icon = m.icon;
-        return (
-          <button className={`method-card ${paymentMethod===m.id ? 'selected' : ''}`} key={m.id} type="button" onClick={() => setPaymentMethod(m.id)}>
-            <div className={`method-icon ${m.accent}`}><Icon size={20} /></div>
-            <div className="method-info"><strong>{m.name}</strong><small>{m.detail}</small></div>
-            <div className="method-radio">{paymentMethod===m.id && <Check size={12} />}</div>
-          </button>
-        );
-      })}
+      <div className="section-head"><h2>Payment Method</h2></div>
+      {PAYMENT_METHODS.map(m => (
+        <button className={`method-card ${paymentMethod===m.id ? 'selected' : ''}`} key={m.id} type="button" onClick={() => setPaymentMethod(m.id)}>
+          <div className="method-logo">{LOGO_MAP[m.id]}</div>
+          <div className="method-info"><strong>{m.name}</strong><small>{m.detail}</small></div>
+          <div className="method-radio">{paymentMethod===m.id && <Check size={12} />}</div>
+        </button>
+      ))}
 
       {err && <div className="error-banner">{err}</div>}
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0 8px' }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)' }}>Total</span>
-        <strong style={{ fontSize: 22, fontWeight: 800 }}>K{selectedProduct.price}</strong>
+      <div className="payment-total-row">
+        <span className="payment-total-label">Total</span>
+        <strong className="payment-total-price">K{selectedProduct.price}</strong>
       </div>
 
       <button className="btn-primary" type="button" onClick={pay} disabled={busy}>
         <Lock size={16} />
         {busy ? (stage === 'confirming' ? 'Activating cover...' : 'Processing...') : `Pay K${selectedProduct.price}`}
       </button>
+
+      <div className="receipt-strip" onClick={() => {}}>
+        <FileText size={18} className="receipt-strip-icon" />
+        <div className="receipt-strip-text">
+          <strong>Need a receipt?</strong>
+          <span>You'll get an instant receipt after payment.</span>
+        </div>
+        <ChevronRight size={16} className="receipt-strip-chevron" />
+      </div>
 
       {stage && !err && (
         <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>Sandbox payment — no real charge</p>
@@ -563,12 +612,26 @@ function PaymentScreen({ goTo, selectedProduct, paymentMethod, setPaymentMethod,
 /* ========== Active Cover ========== */
 function ActiveCoverScreen({ goTo, coverState, countdown }) {
   const hasActive = coverState && countdown !== 'Expired';
+  const expiresAt = coverState?.endsAt ? new Date(coverState.endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  const coverageAmount = coverState?.coverageAmount || coverState?.amount || 0;
+  const durationLabel = (() => {
+    if (!coverState?.endsAt || !coverState?.startedAt) return 'Single Trip';
+    const mins = Math.round((new Date(coverState.endsAt) - new Date(coverState.startedAt)) / 60000);
+    if (mins >= 60) return `${Math.floor(mins / 60)}h`;
+    return `${mins} min`;
+  })();
+
   return (
     <div className="screen with-pad active-cover-screen">
-      <div className="screen-header" style={{ margin: '-16px -16px 16px', padding: '12px 16px' }}>
-        <button className="back-btn" type="button" onClick={() => goTo('home')}><ArrowLeft size={18} /></button>
-        <span className="header-title">My Cover</span>
+      <div className="safe-app-header">
+        <div className="safe-app-header-left">
+          <div className="safe-logo-icon"><span>S</span></div>
+          <span className="safe-app-header-title">SAFE Commuter Insurance</span>
+        </div>
+        <button className="safe-header-bell" type="button" onClick={() => goTo('help')}><Bell size={18} /></button>
       </div>
+
+      <h2 className="my-cover-title">My Cover</h2>
 
       {!coverState ? (
         <div className="empty-state" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -581,27 +644,81 @@ function ActiveCoverScreen({ goTo, coverState, countdown }) {
         </div>
       ) : (
         <>
-          <div className="cover-status-hero">
-            <div className={`cover-shield ${hasActive ? '' : 'inactive'}`}>
-              <ShieldCheck size={40} />
+          <div className="cover-hero-card">
+            <div className="cover-hero-left">
+              <div className="cover-hero-shield-wrap">
+                <ShieldCheck size={28} />
+              </div>
+              <span className="protected-pill"><CheckCircle2 size={12} /> You're Protected</span>
+              <div className="countdown-large">{countdown || '--:--:--'}</div>
+              {coverState.endsAt && (
+                <p className="cover-hero-expires">
+                  {hasActive ? `Expires at ${expiresAt}` : 'This cover has expired'}
+                </p>
+              )}
             </div>
-            <h1 className="cover-status-title">{hasActive ? "You're Protected" : 'Cover Expired'}</h1>
-            <div className="cover-countdown-big">{countdown || '--:--:--'}</div>
-            {coverState.endsAt && (
-              <p className="cover-expires">
-                {hasActive ? `Expires at ${new Date(coverState.endsAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}` : 'This cover has expired'}
-              </p>
-            )}
+            <div className="cover-hero-right">
+              <BusIllustration width={130} height={85} />
+              <div className="cover-hero-check-badge"><Check size={14} /></div>
+            </div>
           </div>
 
-          <div className="policy-grid">
-            <div className="policy-item"><span>Policy</span><strong>{coverState.policyNumber || 'N/A'}</strong></div>
-            <div className="policy-item"><span>Plan</span><strong>{coverState.plan}</strong></div>
-            <div className="policy-item"><span>Vehicle</span><strong>{coverState.vehicle?.plateNumber || 'N/A'}</strong></div>
-            <div className="policy-item"><span>Route</span><strong>{coverState.route ? `${coverState.route.origin} → ${coverState.route.destination}` : 'N/A'}</strong></div>
+          <div className="detail-grid-2x2">
+            <div className="detail-tile">
+              <div className="tile-icon"><FileText size={20} /></div>
+              <span className="tile-label">Policy</span>
+              <strong className="tile-value">{coverState.policyNumber || 'N/A'}</strong>
+            </div>
+            <div className="detail-tile">
+              <div className="tile-icon"><Shield size={20} /></div>
+              <span className="tile-label">Plan</span>
+              <strong className="tile-value">{coverState.plan}</strong>
+            </div>
+            <div className="detail-tile">
+              <div className="tile-icon"><Bus size={20} /></div>
+              <span className="tile-label">Vehicle</span>
+              <strong className="tile-value">{coverState.vehicle?.plateNumber || 'N/A'}</strong>
+            </div>
+            <div className="detail-tile">
+              <div className="tile-icon"><MapPin size={20} /></div>
+              <span className="tile-label">Route</span>
+              <strong className="tile-value">{coverState.route ? `${coverState.route.origin} → ${coverState.route.destination}` : 'N/A'}</strong>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <div className="glance-card">
+            <h3 className="glance-title">Your Cover at a Glance</h3>
+            <div className="glance-grid">
+              <div className="glance-item">
+                <span className="glance-label">Accident Cover</span>
+                <strong className="glance-value">Up to K{coverageAmount.toLocaleString()}</strong>
+              </div>
+              <div className="glance-item">
+                <span className="glance-label">Trip Cover</span>
+                <strong className="glance-value">{durationLabel}</strong>
+              </div>
+              <div className="glance-item">
+                <span className="glance-label">Medical Cover</span>
+                <strong className="glance-value">Up to K{coverageAmount.toLocaleString()}</strong>
+              </div>
+              <div className="glance-item">
+                <span className="glance-label">Coverage Type</span>
+                <strong className="glance-value">Single Trip</strong>
+              </div>
+            </div>
+            <div className="glance-shield-illust"><ShieldCheck size={32} /></div>
+          </div>
+
+          <div className="route-strip">
+            <div className="route-strip-stops">
+              <div className="route-stop"><div className="route-dot green" /><span>{coverState.route?.origin || 'Matero'}</span></div>
+              <div className="route-strip-line"><Bus size={14} /></div>
+              <div className="route-stop"><div className="route-dot red" /><span>{coverState.route?.destination || 'Town'}</span></div>
+            </div>
+            <p className="route-strip-est">Est. duration: ~30 mins</p>
+          </div>
+
+          <div className="cover-action-row">
             <button className="btn-secondary" type="button" onClick={() => goTo('history')} style={{ flex: 1 }}>
               <FileText size={16} /> History
             </button>
@@ -610,6 +727,15 @@ function ActiveCoverScreen({ goTo, coverState, countdown }) {
                 <Siren size={16} /> Report Incident
               </button>
             )}
+          </div>
+
+          <div className="reassurance-card" onClick={() => {}}>
+            <CheckCircle2 size={20} className="reassurance-icon" />
+            <div className="reassurance-text">
+              <strong>You're all set!</strong>
+              <span>Enjoy your trip with SAFE. We've got you covered.</span>
+            </div>
+            <ChevronRight size={16} className="reassurance-chevron" />
           </div>
         </>
       )}

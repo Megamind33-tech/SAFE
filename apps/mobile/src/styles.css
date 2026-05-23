@@ -868,3 +868,678 @@ html, body, #root {
     border-right: 1px solid var(--border);
   }
 }
+
+/* ========================================
+   Premium Redesign — SAFE App Header
+   ======================================== */
+
+.safe-app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 12px;
+  margin-bottom: 4px;
+}
+
+.safe-app-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.safe-logo-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--safe-green);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  font-weight: 800;
+  font-family: var(--font-display);
+}
+
+.safe-app-header-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.safe-header-bell {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.my-cover-title {
+  font-size: 22px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  margin-bottom: 16px;
+}
+
+/* ========================================
+   Premium Hero Card — Active Cover
+   ======================================== */
+
+.cover-hero-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #e8f5ee 0%, #d1fae5 50%, #e8f5ee 100%);
+  border: 2px solid var(--safe-green);
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+
+.cover-hero-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cover-hero-right {
+  position: relative;
+  flex-shrink: 0;
+  margin-left: 8px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.cover-hero-shield-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(0, 107, 63, .12);
+  color: var(--safe-green);
+  display: grid;
+  place-items: center;
+  margin-bottom: 4px;
+}
+
+.protected-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--safe-green);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  width: fit-content;
+}
+
+.countdown-large {
+  font-size: 42px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  letter-spacing: -2px;
+  color: var(--safe-green);
+  line-height: 1.1;
+  margin: 4px 0 2px;
+}
+
+.cover-hero-expires {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.cover-hero-check-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--safe-green);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 6px rgba(0,107,63,.3);
+}
+
+/* ========================================
+   Detail Grid 2x2 with Icon Tiles
+   ======================================== */
+
+.detail-grid-2x2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.detail-tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+
+.tile-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--safe-green-light);
+  color: var(--safe-green);
+  display: grid;
+  place-items: center;
+  margin-bottom: 8px;
+}
+
+.tile-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  display: block;
+}
+
+.tile-value {
+  font-size: 13px;
+  font-weight: 700;
+  display: block;
+  margin-top: 2px;
+  word-break: break-word;
+}
+
+/* ========================================
+   Glance Card — Dark green
+   ======================================== */
+
+.glance-card {
+  background: #006b3f;
+  border-radius: 18px;
+  padding: 20px;
+  color: #fff;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+
+.glance-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.glance-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.glance-item {}
+.glance-label {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: .7;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  display: block;
+}
+
+.glance-value {
+  font-size: 13px;
+  font-weight: 700;
+  display: block;
+  margin-top: 2px;
+}
+
+.glance-shield-illust {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  opacity: .15;
+}
+
+/* ========================================
+   Route Strip
+   ======================================== */
+
+.route-strip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+
+.route-strip-stops {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.route-stop {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.route-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.route-dot.green { background: var(--success); }
+.route-dot.red { background: var(--danger); }
+
+.route-strip-line {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  color: var(--safe-green);
+}
+
+.route-strip-line::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background: var(--border);
+  border-radius: 1px;
+}
+
+.route-strip-line svg {
+  position: relative;
+  z-index: 1;
+  background: var(--surface);
+  padding: 0 4px;
+}
+
+.route-strip-est {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* ========================================
+   Cover Action Row
+   ======================================== */
+
+.cover-action-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* ========================================
+   Reassurance Card
+   ======================================== */
+
+.reassurance-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--safe-green-light);
+  border: 1px solid rgba(0, 107, 63, .15);
+  border-radius: 18px;
+  padding: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+
+.reassurance-icon {
+  color: var(--safe-green);
+  flex-shrink: 0;
+}
+
+.reassurance-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.reassurance-text strong {
+  font-size: 13px;
+  font-weight: 700;
+  display: block;
+  color: var(--text-primary);
+}
+
+.reassurance-text span {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 2px;
+}
+
+.reassurance-chevron {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* ========================================
+   Verified Vehicle Card
+   ======================================== */
+
+.verified-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+
+.verified-card-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.verified-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--success);
+  flex-shrink: 0;
+}
+
+.verified-plate {
+  font-size: 14px;
+  font-weight: 700;
+  display: block;
+}
+
+.verified-route {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 2px;
+}
+
+.verified-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--safe-green-light);
+  color: var(--safe-green);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+/* ========================================
+   Illustrated Banner Card
+   ======================================== */
+
+.banner-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #e8f5ee 0%, #d1fae5 100%);
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+
+.banner-card-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.banner-card-text h3 {
+  font-size: 18px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  color: var(--safe-green);
+  margin-bottom: 4px;
+}
+
+.banner-card-text p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.banner-card-illust {
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+/* ========================================
+   "Why choose SAFE?" Benefit Row
+   ======================================== */
+
+.benefit-row {
+  margin: 16px 0;
+}
+
+.benefit-row h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+
+.benefit-items {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.benefit-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 72px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.benefit-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--safe-green-light);
+  color: var(--safe-green);
+  display: grid;
+  place-items: center;
+}
+
+.benefit-item span {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+/* ========================================
+   Secure Payment Banner
+   ======================================== */
+
+.secure-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #e8f5ee 0%, #d1fae5 100%);
+  border-radius: 18px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+
+.secure-banner-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.secure-banner-text h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--safe-green);
+  margin-bottom: 2px;
+}
+
+.secure-banner-text p {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.secure-banner-illust {
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+.header-secure-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--safe-green);
+  background: var(--safe-green-light);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+/* ========================================
+   Payment method logo override
+   ======================================== */
+
+.method-logo {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* ========================================
+   Payment total
+   ======================================== */
+
+.payment-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0 8px;
+}
+
+.payment-total-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.payment-total-price {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--safe-green);
+}
+
+/* ========================================
+   Receipt Strip
+   ======================================== */
+
+.receipt-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--border-light);
+  border-radius: 18px;
+  padding: 14px 16px;
+  margin-top: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+
+.receipt-strip-icon {
+  color: var(--safe-green);
+  flex-shrink: 0;
+}
+
+.receipt-strip-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.receipt-strip-text strong {
+  font-size: 13px;
+  font-weight: 700;
+  display: block;
+  color: var(--text-primary);
+}
+
+.receipt-strip-text span {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 1px;
+}
+
+.receipt-strip-chevron {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* ========================================
+   Premium Bottom Nav — Cover center button
+   ======================================== */
+
+.nav-item.cover-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-full);
+  background: var(--safe-green);
+  color: #fff;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  box-shadow: 0 4px 14px rgba(0, 107, 63, .35);
+  margin-top: -16px;
+  position: relative;
+  font-size: 9px;
+}
+
+.nav-item.cover-btn span {
+  font-size: 9px;
+  color: #fff;
+}
+
+.nav-item.cover-btn.active {
+  color: #fff;
+  background: var(--safe-green);
+  box-shadow: 0 4px 18px rgba(0, 107, 63, .5);
+}
