@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import SafeMap from './components/SafeMap.jsx';
 import safeLogo from './assets/brand/safe-logo-full.png';
+import busStopCover from './assets/cover/bus-stop-cover.png';
+import verifiedBusShield from './assets/transport/verified-bus-shield.png';
 import BusIllustration from './components/BusIllustration.jsx';
 import { AirtelLogo, MtnLogo, VisaMcLogo, SecurePaymentIllustration } from './components/PaymentLogos.jsx';
 import {
@@ -454,7 +456,7 @@ function ChooseScreen({ goTo, products, selectedProductId, setSelectedProductId,
               )}
             </div>
           </div>
-          <div className="verified-badge"><ShieldCheck size={16} /></div>
+          <img src={verifiedBusShield} alt="Verified" style={{ width: 48, height: 48, objectFit: 'contain' }} />
         </div>
       )}
 
@@ -464,7 +466,7 @@ function ChooseScreen({ goTo, products, selectedProductId, setSelectedProductId,
           <p>You choose the cover, we've got you covered.</p>
         </div>
         <div className="banner-card-illust">
-          <BusIllustration width={110} height={70} />
+          <img src={busStopCover} alt="SAFE commuter cover" style={{ width: 130, height: 'auto', objectFit: 'contain', opacity: 0.9 }} />
         </div>
       </div>
 
@@ -635,7 +637,7 @@ function ActiveCoverScreen({ goTo, coverState, countdown }) {
 
       {!coverState ? (
         <div className="empty-state" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <Shield size={40} />
+          <img src={busStopCover} alt="Get covered" style={{ width: 180, height: 'auto', margin: '0 auto 16px', opacity: 0.85 }} />
           <p>No active cover</p>
           <small>Protect your next trip with SAFE</small>
           <button className="btn-primary" type="button" onClick={() => goTo('choose')} style={{ marginTop: 20, width: 'auto', padding: '12px 32px' }}>
@@ -658,8 +660,7 @@ function ActiveCoverScreen({ goTo, coverState, countdown }) {
               )}
             </div>
             <div className="cover-hero-right">
-              <BusIllustration width={130} height={85} />
-              <div className="cover-hero-check-badge"><Check size={14} /></div>
+              <img src={verifiedBusShield} alt="Protected vehicle" style={{ width: 130, height: 'auto', objectFit: 'contain' }} />
             </div>
           </div>
 
