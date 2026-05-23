@@ -6,7 +6,7 @@ import {
   Siren, Smartphone, Star, Upload, User, WalletCards,
 } from 'lucide-react';
 import SafeMap from './components/SafeMap.jsx';
-import safeLogo from './assets/SAFE_app_icon_master_3D_1024.png';
+import safeLogo from './assets/brand/safe-logo-full.png';
 import BusIllustration from './components/BusIllustration.jsx';
 import { AirtelLogo, MtnLogo, VisaMcLogo, SecurePaymentIllustration } from './components/PaymentLogos.jsx';
 import {
