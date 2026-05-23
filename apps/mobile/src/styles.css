@@ -1689,3 +1689,41 @@ html, body, #root {
 .nav-item.cover-btn:active {
   transform: scale(0.92) translateY(6px);
 }
+
+/* ========================================
+   Route Strip Real Asset
+   ======================================== */
+
+.route-strip-visual {
+  padding: 8px 0;
+}
+
+.route-strip-visual img {
+  display: block;
+  max-height: 56px;
+}
+
+.route-strip-labels {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 8px 0;
+}
+
+.route-label-start,
+.route-label-end {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ========================================
+   Transparent Asset Blending
+   ======================================== */
+
+.banner-card-illust img,
+.cover-hero-right img,
+.verified-card img,
+.empty-state img {
+  mix-blend-mode: normal;
+  background: transparent;
+}

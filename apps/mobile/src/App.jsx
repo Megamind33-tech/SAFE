@@ -468,7 +468,7 @@ function ChooseScreen({ goTo, products, selectedProductId, setSelectedProductId,
           <p>You choose the cover, we've got you covered.</p>
         </div>
         <div className="banner-card-illust">
-          <img src={ASSETS.transport.busStopCover} alt="SAFE commuter cover" style={{ width: 130, height: 'auto', objectFit: 'contain', opacity: 0.9 }} />
+          <img src={ASSETS.transport.roadToSecurity} alt="SAFE commuter cover" style={{ width: 140, height: 'auto', objectFit: 'contain' }} />
         </div>
       </div>
 
@@ -713,10 +713,12 @@ function ActiveCoverScreen({ goTo, coverState, countdown }) {
           </div>
 
           <div className="route-strip">
-            <div className="route-strip-stops">
-              <div className="route-stop"><div className="route-dot green" /><span>{coverState.route?.origin || 'Matero'}</span></div>
-              <div className="route-strip-line"><Bus size={14} /></div>
-              <div className="route-stop"><div className="route-dot red" /><span>{coverState.route?.destination || 'Town'}</span></div>
+            <div className="route-strip-visual">
+              <img src={ASSETS.transport.routeStripReal} alt="Route" style={{ width: '100%', height: 'auto', objectFit: 'contain' }} />
+            </div>
+            <div className="route-strip-labels">
+              <span className="route-label-start">{coverState.route?.origin || 'Matero'}</span>
+              <span className="route-label-end">{coverState.route?.destination || 'Town'}</span>
             </div>
             <p className="route-strip-est">Est. duration: ~30 mins</p>
           </div>
