@@ -13,5 +13,8 @@
     "preview:dashboard": "npm --workspace apps/dashboard run preview",
     "dev:backend": "npm --workspace apps/backend run dev",
     "start:backend": "npm --workspace apps/backend run start"
+  },
+  "dependencies": {
+    "puppeteer-core": "^25.0.4"
   }
 }
