@@ -56,6 +56,14 @@ export async function buyCover(token, payload) {
   return request('/api/mobile/cover/buy', { method: 'POST', token, body: payload });
 }
 
+export async function confirmPayment(token, paymentId) {
+  return request('/api/mobile/payment/confirm', { method: 'POST', token, body: { paymentId } });
+}
+
+export async function getPaymentStatus(token, paymentId) {
+  return request(`/api/mobile/payment/${paymentId}/status`, { token });
+}
+
 export async function activeCover(token) {
   return request('/api/mobile/cover/active', { token });
 }
@@ -72,3 +80,10 @@ export async function listClaims(token) {
   return request('/api/mobile/claims', { token });
 }
 
+export async function getCoverProducts() {
+  return request('/api/cover-products');
+}
+
+export async function getServerTime() {
+  return request('/api/time');
+}

@@ -1,35 +1,60 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
-  Building2,
-  FolderOpen,
-  Handshake,
   FileText,
+  Handshake,
   LifeBuoy,
+  LogOut,
+  QrCode,
   Shield,
   ShieldAlert,
   SlidersHorizontal,
+  Truck,
   Users,
   WalletCards,
 } from 'lucide-react';
+import { loadDashboardToken, clearDashboardToken, dashboardMe } from '../api/dashboardApi.js';
 
 const nav = [
-  { to: '/', label: 'Dashboard', icon: BarChart3 },
-  { to: '/partners', label: 'Partners', icon: Handshake },
+  { to: '/', label: 'Overview', icon: BarChart3 },
+  { to: '/users', label: 'Users', icon: Users },
+  { to: '/covers', label: 'Covers', icon: Shield },
+  { to: '/payments', label: 'Payments', icon: WalletCards },
   { to: '/claims', label: 'Claims', icon: FileText },
-  { to: '/documents', label: 'Documents', icon: FolderOpen },
-  { to: '/customers', label: 'Drivers', icon: Users },
-  { to: '/payments', label: 'Billing', icon: WalletCards },
-  { to: '/analytics', label: 'Analytics', icon: Building2 },
-  { to: '/live-ops', label: 'Operations', icon: Shield },
-  { to: '/fraud', label: 'Compliance', icon: ShieldAlert },
+  { to: '/vehicles', label: 'Vehicles', icon: Truck },
+  { to: '/drivers', label: 'Drivers', icon: Users },
+  { to: '/qr-scans', label: 'QR Scans', icon: QrCode },
+  { to: '/partners', label: 'Partners', icon: Handshake },
+  { to: '/fraud', label: 'Fraud Flags', icon: ShieldAlert },
   { to: '/support', label: 'Support', icon: LifeBuoy },
   { to: '/settings', label: 'Settings', icon: SlidersHorizontal },
 ];
 
 export default function DashboardShell() {
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const token = loadDashboardToken();
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/login', { replace: true });
+      return;
+    }
+    dashboardMe(token)
+      .then((data) => setUser(data.user))
+      .catch(() => {
+        clearDashboardToken();
+        navigate('/login', { replace: true });
+      });
+  }, [token]);
+
+  const handleLogout = () => {
+    clearDashboardToken();
+    navigate('/login');
+  };
+
+  if (!token) return null;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -47,7 +72,7 @@ export default function DashboardShell() {
             </div>
           </div>
 
-          <nav className="flex-1 px-2.5 pb-4">
+          <nav className="flex-1 px-2.5 pb-4 overflow-y-auto">
             {nav.map(({ to, label, icon: Icon }) => (
               <NavLink
                 key={to}
@@ -55,7 +80,7 @@ export default function DashboardShell() {
                 end={to === '/'}
                 className={({ isActive }) =>
                   [
-                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors',
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-colors',
                     isActive ? 'bg-safe-ink text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100',
                   ].join(' ')
                 }
@@ -66,13 +91,14 @@ export default function DashboardShell() {
             ))}
           </nav>
 
-          <div className="px-2.5 pb-4">
+          <div className="px-2.5 pb-4 border-t border-slate-100 pt-3">
             <button
               type="button"
-              onClick={() => navigate('/claims')}
-              className="w-full rounded-xl bg-safe-electric px-4 py-3 text-safe-ink font-black shadow-sm active:scale-[0.99] transition-transform"
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
             >
-              New Claim
+              <LogOut size={18} className="shrink-0" />
+              Log out
             </button>
           </div>
         </aside>
@@ -81,17 +107,13 @@ export default function DashboardShell() {
           <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur">
             <div className="px-4 md:px-6 h-12 flex items-center justify-between gap-4">
               <div className="text-sm font-semibold text-safe-ink">SAFE Dashboard</div>
-              <div className="hidden md:flex items-center gap-3 text-xs font-semibold text-slate-500">
-                <span className="rounded-full bg-slate-100 px-3 py-1">API: Shared Backend</span>
-                <span className="rounded-full bg-slate-100 px-3 py-1">RBAC: Enabled</span>
+              <div className="flex items-center gap-3 text-xs font-semibold text-slate-500">
+                {user && (
+                  <span className="rounded-full bg-slate-100 px-3 py-1">
+                    {user.email || user.phone} ({user.role?.replace('_', ' ')})
+                  </span>
+                )}
               </div>
-              <button
-                type="button"
-                onClick={() => navigate('/login')}
-                className="text-xs font-bold text-slate-600 hover:text-safe-ink"
-              >
-                Admin login
-              </button>
             </div>
           </header>
 

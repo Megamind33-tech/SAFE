@@ -49,79 +49,9 @@ import iconPhoneRinging from './assets/icons/phone-ringing-premium.png';
 import iconShield from './assets/icons/sheild-premium.png';
 import iconTravel from './assets/icons/travel-premium.png';
 import iconWallet from './assets/icons/wallet-premium.png';
-import { buyCover, clearToken, createClaim, loadToken, login, me, registerPassenger, saveToken, activeCover, coverHistory, listClaims, verifyVehicle } from './api/safeApi.js';
+import { buyCover, confirmPayment, clearToken, createClaim, loadToken, login, me, registerPassenger, saveToken, activeCover, coverHistory, listClaims, verifyVehicle, getCoverProducts, getServerTime } from './api/safeApi.js';
 
 const bgImage = zambiaScene;
-
-const trip = {
-  route: 'Matero to Town',
-  vehicle: 'LSK 2481',
-  departure: '09:40 AM',
-  policy: 'SAFE-2026-0518-2943',
-  validUntil: '13:42',
-};
-
-const coverPlans = [
-  {
-    id: 'basic',
-    name: 'Basic Cover',
-    price: 'K3',
-    summary: 'Emergency accident cash support',
-    payout: 'Up to K3,000',
-    tone: 'silver',
-  },
-  {
-    id: 'plus',
-    name: 'Plus Cover',
-    price: 'K5',
-    summary: 'Higher payout plus accident and disability support',
-    payout: 'Up to K5,000',
-    tone: 'green',
-  },
-];
-
-const historyItems = [
-  {
-    day: '18',
-    month: 'May',
-    year: '2026',
-    route: 'Matero to Town',
-    vehicle: 'LSK 2481',
-    cover: 'Plus Cover (K5)',
-    status: 'Active',
-    type: 'active',
-  },
-  {
-    day: '17',
-    month: 'May',
-    year: '2026',
-    route: 'Kwino to Town',
-    vehicle: 'BAE 5677',
-    cover: 'Plus Cover (K5)',
-    status: 'Active',
-    type: 'active',
-  },
-  {
-    day: '15',
-    month: 'May',
-    year: '2026',
-    route: 'Matero to Town',
-    vehicle: 'LSK 2481',
-    cover: 'Basic Cover (K3)',
-    status: 'Claim submitted',
-    type: 'claim',
-  },
-  {
-    day: '14',
-    month: 'May',
-    year: '2026',
-    route: 'Chawama to Town',
-    vehicle: 'BAE 5677',
-    cover: 'Basic Cover (K3)',
-    status: 'Expired',
-    type: 'expired',
-  },
-];
 
 const paymentMethods = [
   { id: 'airtel', name: 'Airtel Money', detail: 'Pay with Airtel Money', icon: Smartphone, accent: 'red' },
@@ -131,7 +61,7 @@ const paymentMethods = [
 
 function App() {
   const [screen, setScreen] = useState('splash');
-  const [selectedPlan, setSelectedPlan] = useState('plus');
+  const [selectedProductId, setSelectedProductId] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('airtel');
   const [claimText, setClaimText] = useState('');
   const [claimSent, setClaimSent] = useState(false);
@@ -140,21 +70,22 @@ function App() {
   const [historyReturn, setHistoryReturn] = useState('active');
   const [session, setSession] = useState(() => ({ token: loadToken(), user: null, ready: false }));
 
-  // New Dynamic States
   const [activeCoverState, setActiveCoverState] = useState(null);
   const [scannedVehicle, setScannedVehicle] = useState(null);
   const [coversHistory, setCoversHistory] = useState([]);
   const [claimsList, setClaimsList] = useState([]);
-  
-  // Scanner Modal States
+  const [coverProducts, setCoverProducts] = useState([]);
+  const [serverTimeOffset, setServerTimeOffset] = useState(0);
+
   const [showScannerModal, setShowScannerModal] = useState(false);
-  const [scannerType, setScannerType] = useState('qr'); // 'qr' or 'plate'
+  const [scannerType, setScannerType] = useState('qr');
   const [plateInput, setPlateInput] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Real-time ticking countdown
   const [countdown, setCountdown] = useState('00:00:00');
+
+  const getAdjustedNow = () => Date.now() + serverTimeOffset;
 
   const refreshPassengerData = async (token) => {
     if (!token) return;
@@ -165,12 +96,31 @@ function App() {
         listClaims(token),
       ]);
       setActiveCoverState(activeRes?.cover || null);
+      if (activeRes?.serverTime) {
+        const serverMs = new Date(activeRes.serverTime).getTime();
+        setServerTimeOffset(serverMs - Date.now());
+      }
       setCoversHistory(historyRes?.covers || []);
       setClaimsList(claimsRes?.claims || []);
     } catch (err) {
       console.error('Failed to load passenger data:', err);
     }
   };
+
+  useEffect(() => {
+    getCoverProducts().then(data => {
+      setCoverProducts(data?.products || []);
+      if (data?.products?.length > 0 && !selectedProductId) {
+        setSelectedProductId(data.products[0].id);
+      }
+    }).catch(() => {});
+
+    getServerTime().then(data => {
+      if (data?.serverTime) {
+        setServerTimeOffset(new Date(data.serverTime).getTime() - Date.now());
+      }
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const token = loadToken();
@@ -208,7 +158,7 @@ function App() {
 
     const updateTimer = () => {
       const endsAt = new Date(activeCoverState.endsAt);
-      const diff = endsAt.getTime() - Date.now();
+      const diff = endsAt.getTime() - getAdjustedNow();
       if (diff <= 0) {
         setCountdown('00:00:00');
         refreshPassengerData(session.token);
@@ -227,11 +177,11 @@ function App() {
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [activeCoverState?.endsAt]);
+  }, [activeCoverState?.endsAt, serverTimeOffset]);
 
-  const activePlan = useMemo(
-    () => coverPlans.find((plan) => plan.id === selectedPlan) ?? coverPlans[1],
-    [selectedPlan]
+  const selectedProduct = useMemo(
+    () => coverProducts.find((p) => p.id === selectedProductId) ?? coverProducts[0] ?? null,
+    [selectedProductId, coverProducts]
   );
 
   const goHome = () => setScreen('home');
@@ -245,7 +195,7 @@ function App() {
   const showBottomNav = !['splash', 'onboarding1', 'onboarding2', 'onboarding3', 'login', 'signup', 'chat', 'offline'].includes(screen);
 
   const screenProps = {
-    activePlan,
+    selectedProduct,
     claimSent,
     claimText,
     policeReference,
@@ -255,12 +205,12 @@ function App() {
     historyReturn,
     openHistory,
     paymentMethod,
-    selectedPlan,
+    selectedProductId,
     setClaimSent,
     setClaimText,
     setPaymentMethod,
     setScreen,
-    setSelectedPlan,
+    setSelectedProductId,
     session,
     setSession,
     auth: {
@@ -268,13 +218,13 @@ function App() {
       registerPassenger,
       saveToken,
     },
-    // New Dynamic Props
     activeCoverState,
     countdown,
     scannedVehicle,
     setScannedVehicle,
     coversHistory,
     claimsList,
+    coverProducts,
     refreshPassengerData,
     setShowScannerModal,
     setScannerType,
@@ -764,7 +714,7 @@ function SignupScreen({ setScreen, setSession, auth }) {
   );
 }
 
-function HomeScreen({ setScreen, activeCoverState, countdown, setShowScannerModal, setScannerType }) {
+function HomeScreen({ setScreen, activeCoverState, countdown, setShowScannerModal, setScannerType, session, coversHistory }) {
   const quickActions = [
     { label: 'Scan QR', detail: 'Board faster', asset: iconCamera, action: () => { setScannerType('qr'); setShowScannerModal(true); }, tone: 'yellow' },
     { label: 'Enter Vehicle', detail: 'Use plate number', asset: iconMobile, action: () => { setScannerType('plate'); setShowScannerModal(true); }, tone: 'blue' },
@@ -780,8 +730,8 @@ function HomeScreen({ setScreen, activeCoverState, countdown, setShowScannerModa
         <div className="hero-environment" style={{ backgroundImage: `url(${lusakaNightAerial})` }} />
         <header className="home-top-row">
           <div className="home-identity">
-            <p>Good morning, Moses</p>
-            <strong>SAFE active in motion</strong>
+            <p>{`${new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 17 ? 'Good afternoon' : 'Good evening'}, ${session?.user?.passengerProfile?.fullName?.split(' ')[0] || 'there'}`}</p>
+            <strong>{activeCoverState ? 'SAFE active in motion' : 'Get protected today'}</strong>
           </div>
           <div className="home-top-actions">
             <button className="location-pill" type="button" aria-label="Current city">
@@ -893,15 +843,15 @@ function HomeScreen({ setScreen, activeCoverState, countdown, setShowScannerModa
         <section className="trust-activity-panel">
           <div className="section-title-row">
             <div>
-              <p className="eyebrow">SAFE network</p>
-              <h2>Live trust activity</h2>
+              <p className="eyebrow">Your activity</p>
+              <h2>Your SAFE journey</h2>
             </div>
           </div>
           <div className="activity-grid">
-            <div><strong>18,420</strong><span>protected commuters today</span></div>
-            <div><strong>94%</strong><span>claims reviewed under 24h</span></div>
-            <div><strong>126</strong><span>verified minibuses nearby</span></div>
-            <div><strong>31</strong><span>active Lusaka routes</span></div>
+            <div><strong>{coversHistory.length}</strong><span>trips covered</span></div>
+            <div><strong>{coversHistory.filter(c => c.status === 'active').length}</strong><span>active covers</span></div>
+            <div><strong>{activeCoverState ? '1' : '0'}</strong><span>protected now</span></div>
+            <div><strong>Lusaka</strong><span>coverage area</span></div>
           </div>
         </section>
       </section>
@@ -909,29 +859,8 @@ function HomeScreen({ setScreen, activeCoverState, countdown, setShowScannerModa
   );
 }
 
-function TripRows() {
-  return (
-    <div className="trip-rows">
-      <div className="trip-row">
-        <span className="row-icon"><MapPin size={18} /></span>
-        <span>Route</span>
-        <strong>{trip.route}</strong>
-      </div>
-      <div className="trip-row">
-        <span className="row-icon"><Bus size={18} /></span>
-        <span>Minibus ID</span>
-        <strong>{trip.vehicle}</strong>
-      </div>
-      <div className="trip-row">
-        <span className="row-icon"><Clock3 size={18} /></span>
-        <span>Departure</span>
-        <strong>{trip.departure}</strong>
-      </div>
-    </div>
-  );
-}
 
-function ChooseCoverScreen({ selectedPlan, setSelectedPlan, setScreen, scannedVehicle }) {
+function ChooseCoverScreen({ selectedProductId, setSelectedProductId, setScreen, scannedVehicle, coverProducts }) {
   return (
     <main className="screen padded">
       <TopBar onBack={() => setScreen('home')} />
@@ -948,31 +877,38 @@ function ChooseCoverScreen({ selectedPlan, setSelectedPlan, setScreen, scannedVe
       </section>
 
       <section className="plan-list">
-        {coverPlans.map((plan) => (
+        {coverProducts.map((product, i) => (
           <button
-            className={`plan-card ${selectedPlan === plan.id ? 'selected' : ''}`}
-            key={plan.id}
+            className={`plan-card ${selectedProductId === product.id ? 'selected' : ''}`}
+            key={product.id}
             type="button"
-            onClick={() => setSelectedPlan(plan.id)}
+            onClick={() => setSelectedProductId(product.id)}
           >
-            <span className={`plan-shield ${plan.tone}`}>
+            <span className={`plan-shield ${i === 0 ? 'silver' : 'green'}`}>
               <ShieldCheck size={38} />
             </span>
             <span className="plan-main">
-              <span className="plan-label">{plan.name}</span>
-              <strong>{plan.price}</strong>
-              <span>{plan.summary}</span>
+              <span className="plan-label">{product.name}</span>
+              <strong>K{product.price}</strong>
+              <span>{product.description}</span>
               <span className="chips">
-                <span>{plan.payout}</span>
-                <span><Clock3 size={14} /> Valid 4h</span>
+                <span>Up to K{(product.coverageAmount || 0).toLocaleString()}</span>
+                <span><Clock3 size={14} /> {product.durationMinutes >= 60 ? `${Math.floor(product.durationMinutes / 60)}h` : `${product.durationMinutes}m`}</span>
               </span>
             </span>
-            <span className="checkmark">{selectedPlan === plan.id ? <Check size={18} /> : <ChevronRight size={18} />}</span>
+            <span className="checkmark">{selectedProductId === product.id ? <Check size={18} /> : <ChevronRight size={18} />}</span>
           </button>
         ))}
       </section>
 
-      <button className="primary-btn sticky-cta" type="button" onClick={() => setScreen('payment')}>
+      {coverProducts.length === 0 && (
+        <div className="empty-state" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+          <Shield size={40} style={{ margin: '0 auto 1rem' }} />
+          <p>Loading cover products...</p>
+        </div>
+      )}
+
+      <button className="primary-btn sticky-cta" type="button" onClick={() => setScreen('payment')} disabled={!selectedProductId}>
         <span>Continue to payment</span>
         <ArrowRight size={18} />
       </button>
@@ -980,9 +916,26 @@ function ChooseCoverScreen({ selectedPlan, setSelectedPlan, setScreen, scannedVe
   );
 }
 
-function PaymentScreen({ activePlan, paymentMethod, selectedPlan, session, setPaymentMethod, setScreen, scannedVehicle, refreshPassengerData }) {
+function PaymentScreen({ selectedProduct, paymentMethod, session, setPaymentMethod, setScreen, scannedVehicle, refreshPassengerData }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [paymentStage, setPaymentStage] = useState('ready');
+
+  if (!selectedProduct) {
+    return (
+      <main className="screen padded payment-screen">
+        <TopBar onBack={() => setScreen('choose')} />
+        <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#94a3b8' }}>
+          <Shield size={40} style={{ margin: '0 auto 1rem' }} />
+          <p>No cover product selected. Go back and choose a plan.</p>
+        </div>
+      </main>
+    );
+  }
+
+  const durationLabel = selectedProduct.durationMinutes >= 60
+    ? `${Math.floor(selectedProduct.durationMinutes / 60)} hours`
+    : `${selectedProduct.durationMinutes} minutes`;
 
   return (
     <main className="screen padded payment-screen">
@@ -997,10 +950,11 @@ function PaymentScreen({ activePlan, paymentMethod, selectedPlan, session, setPa
 
       <section className="summary-card">
         <h2>Trip summary</h2>
-        <div className="summary-row"><Bus size={18} /><span>Route</span><strong>{scannedVehicle?.route ? `${scannedVehicle.route.origin} to ${scannedVehicle.route.destination}` : trip.route}</strong></div>
-        <div className="summary-row"><FileText size={18} /><span>Vehicle</span><strong>{scannedVehicle?.vehicle?.plateNumber || trip.vehicle}</strong></div>
-        <div className="summary-row"><ShieldCheck size={18} /><span>Cover plan</span><strong>{activePlan.name} ({activePlan.price})</strong></div>
-        <div className="summary-row"><Clock3 size={18} /><span>Validity</span><strong>4 hours</strong></div>
+        <div className="summary-row"><Bus size={18} /><span>Route</span><strong>{scannedVehicle?.route ? `${scannedVehicle.route.origin} to ${scannedVehicle.route.destination}` : 'Lusaka commute'}</strong></div>
+        <div className="summary-row"><FileText size={18} /><span>Vehicle</span><strong>{scannedVehicle?.vehicle?.plateNumber || 'Not selected'}</strong></div>
+        <div className="summary-row"><ShieldCheck size={18} /><span>Cover plan</span><strong>{selectedProduct.name} (K{selectedProduct.price})</strong></div>
+        <div className="summary-row"><Clock3 size={18} /><span>Validity</span><strong>{durationLabel}</strong></div>
+        <div className="summary-row"><Shield size={18} /><span>Coverage</span><strong>Up to K{(selectedProduct.coverageAmount || 0).toLocaleString()}</strong></div>
       </section>
 
       <section className="payment-methods">
@@ -1022,7 +976,7 @@ function PaymentScreen({ activePlan, paymentMethod, selectedPlan, session, setPa
       </section>
 
       <section className="payment-dock">
-        <div><span>Total</span><strong>{activePlan.price}</strong></div>
+        <div><span>Total</span><strong>K{selectedProduct.price}</strong></div>
         <button
           className="primary-btn"
           type="button"
@@ -1034,27 +988,36 @@ function PaymentScreen({ activePlan, paymentMethod, selectedPlan, session, setPa
               return;
             }
             setBusy(true);
+            setPaymentStage('processing');
             try {
-              await buyCover(session.token, {
-                plan: selectedPlan === 'basic' ? 'basic' : 'plus',
-                plateNumber: scannedVehicle?.vehicle?.plateNumber || 'LSK 2481',
+              const buyResult = await buyCover(session.token, {
+                coverProductId: selectedProduct.id,
+                vehicleId: scannedVehicle?.vehicle?.id,
                 paymentMethod,
               });
+
+              setPaymentStage('confirming');
+              await confirmPayment(session.token, buyResult.payment.id);
+
               await refreshPassengerData(session.token);
               setScreen('active');
             } catch (e) {
               setError(e?.message || 'Payment failed');
+              setPaymentStage('ready');
             } finally {
               setBusy(false);
             }
           }}
         >
           <Lock size={18} />
-          <span>{busy ? 'Confirming…' : 'Confirm payment'}</span>
+          <span>{busy ? (paymentStage === 'confirming' ? 'Activating cover…' : 'Processing payment…') : `Pay K${selectedProduct.price}`}</span>
         </button>
       </section>
 
       {error ? <p className="payment-error">{error}</p> : null}
+      {paymentStage !== 'ready' && !error && (
+        <p style={{ textAlign: 'center', fontSize: '10px', color: '#94a3b8', marginTop: '8px' }}>Sandbox payment — no real money charged</p>
+      )}
     </main>
   );
 }
@@ -1084,10 +1047,10 @@ function ActiveCoverScreen({ openHistory, setScreen, activeCoverState, countdown
         </div>
 
         <section className="policy-card">
-          <div><span>Policy ID</span><strong>{activeCoverState?.id ? `SAFE-${activeCoverState.id.slice(-8).toUpperCase()}` : 'SAFE-ACTIVE-PLAN'}</strong></div>
-          <div><span>Vehicle</span><strong>{activeCoverState?.vehicle?.plateNumber || 'LSK 2481'}</strong></div>
-          <div><span>Route</span><strong>{activeCoverState?.route ? `${activeCoverState.route.origin} to ${activeCoverState.route.destination}` : 'Matero to Town'}</strong></div>
-          <div><span>Valid until</span><strong>{activeCoverState?.endsAt ? new Date(activeCoverState.endsAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '13:42'}</strong></div>
+          <div><span>Policy ID</span><strong>{activeCoverState?.policyNumber || 'N/A'}</strong></div>
+          <div><span>Vehicle</span><strong>{activeCoverState?.vehicle?.plateNumber || 'N/A'}</strong></div>
+          <div><span>Route</span><strong>{activeCoverState?.route ? `${activeCoverState.route.origin} to ${activeCoverState.route.destination}` : 'N/A'}</strong></div>
+          <div><span>Valid until</span><strong>{activeCoverState?.endsAt ? new Date(activeCoverState.endsAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A'}</strong></div>
         </section>
 
         <section className="stacked-actions">
@@ -1105,7 +1068,7 @@ function ActiveCoverScreen({ openHistory, setScreen, activeCoverState, countdown
   );
 }
 
-function HistoryScreen({ historyReturn, setScreen, coversHistory, claimsList }) {
+function HistoryScreen({ historyReturn, setScreen, coversHistory, claimsList, session }) {
   const [filter, setFilter] = useState('All');
 
   const visibleItems = useMemo(() => {
@@ -1118,7 +1081,7 @@ function HistoryScreen({ historyReturn, setScreen, coversHistory, claimsList }) 
       
       const route = cover.route ? `${cover.route.origin} to ${cover.route.destination}` : 'Lusaka Commute';
       const vehicle = cover.vehicle?.plateNumber || 'LSK 2481';
-      const coverPlanName = `${cover.plan === 'basic' ? 'Basic' : 'Plus'} Cover (K${cover.amount})`;
+      const coverPlanName = `${cover.plan} (K${cover.amount})`;
       
       // Find matching claim
       const claim = claimsList.find((c) => c.tripCoverId === cover.id);
@@ -1166,7 +1129,7 @@ function HistoryScreen({ historyReturn, setScreen, coversHistory, claimsList }) 
         <IconButton label="Back" quiet onClick={() => setScreen(historyReturn)}><ArrowLeft size={22} /></IconButton>
         <div>
           <IconButton label="Search" quiet><Search size={22} /></IconButton>
-          <span className="avatar">M</span>
+          <span className="avatar">{(session?.user?.passengerProfile?.fullName || 'U')[0]}</span>
         </div>
       </header>
 
@@ -1305,7 +1268,7 @@ function ClaimScreen({
               <span className="bullet h-5 w-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">✓</span>
               <div className="step-desc text-xs">
                 <strong className="block font-bold text-safe-ink">Claim Submitted</strong>
-                <small className="block text-[10px] font-semibold text-slate-400">Today, 12:42 PM</small>
+                <small className="block text-[10px] font-semibold text-slate-400">Just now</small>
               </div>
             </div>
             <div className="timeline-step flex items-start gap-3">
@@ -1319,7 +1282,7 @@ function ClaimScreen({
               <span className="bullet h-5 w-5 rounded-full bg-slate-200 text-slate-400 flex items-center justify-center shrink-0 text-[10px] font-bold">3</span>
               <div className="step-desc text-xs">
                 <strong className="block font-semibold text-slate-400">Insurance Payout</strong>
-                <small className="block text-[10px] font-semibold text-slate-400">ZMW 1,200 payout standard</small>
+                <small className="block text-[10px] font-semibold text-slate-400">Payout based on cover product</small>
               </div>
             </div>
           </div>
@@ -1558,10 +1521,10 @@ function ClaimScreen({
   );
 }
 
-function ProfileScreen({ openHistory, setScreen, coversHistory = [], claimsList = [], activeCoverState, session }) {
-  const fullName = session?.user?.passengerProfile?.fullName || 'Moses Banda';
-  const phone = session?.user?.phone || '+260 97 000 0000';
-  const planLabel = activeCoverState ? (activeCoverState.plan === 'basic' ? 'K3' : 'K5') : 'None';
+function ProfileScreen({ openHistory, setScreen, coversHistory = [], claimsList = [], activeCoverState, session, setSession }) {
+  const fullName = session?.user?.passengerProfile?.fullName || 'SAFE User';
+  const phone = session?.user?.phone || '';
+  const planLabel = activeCoverState ? `K${activeCoverState.amount}` : 'None';
 
   return (
     <main className="screen padded profile-screen">
@@ -1585,6 +1548,11 @@ function ProfileScreen({ openHistory, setScreen, coversHistory = [], claimsList 
         <button type="button" onClick={() => setScreen('profilePayments')}><WalletCards size={19} /><span>Payment methods</span><ChevronRight size={18} /></button>
         <button type="button" onClick={() => setScreen('notifications')}><Bell size={19} /><span>Notifications</span><ChevronRight size={18} /></button>
         <button type="button" onClick={() => setScreen('helpSafety')}><ShieldCheck size={19} /><span>Help and safety</span><ChevronRight size={18} /></button>
+        <button type="button" onClick={() => {
+          clearToken();
+          setSession({ token: '', user: null, ready: true });
+          setScreen('splash');
+        }} style={{ color: '#ef4444' }}><ArrowLeft size={19} /><span>Log out</span><ChevronRight size={18} /></button>
       </section>
     </main>
   );
@@ -1700,25 +1668,14 @@ function HelpSafetyScreen({ setScreen }) {
   );
 }
 
-function ChatScreen({ setScreen }) {
+function ChatScreen({ setScreen, session }) {
+  const userName = session?.user?.passengerProfile?.fullName?.split(' ')[0] || 'there';
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([
     {
       id: 1,
       from: 'safe',
-      text: 'Hi Moses. SAFE support is here. What do you need help with today?',
-      time: 'Now',
-    },
-    {
-      id: 2,
-      from: 'user',
-      text: 'I need help understanding my accident cover.',
-      time: 'Now',
-    },
-    {
-      id: 3,
-      from: 'safe',
-      text: 'No problem. Your current Plus Cover protects this Matero to Town trip for 4 hours and supports accident claims.',
+      text: `Hi ${userName}. SAFE support is here. What do you need help with today?`,
       time: 'Now',
     },
   ]);

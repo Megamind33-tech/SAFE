@@ -70,4 +70,30 @@ export async function onboardDriver(token, driverData) {
   return request('/api/dashboard/drivers', { method: 'POST', token, body: driverData });
 }
 
+export async function dashboardPayments(token) {
+  return request('/api/dashboard/payments', { token });
+}
 
+export async function dashboardUsers(token) {
+  return request('/api/dashboard/users', { token });
+}
+
+export async function dashboardQRScans(token) {
+  return request('/api/dashboard/qr-scans', { token });
+}
+
+export async function dashboardCovers(token) {
+  return request('/api/dashboard/covers', { token });
+}
+
+export async function dashboardPayouts(token) {
+  return request('/api/dashboard/payouts', { token });
+}
+
+export async function dashboardFraudFlags(token) {
+  return request('/api/dashboard/fraud/flags', { token });
+}
+
+export async function dashboardRoutes(token) {
+  return request('/api/dashboard/routes', { token });
+}
