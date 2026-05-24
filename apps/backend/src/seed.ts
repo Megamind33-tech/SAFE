@@ -1,6 +1,14 @@
 import { prisma } from './lib/prisma.js';
 import { hashPassword } from './lib/auth.js';
 
+const MATERO_TOWN_POLYLINE = JSON.stringify([
+  { lat: -15.3745, lng: 28.278 },
+  { lat: -15.382, lng: 28.2795 },
+  { lat: -15.395, lng: 28.281 },
+  { lat: -15.408, lng: 28.2818 },
+  { lat: -15.4164, lng: 28.2822 },
+]);
+
 async function main() {
   const adminEmail = 'admin@safe.local';
   const existingAdmin = await prisma.user.findFirst({ where: { email: adminEmail } });
@@ -17,14 +25,44 @@ async function main() {
 
   const route = await prisma.route.upsert({
     where: { id: 'route-matero-town' },
-    create: { id: 'route-matero-town', origin: 'Matero', destination: 'Town' },
-    update: {},
+    create: {
+      id: 'route-matero-town',
+      origin: 'Matero',
+      destination: 'Town',
+      originLat: -15.3745,
+      originLng: 28.278,
+      destinationLat: -15.4164,
+      destinationLng: 28.2822,
+      polyline: MATERO_TOWN_POLYLINE,
+    },
+    update: {
+      originLat: -15.3745,
+      originLng: 28.278,
+      destinationLat: -15.4164,
+      destinationLng: 28.2822,
+      polyline: MATERO_TOWN_POLYLINE,
+    },
   });
 
   const vehicle = await prisma.vehicle.upsert({
     where: { plateNumber: 'LSK 2481' },
-    create: { plateNumber: 'LSK 2481', busId: 'LSK-2481', routeId: route.id },
-    update: { busId: 'LSK-2481', routeId: route.id },
+    create: {
+      plateNumber: 'LSK 2481',
+      busId: 'LSK-2481',
+      routeId: route.id,
+      lastLat: -15.395,
+      lastLng: 28.281,
+      lastHeading: 185,
+      locationAt: new Date(),
+    },
+    update: {
+      busId: 'LSK-2481',
+      routeId: route.id,
+      lastLat: -15.395,
+      lastLng: 28.281,
+      lastHeading: 185,
+      locationAt: new Date(),
+    },
   });
 
   await prisma.qRCode.upsert({
@@ -44,4 +82,3 @@ main()
     await prisma.$disconnect();
     process.exit(1);
   });
-

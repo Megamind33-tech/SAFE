@@ -51,9 +51,18 @@ import iconTravel from './assets/icons/travel-premium.png';
 import iconWallet from './assets/icons/wallet-premium.png';
 import heroContainerSvg from './assets/hero/safe_hero_container_transparent.svg';
 import heroContainerMobile from './assets/hero/safe_hero_container_mobile_transparent.png';
-import heroRouteAsset from './assets/transport/road-to-security.png';
-import heroVehicleAsset from './assets/transport/hero-minibus-asset.png';
-import heroShieldAsset from './assets/transport/verified-bus-shield.png';
+import heroRouteAsset from './assets/real/route_strip_bus_clean.png';
+import heroVehicleAsset from './assets/real/verified_vehicle_clean.png';
+import heroShieldAsset from './assets/real/safe_shield_clean.png';
+import LiveRouteMap from './components/LiveRouteMap.jsx';
+import {
+  coverDurationMins,
+  formatDriverLabel,
+  formatPlanLabel,
+  formatStartedAt,
+  formatVehicleLabel,
+  useActiveTrip,
+} from './hooks/useActiveTrip.js';
 import { buyCover, clearToken, createClaim, loadToken, login, me, registerPassenger, saveToken, activeCover, coverHistory, listClaims, verifyVehicle } from './api/safeApi.js';
 
 const bgImage = zambiaScene;
@@ -770,9 +779,11 @@ function SignupScreen({ setScreen, setSession, auth }) {
 }
 
 function HomeScreen({ setScreen, activeCoverState, countdown, setShowScannerModal, setScannerType }) {
-  const coverDurationMins = activeCoverState?.endsAt && activeCoverState?.startedAt
-    ? Math.max(1, Math.round((new Date(activeCoverState.endsAt) - new Date(activeCoverState.startedAt)) / 60000))
-    : 30;
+  const { trip: liveTrip, loading: tripLoading, error: tripError, refresh: refreshTrip } = useActiveTrip();
+  const durationMins = coverDurationMins(activeCoverState?.startedAt, activeCoverState?.endsAt);
+  const statusChip = activeCoverState && durationMins
+    ? `Valid • Today • ${durationMins} mins`
+    : null;
 
   const quickActions = [
     { label: 'Scan QR', detail: 'Board faster', asset: iconCamera, action: () => { setScannerType('qr'); setShowScannerModal(true); }, tone: 'yellow' },
@@ -812,21 +823,28 @@ function HomeScreen({ setScreen, activeCoverState, countdown, setShowScannerModa
               <img className="safe-hero-vehicle" src={heroVehicleAsset} alt="" aria-hidden="true" />
               <img className="safe-hero-shield" src={heroShieldAsset} alt="" aria-hidden="true" />
               <div className="safe-hero-content">
-                <span className="safe-hero-status">Valid • Today • {coverDurationMins} mins</span>
+                <span className="safe-hero-status">{statusChip || 'Inactive'}</span>
                 <h1 className="safe-hero-title">Active Cover</h1>
                 <p className="safe-hero-subtitle">Protected for this trip</p>
-                <span className="safe-hero-countdown">{countdown}</span>
+                {countdown && countdown !== '00:00:00' ? (
+                  <span className="safe-hero-countdown">{countdown}</span>
+                ) : null}
               </div>
             </div>
 
             <div className="cover-intel-grid safe-hero-intel">
-              <div><span>Vehicle</span><strong>{activeCoverState.vehicle?.plateNumber || 'LSK 2481'}</strong></div>
-              <div><span>Driver</span><strong>Verified</strong></div>
-              <div><span>Started</span><strong>{new Date(activeCoverState.startedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong></div>
-              <div><span>Cover</span><strong>{activeCoverState.plan === 'basic' ? 'Basic' : 'Plus'}</strong></div>
+              <div><span>Vehicle</span><strong>{formatVehicleLabel(activeCoverState?.vehicle)}</strong></div>
+              <div><span>Driver</span><strong>{formatDriverLabel(liveTrip?.driver)}</strong></div>
+              <div><span>Started</span><strong>{formatStartedAt(activeCoverState?.startedAt)}</strong></div>
+              <div><span>Cover</span><strong>{formatPlanLabel(activeCoverState?.plan)}</strong></div>
             </div>
 
-            <button className="share-trip-btn safe-hero-share" type="button" onClick={() => setScreen('chat')}>
+            <button
+              className="share-trip-btn safe-hero-share"
+              type="button"
+              disabled={!liveTrip?.tripId}
+              title={liveTrip?.tripId ? 'Share link coming soon' : 'Start a cover to share'}
+              onClick={() => {}}>
               <Share2 size={18} />
               <span>Share protected trip</span>
               <ArrowRight size={17} />
@@ -875,16 +893,13 @@ function HomeScreen({ setScreen, activeCoverState, countdown, setShowScannerModa
               <p className="eyebrow">Live route intelligence</p>
               <h2>Protected route map</h2>
             </div>
-            <span className="route-live-pill"><i />Live</span>
           </div>
-          <div className="route-map-surface" style={{ backgroundImage: `url(${shareTrackMap})` }}>
-            <div className="map-vignette" />
-            <span className="map-status-card">
-              <ShieldCheck size={17} />
-              <strong>Route secured</strong>
-            </span>
-            <span className="route-pulse-dot" />
-          </div>
+          <LiveRouteMap
+            trip={liveTrip}
+            loading={tripLoading}
+            error={tripError}
+            onRetry={refreshTrip}
+          />
         </section>
 
         <section className="quick-action-section">
@@ -1103,9 +1118,9 @@ function ActiveCoverScreen({ openHistory, setScreen, activeCoverState, countdown
 
         <section className="policy-card">
           <div><span>Policy ID</span><strong>{activeCoverState?.id ? `SAFE-${activeCoverState.id.slice(-8).toUpperCase()}` : 'SAFE-ACTIVE-PLAN'}</strong></div>
-          <div><span>Vehicle</span><strong>{activeCoverState?.vehicle?.plateNumber || 'LSK 2481'}</strong></div>
-          <div><span>Route</span><strong>{activeCoverState?.route ? `${activeCoverState.route.origin} to ${activeCoverState.route.destination}` : 'Matero to Town'}</strong></div>
-          <div><span>Valid until</span><strong>{activeCoverState?.endsAt ? new Date(activeCoverState.endsAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '13:42'}</strong></div>
+          <div><span>Vehicle</span><strong>{activeCoverState?.vehicle?.plateNumber || 'Not assigned'}</strong></div>
+          <div><span>Route</span><strong>{activeCoverState?.route ? `${activeCoverState.route.origin} to ${activeCoverState.route.destination}` : 'Not assigned'}</strong></div>
+          <div><span>Valid until</span><strong>{activeCoverState?.endsAt ? new Date(activeCoverState.endsAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Pending'}</strong></div>
         </section>
 
         <section className="stacked-actions">

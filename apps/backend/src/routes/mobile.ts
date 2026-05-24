@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
+import { serializeActiveTrip } from '../lib/activeTrip.js';
 import { requireAuth, type AuthedRequest } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
 
@@ -8,6 +9,19 @@ export const mobileRouter = Router();
 
 mobileRouter.use(requireAuth);
 mobileRouter.use(requireRole(['passenger']));
+
+async function loadActiveCover(userId: string) {
+  const now = new Date();
+  return prisma.tripCover.findFirst({
+    where: { passengerUserId: userId, status: 'active', endsAt: { gt: now } },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      vehicle: { include: { route: true, driver: true } },
+      route: true,
+      payment: true,
+    },
+  });
+}
 
 mobileRouter.get('/profile', async (req, res) => {
   const authed = req as AuthedRequest;
@@ -174,13 +188,56 @@ mobileRouter.post('/cover/buy', async (req, res) => {
 
 mobileRouter.get('/cover/active', async (req, res) => {
   const authed = req as AuthedRequest;
-  const now = new Date();
+  const cover = await loadActiveCover(authed.user.id);
+  res.json({ cover, trip: serializeActiveTrip(cover) });
+});
+
+mobileRouter.get('/active-trip', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const cover = await loadActiveCover(authed.user.id);
+  if (!cover) {
+    res.json({ trip: null });
+    return;
+  }
+  res.json({ trip: serializeActiveTrip(cover) });
+});
+
+mobileRouter.get('/trips/:tripId/route', async (req, res) => {
+  const authed = req as AuthedRequest;
   const cover = await prisma.tripCover.findFirst({
-    where: { passengerUserId: authed.user.id, status: 'active', endsAt: { gt: now } },
-    orderBy: { createdAt: 'desc' },
-    include: { vehicle: { include: { route: true } }, route: true, payment: true },
+    where: { id: req.params.tripId, passengerUserId: authed.user.id },
+    include: { vehicle: { include: { route: true, driver: true } }, route: true },
   });
-  res.json({ cover });
+  if (!cover) {
+    res.status(404).json({ error: 'Trip not found' });
+    return;
+  }
+  res.json({ trip: serializeActiveTrip(cover) });
+});
+
+mobileRouter.get('/trips/:tripId/location', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const cover = await prisma.tripCover.findFirst({
+    where: { id: req.params.tripId, passengerUserId: authed.user.id },
+    include: { vehicle: true },
+  });
+  if (!cover?.vehicle) {
+    res.status(404).json({ error: 'Vehicle not found for trip' });
+    return;
+  }
+  const vehicle = cover.vehicle;
+  if (vehicle.lastLat == null || vehicle.lastLng == null) {
+    res.json({ location: null });
+    return;
+  }
+  res.json({
+    location: {
+      lat: vehicle.lastLat,
+      lng: vehicle.lastLng,
+      heading: vehicle.lastHeading,
+      updatedAt: vehicle.locationAt?.toISOString() ?? null,
+    },
+  });
 });
 
 mobileRouter.get('/cover/history', async (req, res) => {

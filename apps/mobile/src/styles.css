@@ -2836,3 +2836,125 @@ button {
     justify-self: start;
   }
 }
+
+/* Live route map (Leaflet + OSM) */
+.live-route-map {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  min-height: 248px;
+  background: rgba(7, 20, 43, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.live-route-map-canvas {
+  width: 100%;
+  height: 248px;
+  z-index: 1;
+}
+
+.live-route-map-chips {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 12px;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.live-route-map-loading,
+.live-route-map-empty,
+.live-route-map-error {
+  min-height: 248px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 18px;
+  text-align: center;
+  color: rgba(248, 250, 252, 0.86);
+}
+
+.live-route-map-skeleton {
+  width: 100%;
+  height: 120px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.14), rgba(255,255,255,.06));
+  animation: live-map-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes live-map-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+.live-route-map-empty svg {
+  color: rgba(255, 199, 0, 0.85);
+}
+
+.live-route-map-empty strong {
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.live-route-map-empty p,
+.live-route-map-loading p,
+.live-route-map-error p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: rgba(248, 250, 252, 0.68);
+}
+
+.live-route-map-retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+.map-status-card-wait {
+  background: rgba(7, 20, 43, 0.82) !important;
+}
+
+.share-trip-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.live-map-marker {
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 0.72rem;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
+}
+
+.live-map-marker-start {
+  background: #14b867;
+  color: #fff;
+}
+
+.live-map-marker-end {
+  background: #ffc700;
+  color: #07142b;
+}
+
+.live-map-marker-vehicle {
+  background: rgba(7, 20, 43, 0.88);
+  border: 2px solid #ffc700;
+  font-size: 1rem;
+}

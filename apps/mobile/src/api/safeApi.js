@@ -60,6 +60,18 @@ export async function activeCover(token) {
   return request('/api/mobile/cover/active', { token });
 }
 
+export async function activeTrip(token) {
+  return request('/api/mobile/active-trip', { token });
+}
+
+export async function tripLocation(token, tripId) {
+  return request(`/api/mobile/trips/${tripId}/location`, { token });
+}
+
+export async function tripRoute(token, tripId) {
+  return request(`/api/mobile/trips/${tripId}/route`, { token });
+}
+
 export async function coverHistory(token) {
   return request('/api/mobile/cover/history', { token });
 }

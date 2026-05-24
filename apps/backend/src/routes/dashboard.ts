@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
@@ -37,9 +38,33 @@ dashboardRouter.get('/vehicles', async (_req, res) => {
   const vehicles = await prisma.vehicle.findMany({
     orderBy: { createdAt: 'desc' },
     take: 50,
-    include: { route: true, transportPartner: true },
+    include: { route: true, transportPartner: true, driver: true },
   });
   res.json({ vehicles });
+});
+
+dashboardRouter.patch('/vehicles/:id/location', requireRole(['admin', 'super_admin', 'transport_partner']), async (req, res) => {
+  const schema = z.object({
+    lat: z.number(),
+    lng: z.number(),
+    heading: z.number().optional(),
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+    return;
+  }
+  const vehicle = await prisma.vehicle.update({
+    where: { id: String(req.params.id) },
+    data: {
+      lastLat: parsed.data.lat,
+      lastLng: parsed.data.lng,
+      lastHeading: parsed.data.heading ?? null,
+      locationAt: new Date(),
+    },
+    include: { route: true },
+  });
+  res.json({ vehicle });
 });
 
 dashboardRouter.get('/claims', async (_req, res) => {

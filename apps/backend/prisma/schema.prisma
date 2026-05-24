@@ -129,6 +129,11 @@ model Vehicle {
   driverId  String?
   driver    DriverProfile? @relation(fields: [driverId], references: [id])
 
+  lastLat      Float?
+  lastLng      Float?
+  lastHeading  Float?
+  locationAt   DateTime?
+
   qrCodes   QRCode[]
   tripCovers TripCover[]
 }
@@ -140,6 +145,13 @@ model Route {
 
   origin      String
   destination String
+
+  originLat       Float?
+  originLng       Float?
+  destinationLat  Float?
+  destinationLng  Float?
+  /// JSON array of { lat, lng } waypoints for map polyline
+  polyline        String?
 
   vehicles  Vehicle[]
   tripCovers TripCover[]
