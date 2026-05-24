@@ -533,8 +533,16 @@ function BottomNav({ current, onHome, onCover, onClaims, onProfile }) {
     { id: 'profile', label: 'Profile', icon: navAccountIcon, onClick: onProfile },
   ];
 
+  const navClassName = [
+    'bottom-nav',
+    current === 'claims' ? 'bottom-nav--claims-current' : '',
+    current === 'profile' ? 'bottom-nav--profile-current' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <nav className={`bottom-nav${current === 'claims' ? ' bottom-nav--claims-current' : ''}`} aria-label="Primary">
+    <nav className={navClassName} aria-label="Primary">
       {items.map((item) => {
         const active = current === item.id;
         return (
@@ -542,6 +550,14 @@ function BottomNav({ current, onHome, onCover, onClaims, onProfile }) {
             {item.id === 'claims' && active ? (
               <FileText
                 className="nav-item-icon nav-item-icon--claims-active"
+                size={22}
+                strokeWidth={2}
+                color="#FFC612"
+                aria-hidden="true"
+              />
+            ) : item.id === 'profile' && active ? (
+              <CircleUserRound
+                className="nav-item-icon nav-item-icon--profile-active"
                 size={22}
                 strokeWidth={2}
                 color="#FFC612"
