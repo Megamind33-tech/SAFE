@@ -119,4 +119,32 @@ export function buildClaimSubmitPayload(claimDraft, { tripCoverId, policeReferen
   };
 }
 
+export function buildClaimReference(claim) {
+  if (!claim?.id) return null;
+  const date = claim.createdAt ? new Date(claim.createdAt) : new Date();
+  const ymd = date.toISOString().slice(0, 10).replace(/-/g, '');
+  return `SAFE-CLM-${ymd}-${claim.id.slice(-4).toUpperCase()}`;
+}
+
+export function formatClaimStatusLabel(status) {
+  const normalized = String(status || 'submitted').toLowerCase();
+  const labels = {
+    submitted: 'Submitted',
+    processing: 'Processing',
+    approved: 'Approved',
+    rejected: 'Rejected',
+    paid: 'Paid',
+  };
+  return labels[normalized] || 'Submitted';
+}
+
+export function formatClaimReviewStage(status) {
+  const normalized = String(status || 'submitted').toLowerCase();
+  if (normalized === 'submitted' || normalized === 'processing') return 'Pending review';
+  if (normalized === 'approved') return 'Approved';
+  if (normalized === 'rejected') return 'Rejected';
+  if (normalized === 'paid') return 'Paid';
+  return 'Pending review';
+}
+
 // TODO(backend): POST multipart files to /api/mobile/claims/documents and store returned file IDs.

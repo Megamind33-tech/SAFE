@@ -8,6 +8,7 @@ import './cover-screen.css';
 import './view-policy-screen.css';
 import './claims-screen.css';
 import './claim-flow-screen.css';
+import './claim-submitted-screen.css';
 
 // react-leaflet expects React on window in dev bundles
 if (typeof window !== 'undefined') {

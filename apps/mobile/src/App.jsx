@@ -49,6 +49,7 @@ import ClaimsScreen from './screens/ClaimsScreen.jsx';
 import ClaimFlowDescribeStep from './screens/ClaimFlowDescribeStep.jsx';
 import ClaimFlowUploadStep from './screens/ClaimFlowUploadStep.jsx';
 import ClaimFlowReviewStep from './screens/ClaimFlowReviewStep.jsx';
+import ClaimFlowSubmittedStep from './screens/ClaimFlowSubmittedStep.jsx';
 import { createEmptyClaimDraft, buildClaimSubmitPayload, hasUploadInProgress, normalizeClaimDraft, normalizeClaimDocuments, primaryClaimSlipUrl } from './claimDraftUtils.js';
 import navHomeIcon from './assets/pack/icons/nav-home.svg';
 import navCoverIcon from './assets/pack/icons/nav-cover-active.svg';
@@ -139,7 +140,7 @@ function App() {
   const [selectedPlan, setSelectedPlan] = useState('plus');
   const [paymentMethod, setPaymentMethod] = useState('airtel');
   const [claimDraft, setClaimDraft] = useState(() => createEmptyClaimDraft());
-  const [claimSent, setClaimSent] = useState(false);
+  const [submittedClaim, setSubmittedClaim] = useState(null);
   const [policeReference, setPoliceReference] = useState('');
   const [hospitalSlipUrl, setHospitalSlipUrl] = useState('');
   const [historyReturn, setHistoryReturn] = useState('active');
@@ -258,7 +259,7 @@ function App() {
       setClaimDraft(createEmptyClaimDraft());
       setPoliceReference('');
       setHospitalSlipUrl('');
-      setClaimSent(false);
+      setSubmittedClaim(null);
     }
     setClaimFlowStep(step);
     setScreen('claimFlow');
@@ -267,7 +268,7 @@ function App() {
 
   const screenProps = {
     activePlan,
-    claimSent,
+    submittedClaim,
     claimDraft,
     setClaimDraft,
     policeReference,
@@ -282,7 +283,7 @@ function App() {
     claimFlowStep,
     paymentMethod,
     selectedPlan,
-    setClaimSent,
+    setSubmittedClaim,
     setPaymentMethod,
     setScreen,
     setSelectedPlan,
@@ -1058,15 +1059,14 @@ function ClaimScreen({
   claimDraft,
   setClaimDraft,
   session,
-  claimSent,
-  setClaimSent,
+  submittedClaim,
+  setSubmittedClaim,
   policeReference,
   setPoliceReference,
   hospitalSlipUrl,
   setHospitalSlipUrl,
   refreshPassengerData,
   setScreen,
-  openHistory,
   activeCoverState,
   coversHistory = [],
   claimFlowStep = 1,
@@ -1079,14 +1079,12 @@ function ClaimScreen({
   const draftDocuments = draft.documents;
 
   const activeCover = activeCoverState || coversHistory[0];
-  const activePolicyId = activeCover?.id ? `SAFE-${activeCover.id.slice(-8).toUpperCase()}` : trip.policy;
-  const activeVehicle = activeCover?.vehicle?.plateNumber || trip.vehicle;
 
-  const handleReset = () => {
+  const finishClaimFlow = () => {
     setClaimDraft(createEmptyClaimDraft());
     setPoliceReference('');
     setHospitalSlipUrl('');
-    setClaimSent(false);
+    setSubmittedClaim(null);
     setStep(1);
   };
 
@@ -1118,86 +1116,22 @@ function ClaimScreen({
     });
   };
 
-  if (claimSent) {
+  if (submittedClaim) {
     return (
-      <main className="screen padded claim-screen success-view overflow-y-auto pb-24">
-        <MiniStatusBar />
-        <section className="success-hero text-center my-6">
-          <div className="success-icon-wrap flex justify-center mb-4 relative">
-            <div className="h-16 w-16 bg-emerald-500 text-white rounded-full grid place-items-center shadow-lg relative z-10 animate-bounce">
-              <ShieldCheck size={36} />
-            </div>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-20 w-20 bg-emerald-500/20 rounded-full blur-md" />
-          </div>
-          <h1 className="text-xl font-black text-safe-ink">Claim Submitted!</h1>
-          <p className="text-xs font-semibold text-slate-500 mt-1">Claim submitted for trip {activeVehicle}.</p>
-        </section>
-
-        <section className="claim-receipt-card bg-white border border-slate-200 rounded-2xl p-4 shadow-[0_8px_20px_rgba(0,0,0,0.03)] mb-5">
-          <div className="receipt-header border-b border-dashed border-slate-200 pb-3 flex justify-between items-center mb-3">
-            <strong className="text-xs font-black tracking-wider text-safe-ink">CLAIM RECEIPT</strong>
-            <span className="text-[10px] font-bold text-slate-400">Policy: {activePolicyId}</span>
-          </div>
-          <div className="receipt-body space-y-2 text-xs">
-            <div className="receipt-row flex justify-between">
-              <span className="text-slate-400 font-semibold">Incident Details</span>
-              <strong className="text-safe-ink font-bold max-w-[150px] truncate">{draft.incidentNarrative.length > 40 ? draft.incidentNarrative.slice(0, 37) + '...' : draft.incidentNarrative}</strong>
-            </div>
-            {policeReference && (
-              <div className="receipt-row flex justify-between">
-                <span className="text-slate-400 font-semibold">RTSA / Police Ref</span>
-                <strong className="text-safe-ink font-bold">{policeReference}</strong>
-              </div>
-            )}
-            <div className="receipt-row flex justify-between">
-              <span className="text-slate-400 font-semibold">Hospital Slip</span>
-              <strong className="text-emerald-700 font-bold">{hospitalSlipUrl ? 'Attached (Verified)' : 'Not attached'}</strong>
-            </div>
-            <div className="receipt-row flex justify-between items-center pt-2 border-t border-slate-100">
-              <span className="text-slate-400 font-semibold">Status</span>
-              <span className="rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-700">Submitted</span>
-            </div>
-          </div>
-        </section>
-
-        <section className="timeline-tracker bg-white border border-slate-200 rounded-2xl p-4 shadow-[0_8px_20px_rgba(0,0,0,0.03)] mb-5">
-          <h3 className="text-xs font-black tracking-wider text-safe-ink mb-3 uppercase">Review Timeline</h3>
-          <div className="timeline-steps space-y-4">
-            <div className="timeline-step flex items-start gap-3">
-              <span className="bullet h-5 w-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">✓</span>
-              <div className="step-desc text-xs">
-                <strong className="block font-bold text-safe-ink">Claim Submitted</strong>
-                <small className="block text-[10px] font-semibold text-slate-400">Today, 12:42 PM</small>
-              </div>
-            </div>
-            <div className="timeline-step flex items-start gap-3">
-              <span className="bullet h-5 w-5 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0 text-[12px] font-bold animate-pulse">!</span>
-              <div className="step-desc text-xs">
-                <strong className="block font-bold text-safe-ink">Operations Audit</strong>
-                <small className="block text-[10px] font-semibold text-slate-400">Review in progress (Under 24h)</small>
-              </div>
-            </div>
-            <div className="timeline-step flex items-start gap-3">
-              <span className="bullet h-5 w-5 rounded-full bg-slate-200 text-slate-400 flex items-center justify-center shrink-0 text-[10px] font-bold">3</span>
-              <div className="step-desc text-xs">
-                <strong className="block font-semibold text-slate-400">Insurance Payout</strong>
-                <small className="block text-[10px] font-semibold text-slate-400">ZMW 1,200 payout standard</small>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <div className="sticky-double-cta grid grid-cols-2 gap-3 mt-6">
-          <button className="primary-btn flex items-center justify-center gap-2" type="button" onClick={() => openHistory('active')}>
-            <FileText size={18} />
-            <span>Track in History</span>
-          </button>
-          <button className="secondary-btn flex items-center justify-center gap-2 border border-slate-300 hover:bg-slate-50" type="button" onClick={handleReset}>
-            <RefreshCcw size={18} />
-            <span>New Claim</span>
-          </button>
-        </div>
-      </main>
+      <ClaimFlowSubmittedStep
+        claim={submittedClaim}
+        activeCover={activeCover}
+        fallbackPolicyId={trip.policy}
+        fallbackVehicle={trip.vehicle}
+        onBackToClaims={() => {
+          finishClaimFlow();
+          setScreen('claim');
+        }}
+        onBackToHome={() => {
+          finishClaimFlow();
+          setScreen('home');
+        }}
+      />
     );
   }
 
@@ -1258,14 +1192,14 @@ function ClaimScreen({
               tripCoverId: activeCover?.id || undefined,
               policeReference,
             });
-            await createClaim(session.token, payload);
+            const result = await createClaim(session.token, payload);
             syncHospitalSlipFromDraft(draftDocuments);
             if (refreshPassengerData) {
               await refreshPassengerData(session.token);
             }
-            setClaimSent(true);
+            setSubmittedClaim(result.claim);
           } catch (e) {
-            setError(e?.message || 'Failed to submit claim');
+            setError('Claim could not be submitted. Please try again.');
           } finally {
             setBusy(false);
           }
