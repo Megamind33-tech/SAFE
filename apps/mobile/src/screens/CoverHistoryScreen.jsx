@@ -134,7 +134,7 @@ export default function CoverHistoryScreen({
           </section>
         )}
 
-        <BottomScrollSpacer height={190} />
+        <BottomScrollSpacer height={240} />
       </div>
     </main>
   );

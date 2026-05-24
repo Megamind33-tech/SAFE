@@ -3,7 +3,7 @@
 .cover-history-screen.cover-history-screen-board {
   --ch-pad-x: 22px;
   --ch-content-width: 346px;
-  --ch-scroll-clearance: calc(280px + env(safe-area-inset-bottom, 0px));
+  --ch-scroll-clearance: calc(360px + env(safe-area-inset-bottom, 0px));
   position: relative;
   height: 100dvh;
   min-height: 100%;
@@ -121,7 +121,7 @@
 }
 
 .cover-history-list .cover-history-card:last-child {
-  scroll-margin-bottom: 190px;
+  scroll-margin-bottom: 240px;
 }
 
 .cover-history-card {
