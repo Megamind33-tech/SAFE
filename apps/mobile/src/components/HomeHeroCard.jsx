@@ -1,66 +1,48 @@
-import heroContainer from '../assets/safe/hero/safe_hero_container_mobile_transparent.png';
 import vehicleAsset from '../assets/safe/transport/green_bus_with_protective_emblem_transparent.png';
-import {
-  formatPlanLabel,
-  formatStartedAt,
-  formatVehicleLabel,
-  remainingCoverLabel,
-} from '../hooks/useActiveTrip.js';
 
-function formatHeroDriverValue(driver) {
-  if (!driver) return 'Vehicle pending';
-  if (driver.verified) return 'Verified';
-  return driver.name || 'Not assigned';
+function compactValidChip(endsAt) {
+  if (!endsAt) return 'Valid • Pending';
+  const diff = new Date(endsAt).getTime() - Date.now();
+  if (diff <= 0) return 'Expired';
+  const mins = Math.ceil(diff / 60000);
+  if (mins >= 60) {
+    const hrs = Math.floor(mins / 60);
+    const rem = mins % 60;
+    return rem > 0 ? `Valid • ${hrs}h ${rem}m` : `Valid • ${hrs}h`;
+  }
+  return `Valid • ${mins} mins`;
 }
 
-export default function HomeHeroCard({
-  activeCoverState,
-  countdown,
-  isProtected,
-  liveTrip,
-}) {
-  const statusChip = isProtected
-    ? remainingCoverLabel(activeCoverState?.endsAt)
-    : 'Unprotected';
-  const title = isProtected ? 'Active Cover' : 'Secure Your Ride';
+export default function HomeHeroCard({ activeCoverState, isProtected, onScanVehicle }) {
+  const statusChip = isProtected ? compactValidChip(activeCoverState?.endsAt) : 'Unprotected';
+  const title = isProtected ? 'Active cover' : 'Secure your ride';
   const subtitle = isProtected
-    ? 'Protected for this trip'
-    : 'Protect your current commute';
-  const showCountdown = isProtected && countdown && countdown !== '00:00:00';
+    ? 'Validated for this trip'
+    : 'Protect your current commute before boarding.';
 
   return (
     <section
-      className={`home-hero-card home-hero-card--${isProtected ? 'active' : 'unprotected'}`}
+      className="home-hero-card"
       aria-label={isProtected ? 'Active cover' : 'Get covered'}
     >
-      <div className="home-hero-shell">
-        <img className="home-hero-container" src={heroContainer} alt="" aria-hidden="true" />
-
-        <img
-          className={`home-hero-vehicle${isProtected ? '' : ' home-hero-vehicle--muted'}`}
-          src={vehicleAsset}
-          alt=""
-          aria-hidden="true"
-        />
-
-        <span className={`home-hero-chip${isProtected ? '' : ' home-hero-chip-muted'}`}>
+      <div className="home-hero-card__text">
+        <h2 className="home-hero-card__title">{title}</h2>
+        <p className="home-hero-card__subtitle">{subtitle}</p>
+        <span
+          className={`home-hero-card__chip ${
+            isProtected ? 'home-hero-card__chip--valid' : 'home-hero-card__chip--unprotected'
+          }`}
+        >
           {statusChip}
         </span>
-        <h1 className="home-hero-title">{title}</h1>
-        <p className="home-hero-subtitle">{subtitle}</p>
-        {showCountdown ? (
-          <span className="home-hero-countdown" aria-live="polite">{countdown}</span>
-        ) : null}
+        <button className="home-hero-card__cta" type="button" onClick={onScanVehicle}>
+          Scan vehicle
+        </button>
       </div>
 
-      {isProtected ? (
-        <div className="home-hero-meta">
-          <div><span>Vehicle</span><strong>{formatVehicleLabel(activeCoverState?.vehicle)}</strong></div>
-          <div><span>Driver</span><strong>{formatHeroDriverValue(liveTrip?.driver)}</strong></div>
-          <div><span>Started</span><strong>{formatStartedAt(activeCoverState?.startedAt)}</strong></div>
-          <div><span>Cover</span><strong>{formatPlanLabel(activeCoverState?.plan)}</strong></div>
-        </div>
-      ) : null}
+      <div className="home-hero-card__asset">
+        <img className="home-hero-card__vehicle" src={vehicleAsset} alt="" aria-hidden="true" />
+      </div>
     </section>
   );
 }
