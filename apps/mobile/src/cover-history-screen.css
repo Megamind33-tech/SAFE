@@ -3,7 +3,7 @@
 .cover-history-screen.cover-history-screen-board {
   --ch-pad-x: 22px;
   --ch-content-width: 346px;
-  --ch-scroll-clearance: calc(240px + env(safe-area-inset-bottom, 0px));
+  --ch-scroll-clearance: calc(280px + env(safe-area-inset-bottom, 0px));
   position: relative;
   height: 100dvh;
   min-height: 100%;
@@ -120,10 +120,14 @@
   max-width: 100%;
 }
 
+.cover-history-list .cover-history-card:last-child {
+  scroll-margin-bottom: 190px;
+}
+
 .cover-history-card {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) auto;
-  align-items: center;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: start;
   gap: 14px;
   width: 100%;
   min-height: 112px;
@@ -167,14 +171,22 @@
 }
 
 .cover-history-card__body {
-  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+.cover-history-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .cover-history-card__route {
+  flex: 1;
+  min-width: 0;
   font-size: 15px;
   line-height: 18px;
   font-weight: 900;
@@ -190,20 +202,22 @@
 .cover-history-card__meta--policy {
   display: block;
   max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  word-break: break-word;
+  line-height: 16px;
 }
 
 .cover-history-card__pill {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  height: 28px;
-  padding: 0 10px;
-  border-radius: 14px;
-  font-size: 11px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 13px;
+  font-size: 10px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .cover-history-card__pill--active {

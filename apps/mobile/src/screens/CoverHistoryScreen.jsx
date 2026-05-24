@@ -8,7 +8,6 @@ import {
   formatCoverPlanLine,
   formatCoverRouteTitle,
   formatCoverVehicle,
-  formatPolicyIdListDisplay,
   getCoverPolicyId,
   getEffectiveCoverStatus,
   mapCoverHistoryItem,
@@ -116,22 +115,24 @@ export default function CoverHistoryScreen({
                   <small className="cover-history-card__year">{item.year}</small>
                 </div>
                 <div className="cover-history-card__body">
-                  <strong className="cover-history-card__route">{item.routeTitle}</strong>
+                  <div className="cover-history-card__head">
+                    <strong className="cover-history-card__route">{item.routeTitle}</strong>
+                    <span className={`cover-history-card__pill cover-history-card__pill--${item.statusType}`}>
+                      {item.statusLabel}
+                    </span>
+                  </div>
                   <span className="cover-history-card__meta">Vehicle: {item.vehicle}</span>
                   <span className="cover-history-card__meta">Plan: {item.planLine}</span>
                   <span className="cover-history-card__meta cover-history-card__meta--policy">
-                    Policy ID: {formatPolicyIdListDisplay(item.policyId)}
+                    Policy ID: {item.policyId}
                   </span>
                 </div>
-                <span className={`cover-history-card__pill cover-history-card__pill--${item.statusType}`}>
-                  {item.statusLabel}
-                </span>
               </button>
             ))}
           </section>
         )}
 
-        <BottomScrollSpacer height={170} />
+        <BottomScrollSpacer height={190} />
       </div>
     </main>
   );
