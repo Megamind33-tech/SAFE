@@ -588,22 +588,35 @@ button.claim-flow-upload-option:disabled {
 .claim-flow-screen.claim-flow-screen--review {
   --cf-pad-x: 22px;
   --cf-content-width: 346px;
-  --cf-bottom-nav-height: 82px;
-  --cf-bottom-nav-inset: 16px;
-  --cf-bottom-nav-zone: calc(var(--cf-bottom-nav-height) + var(--cf-bottom-nav-inset));
-  --cf-bottom-clearance: max(280px, calc(var(--cf-bottom-nav-zone) + 150px));
-  min-height: 100%;
-  padding: 0 var(--cf-pad-x) var(--cf-bottom-clearance);
-  overflow-x: hidden;
-  overflow-y: auto;
-  scroll-padding-bottom: calc(var(--cf-bottom-nav-zone) + 32px);
+  --cf-scroll-clearance: calc(260px + env(safe-area-inset-bottom, 0px));
+  --cf-scroll-margin-bottom: 180px;
+  position: relative;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  padding: 0;
   background: linear-gradient(180deg, #f4fff9 0%, #edf7f2 48%, #f8faf9 100%);
 }
 
 .screen.claim-flow-screen.claim-flow-screen--review {
-  height: 100%;
-  padding: 0 var(--cf-pad-x) var(--cf-bottom-clearance);
-  scroll-padding-bottom: calc(var(--cf-bottom-nav-zone) + 32px);
+  height: 100dvh;
+  overflow: hidden;
+  padding-bottom: 0;
+  background: transparent;
+}
+
+.claim-flow-review-scroll {
+  height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 var(--cf-pad-x) var(--cf-scroll-clearance);
+  -webkit-overflow-scrolling: touch;
+}
+
+.bottom-scroll-spacer {
+  flex-shrink: 0;
+  width: 100%;
+  pointer-events: none;
 }
 
 .claim-flow-review-summary {
@@ -817,16 +830,16 @@ button.claim-flow-upload-option:disabled {
   border-radius: 18px;
   background: rgba(255, 198, 18, 0.1);
   border: 1px solid rgba(255, 198, 18, 0.22);
+  scroll-margin-bottom: var(--cf-scroll-margin-bottom, 180px);
 }
 
 .claim-flow-review-footer {
   width: var(--cf-content-width);
   max-width: 100%;
-  padding-bottom: 48px;
 }
 
-.claim-flow-review-card:has(.claim-flow-review-evidence) {
-  scroll-margin-bottom: var(--cf-bottom-nav-zone, 98px);
+.claim-flow-review-card--evidence {
+  scroll-margin-bottom: var(--cf-scroll-margin-bottom, 180px);
 }
 
 .claim-flow-review-notice p {
@@ -871,6 +884,7 @@ button.claim-flow-upload-option:disabled {
 .claim-flow-screen--review .claim-flow-screen__submit {
   margin-top: 18px;
   margin-bottom: 40px;
+  scroll-margin-bottom: var(--cf-scroll-margin-bottom, 180px);
 }
 
 .claim-flow-screen__submit:disabled {

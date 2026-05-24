@@ -4,6 +4,7 @@ import {
   File,
   Info,
 } from 'lucide-react';
+import BottomScrollSpacer from '../components/BottomScrollSpacer.jsx';
 import ClaimFlowSteps from './ClaimFlowSteps.jsx';
 import {
   buildClaimPolicyId,
@@ -81,7 +82,8 @@ export default function ClaimFlowReviewStep({
 
   return (
     <main className="screen claim-flow-screen claim-flow-screen--review">
-      <header className="claim-flow-screen__header">
+      <div className="claim-flow-review-scroll">
+        <header className="claim-flow-screen__header">
         <button type="button" className="claim-flow-screen__back" onClick={onBack} aria-label="Go back">
           <ArrowLeft size={20} strokeWidth={2.25} />
         </button>
@@ -131,7 +133,7 @@ export default function ClaimFlowReviewStep({
         </p>
       </article>
 
-      <article className="claim-flow-review-card">
+      <article className="claim-flow-review-card claim-flow-review-card--evidence">
         <div className="claim-flow-review-card__head">
           <h3 className="claim-flow-review-card__title">Evidence</h3>
           <button type="button" className="claim-flow-review-card__edit" onClick={onEditEvidence}>
@@ -174,6 +176,9 @@ export default function ClaimFlowReviewStep({
         >
           {busy ? 'Submitting…' : 'Submit Claim'}
         </button>
+      </div>
+
+        <BottomScrollSpacer height={180} />
       </div>
     </main>
   );
