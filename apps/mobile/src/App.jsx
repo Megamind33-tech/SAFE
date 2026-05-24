@@ -47,6 +47,8 @@ import CoverScreen from './screens/CoverScreen.jsx';
 import ViewPolicyScreen from './screens/ViewPolicyScreen.jsx';
 import ClaimsScreen from './screens/ClaimsScreen.jsx';
 import ClaimFlowDescribeStep from './screens/ClaimFlowDescribeStep.jsx';
+import ClaimFlowUploadStep from './screens/ClaimFlowUploadStep.jsx';
+import { EMPTY_CLAIM_DOCUMENTS } from './claimDraftUtils.js';
 import navHomeIcon from './assets/pack/icons/nav-home.svg';
 import navCoverIcon from './assets/pack/icons/nav-cover-active.svg';
 import navClaimsIcon from './assets/pack/icons/nav-claims.svg';
@@ -139,6 +141,7 @@ function App() {
   const [claimSent, setClaimSent] = useState(false);
   const [policeReference, setPoliceReference] = useState('');
   const [hospitalSlipUrl, setHospitalSlipUrl] = useState('');
+  const [claimDocuments, setClaimDocuments] = useState(EMPTY_CLAIM_DOCUMENTS);
   const [historyReturn, setHistoryReturn] = useState('active');
   const [viewPolicyReturn, setViewPolicyReturn] = useState('active');
   const [claimFlowStep, setClaimFlowStep] = useState(1);
@@ -251,6 +254,13 @@ function App() {
     setScreen('viewPolicy');
   };
   const openClaimFlow = (step = 1) => {
+    if (step === 1) {
+      setClaimText('');
+      setPoliceReference('');
+      setHospitalSlipUrl('');
+      setClaimDocuments(EMPTY_CLAIM_DOCUMENTS);
+      setClaimSent(false);
+    }
     setClaimFlowStep(step);
     setScreen('claimFlow');
   };
@@ -264,6 +274,8 @@ function App() {
     setPoliceReference,
     hospitalSlipUrl,
     setHospitalSlipUrl,
+    claimDocuments,
+    setClaimDocuments,
     historyReturn,
     openHistory,
     viewPolicyReturn,
@@ -1055,6 +1067,8 @@ function ClaimScreen({
   setPoliceReference,
   hospitalSlipUrl,
   setHospitalSlipUrl,
+  claimDocuments,
+  setClaimDocuments,
   setScreen,
   openHistory,
   activeCoverState,
@@ -1069,28 +1083,28 @@ function ClaimScreen({
   const activePolicyId = activeCover?.id ? `SAFE-${activeCover.id.slice(-8).toUpperCase()}` : trip.policy;
   const activeVehicle = activeCover?.vehicle?.plateNumber || trip.vehicle;
 
-  const handleFileChange = (event) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setHospitalSlipUrl(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const triggerCameraMock = () => {
-    const mockSvgBase64 = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400"><rect width="300" height="400" fill="%23e6f4ea" rx="8"/><rect x="15" y="15" width="270" height="370" fill="none" stroke="%2334a853" stroke-width="2" stroke-dasharray="6 4"/><text x="150" y="50" font-family="sans-serif" font-size="20" font-weight="bold" fill="%230f5132" text-anchor="middle">LUSAKA GENERAL HOSPITAL</text><text x="150" y="80" font-family="sans-serif" font-size="12" fill="%23198754" text-anchor="middle">EMERGENCY WARD - ACCIDENT REPORT</text><line x1="30" y1="110" x2="270" y2="110" stroke="%2334a853" stroke-width="1.5"/><text x="40" y="140" font-family="sans-serif" font-size="11" font-weight="bold" fill="%23333">PATIENT: MOSES BANDA</text><text x="40" y="165" font-family="sans-serif" font-size="11" fill="%23555">ADMISSION DATE: 21 MAY 2026</text><text x="40" y="190" font-family="sans-serif" font-size="11" fill="%23555">DIAGNOSIS: MINOR BRUISES & CONTUSIONS</text><text x="40" y="215" font-family="sans-serif" font-size="11" fill="%23555">COVER LEVEL: SAFE ACTIVE COVER</text><line x1="30" y1="240" x2="270" y2="240" stroke="%2334a853" stroke-dasharray="3 3"/><text x="150" y="275" font-family="sans-serif" font-size="14" font-weight="bold" fill="%230f5132" text-anchor="middle">TOTAL CHARGES: ZMW 1,200</text><text x="150" y="300" font-family="sans-serif" font-size="10" fill="%23555" text-anchor="middle">STATUS: PAID IN FULL</text><rect x="60" y="330" width="180" height="40" fill="%23198754" rx="4"/><text x="150" y="355" font-family="sans-serif" font-size="11" font-weight="bold" fill="%23fff" text-anchor="middle">VERIFIED COMMUTER CLAIM</text></svg>';
-    setHospitalSlipUrl(mockSvgBase64);
-  };
-
   const handleReset = () => {
     setClaimText('');
     setPoliceReference('');
     setHospitalSlipUrl('');
+    setClaimDocuments(EMPTY_CLAIM_DOCUMENTS);
     setClaimSent(false);
     setStep(1);
+  };
+
+  const syncHospitalSlipFromDocuments = (documents) => {
+    const readyMedical = documents.medicalDocuments?.find(
+      (file) => file.status === 'ready' && file.dataUrl
+    );
+    setHospitalSlipUrl(readyMedical?.dataUrl || '');
+  };
+
+  const handleDocumentsChange = (nextOrUpdater) => {
+    setClaimDocuments((prev) => {
+      const next = typeof nextOrUpdater === 'function' ? nextOrUpdater(prev) : nextOrUpdater;
+      syncHospitalSlipFromDocuments(next);
+      return next;
+    });
   };
 
   if (claimSent) {
@@ -1190,100 +1204,32 @@ function ClaimScreen({
     );
   }
 
-  return (
-    <main className="screen padded claim-screen overflow-y-auto pb-24">
-      <TopBar 
-        onBack={() => {
-          if (step > 1) {
-            setStep(step - 1);
-          } else {
-            setScreen('claim');
-          }
-        }} 
-        title={
-          step === 2 ? 'Attach Documents' : 'Police Reference'
-        }
+  if (step === 2) {
+    return (
+      <ClaimFlowUploadStep
+        documents={claimDocuments}
+        onDocumentsChange={handleDocumentsChange}
+        onBack={() => setStep(1)}
+        onNext={() => setStep(3)}
+        onUploadLater={() => setStep(3)}
       />
+    );
+  }
+
+  if (step === 3) {
+    return (
+      <main className="screen padded claim-screen overflow-y-auto pb-24">
+        <TopBar onBack={() => setStep(2)} title="Police Reference" />
       
-      <section className="steps" aria-label="Claim progress">
-        <span className={step >= 1 ? 'active' : ''}>1</span>
-        <span className={step >= 2 ? 'active' : ''}>2</span>
-        <span className={step >= 3 ? 'active' : ''}>3</span>
-      </section>
+        <section className="steps" aria-label="Claim progress">
+          <span className="active">1</span>
+          <span className="active">2</span>
+          <span className="active">3</span>
+        </section>
 
       {error && <p className="payment-error mb-4">{error}</p>}
 
 
-      {step === 2 && (
-        <div className="step-container">
-          <section className="page-heading mb-4">
-            <h1>Medical Documents</h1>
-          </section>
-
-          <div className="claim-list mb-4">
-            <div className="document-uploader bg-white border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center">
-              {hospitalSlipUrl ? (
-                <div className="image-preview-card relative">
-                  <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm max-h-[220px] bg-slate-50 flex justify-center items-center">
-                    <img src={hospitalSlipUrl} alt="Hospital Slip Preview" className="uploaded-slip object-contain max-h-[200px]" />
-                  </div>
-                  <div className="mt-3 flex justify-between items-center px-1">
-                    <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Hospital Slip Attached ✓</span>
-                    <button 
-                      type="button" 
-                      className="text-[10px] font-black text-red-600 hover:underline" 
-                      onClick={() => setHospitalSlipUrl('')}
-                    >
-                      Remove File
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="upload-dropzone">
-                  <div className="upload-icons flex justify-center mb-3">
-                    <span className="claim-icon medical h-12 w-12 bg-emerald-50 text-emerald-500 rounded-full grid place-items-center"><HeartPulse size={24} /></span>
-                  </div>
-                  <h3 className="text-xs font-black text-safe-ink">Hospital Admission Slip</h3>
-                  
-                  <input 
-                    type="file" 
-                    id="hospital-file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={handleFileChange}
-                  />
-                  
-                  <div className="upload-btn-row flex justify-center gap-3 mt-4">
-                    <label htmlFor="hospital-file" className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-black text-safe-ink cursor-pointer hover:bg-slate-50 inline-flex items-center gap-2">
-                      <Upload size={14} />
-                      <span>Choose File</span>
-                    </label>
-                    <button 
-                      type="button" 
-                      className="px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-black text-emerald-700 cursor-pointer hover:bg-emerald-100 inline-flex items-center gap-2"
-                      onClick={triggerCameraMock}
-                    >
-                      <Siren size={14} />
-                      <span>Simulate Camera</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <button 
-            className="primary-btn w-full flex items-center justify-center gap-2 mt-4" 
-            type="button"
-            onClick={() => setStep(3)}
-          >
-            <span>{hospitalSlipUrl ? 'Continue to Reference' : 'Skip & Continue'}</span>
-            <ArrowRight size={18} />
-          </button>
-        </div>
-      )}
-
-      {step === 3 && (
         <div className="step-container">
           <section className="page-heading mb-4">
             <h1>Police Reference</h1>
@@ -1363,9 +1309,11 @@ function ClaimScreen({
             <span>{busy ? 'Submitting…' : 'Submit Claim'}</span>
           </button>
         </div>
-      )}
-    </main>
-  );
+      </main>
+    );
+  }
+
+  return null;
 }
 
 function ProfileScreen({ openHistory, setScreen, coversHistory = [], claimsList = [], activeCoverState, session }) {

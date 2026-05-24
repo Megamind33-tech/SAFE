@@ -133,6 +133,17 @@
   font-weight: 800;
 }
 
+.claim-flow-steps__item--complete .claim-flow-steps__circle {
+  color: #ffffff;
+  background: #007a3d;
+  box-shadow: 0 4px 12px rgba(0, 122, 61, 0.22);
+}
+
+.claim-flow-steps__item--complete .claim-flow-steps__label {
+  color: #007a3d;
+  font-weight: 700;
+}
+
 /* Title block */
 .claim-flow-screen__intro {
   width: var(--cf-content-width);
@@ -291,8 +302,283 @@
   background: #006633;
 }
 
+/* Step 2: Upload Documents */
+.claim-flow-screen.claim-flow-screen--upload {
+  --cf-pad-x: 22px;
+  --cf-content-width: 346px;
+  min-height: 100%;
+  padding: 0 var(--cf-pad-x) 170px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #f4fff9 0%, #edf7f2 48%, #f8faf9 100%);
+}
+
+.screen.claim-flow-screen.claim-flow-screen--upload {
+  padding-bottom: 170px;
+}
+
+.claim-flow-upload-card {
+  width: var(--cf-content-width);
+  max-width: 100%;
+  margin-top: 22px;
+  padding: 18px;
+  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 122, 61, 0.08);
+  box-shadow: 0 12px 26px rgba(0, 45, 28, 0.07);
+}
+
+.claim-flow-upload-card__head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.claim-flow-upload-card__icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  background: rgba(0, 122, 61, 0.08);
+}
+
+.claim-flow-upload-card__title {
+  margin: 0;
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 900;
+  color: #101820;
+}
+
+.claim-flow-upload-card__hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: rgba(16, 24, 32, 0.56);
+}
+
+.claim-flow-upload-card__options {
+  margin-top: 4px;
+}
+
+.claim-flow-upload-option-wrap {
+  margin-top: 14px;
+}
+
+.claim-flow-upload-option-wrap:first-child {
+  margin-top: 14px;
+}
+
+.claim-flow-upload-option__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.claim-flow-upload-option {
+  width: 100%;
+  min-height: 72px;
+  border-radius: 18px;
+  background: #f8fffb;
+  border: 1px dashed rgba(0, 122, 61, 0.28);
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+button.claim-flow-upload-option:hover:not(:disabled) {
+  border-color: rgba(0, 122, 61, 0.45);
+  background: #f2fff8;
+}
+
+button.claim-flow-upload-option:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.claim-flow-upload-option--filled {
+  align-items: flex-start;
+  cursor: default;
+}
+
+.claim-flow-upload-option__icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: rgba(0, 122, 61, 0.08);
+}
+
+.claim-flow-upload-option__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.claim-flow-upload-option__title {
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 800;
+  color: #101820;
+}
+
+.claim-flow-upload-option__subtitle {
+  font-size: 12px;
+  line-height: 16px;
+  color: rgba(16, 24, 32, 0.56);
+}
+
+.claim-flow-upload-option__files {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.claim-flow-file-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid rgba(16, 24, 32, 0.08);
+}
+
+.claim-flow-file-row__meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.claim-flow-file-row__name {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+  color: #101820;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.claim-flow-file-row__size {
+  font-size: 11px;
+  line-height: 14px;
+  color: rgba(16, 24, 32, 0.52);
+}
+
+.claim-flow-file-row__note {
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  color: rgba(16, 24, 32, 0.56);
+}
+
+.claim-flow-file-row__progress {
+  display: block;
+  margin-top: 6px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(16, 24, 32, 0.08);
+  overflow: hidden;
+}
+
+.claim-flow-file-row__progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: #007a3d;
+  transition: width 160ms ease;
+}
+
+.claim-flow-file-row__remove,
+.claim-flow-file-row__retry {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  padding: 4px;
+  cursor: pointer;
+  color: rgba(16, 24, 32, 0.48);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.claim-flow-file-row__retry {
+  color: #007a3d;
+}
+
+.claim-flow-upload-option__add-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  padding: 4px 0 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: #007a3d;
+  cursor: pointer;
+}
+
+.claim-flow-upload-option__error {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.claim-flow-upload-hint {
+  width: var(--cf-content-width);
+  max-width: 100%;
+  margin: 14px 0 0;
+  font-size: 12px;
+  line-height: 17px;
+  color: rgba(16, 24, 32, 0.56);
+  text-align: center;
+}
+
+.claim-flow-screen__secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--cf-content-width);
+  max-width: 100%;
+  height: 42px;
+  margin-top: 12px;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  color: #007a3d;
+  cursor: pointer;
+}
+
 @media (max-width: 374px) {
   .claim-flow-screen.claim-flow-screen--describe {
+    --cf-pad-x: 18px;
+    --cf-content-width: calc(100vw - 36px);
+  }
+
+  .claim-flow-screen.claim-flow-screen--upload {
     --cf-pad-x: 18px;
     --cf-content-width: calc(100vw - 36px);
   }
