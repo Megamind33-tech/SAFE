@@ -1,5 +1,5 @@
 import homeBgNight from '../assets/safe/backgrounds/safe_bg_home_night_commuter_1080x2400.png';
-import safeLogo from '../assets/real/safe_logo_clean.png';
+import safeShieldIcon from '../assets/real/safe_shield_clean.png';
 import iconQrScan from '../assets/pack/icons/qr-scan.svg';
 import iconLockShield from '../assets/pack/icons/lock-shield.svg';
 import iconEmergency from '../assets/icons/phone-ringing-premium.png';
@@ -31,10 +31,15 @@ export default function HomeScreen({
       <header className="home-screen-board__header">
         <div className="home-screen-board__brand">
           <img
-            className="home-screen-board__logo-lockup"
-            src={safeLogo}
-            alt="SAFE commuter cover"
+            className="home-screen-board__brand-icon"
+            src={safeShieldIcon}
+            alt=""
+            aria-hidden="true"
           />
+          <div className="home-screen-board__brand-text">
+            <span className="home-screen-board__brand-name">SAFE</span>
+            <span className="home-screen-board__brand-sub">commuter cover</span>
+          </div>
         </div>
         <span className="home-screen-board__location">Lusaka</span>
       </header>

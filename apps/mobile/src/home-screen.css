@@ -39,41 +39,63 @@
   z-index: 1;
 }
 
-/* Header — single logo lockup */
+/* Header — icon + live text brand lockup */
 .home-screen-board__header {
   position: relative;
-  width: 100%;
-  max-width: calc(100vw - 44px);
-  margin-top: 50px;
-  height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  height: 44px;
+  margin-top: 46px;
+  margin-left: calc(-1 * var(--home-pad-x));
+  margin-right: calc(-1 * var(--home-pad-x));
+  width: calc(100% + (2 * var(--home-pad-x)));
 }
 
 .home-screen-board__brand {
+  position: absolute;
+  top: 0;
+  left: 40px;
+  height: 44px;
   display: flex;
   align-items: center;
-  width: auto;
-  min-width: 0;
+  gap: 10px;
+}
+
+.home-screen-board__brand-icon {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  opacity: 1;
   flex-shrink: 0;
 }
 
-.home-screen-board__logo-lockup {
-  display: block;
-  height: 32px;
-  max-height: 34px;
-  width: 92px;
-  max-width: 110px;
-  object-fit: contain;
-  object-position: left center;
-  opacity: 0.96;
+.home-screen-board__brand-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.home-screen-board__brand-name {
+  font-size: 22px;
+  line-height: 24px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #ffffff;
+}
+
+.home-screen-board__brand-sub {
+  font-size: 12px;
+  line-height: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .home-screen-board__location {
-  flex-shrink: 0;
-  height: 38px;
-  min-width: 96px;
+  position: absolute;
+  top: 0;
+  right: 40px;
+  height: 40px;
+  min-width: 104px;
   padding: 0 16px;
   border-radius: 19px;
   border: 1px solid rgba(255, 255, 255, 0.1);
