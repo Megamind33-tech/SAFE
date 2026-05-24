@@ -1064,7 +1064,6 @@ function ClaimScreen({
   const [step, setStep] = useState(claimFlowStep);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const chars = claimText.length;
 
   const activeCover = activeCoverState || coversHistory[0];
   const activePolicyId = activeCover?.id ? `SAFE-${activeCover.id.slice(-8).toUpperCase()}` : trip.policy;
