@@ -520,12 +520,22 @@ function BottomNav({ current, onHome, onCover, onClaims, onProfile }) {
   ];
 
   return (
-    <nav className="bottom-nav" aria-label="Primary">
+    <nav className={`bottom-nav${current === 'claims' ? ' bottom-nav--claims-current' : ''}`} aria-label="Primary">
       {items.map((item) => {
         const active = current === item.id;
         return (
           <button className={`nav-item ${active ? 'active' : ''}`} key={item.id} type="button" onClick={item.onClick}>
-            <img className="nav-item-icon" src={item.icon} alt="" aria-hidden="true" />
+            {item.id === 'claims' && active ? (
+              <FileText
+                className="nav-item-icon nav-item-icon--claims-active"
+                size={22}
+                strokeWidth={2}
+                color="#FFC612"
+                aria-hidden="true"
+              />
+            ) : (
+              <img className="nav-item-icon" src={item.icon} alt="" aria-hidden="true" />
+            )}
             <span>{item.label}</span>
           </button>
         );
