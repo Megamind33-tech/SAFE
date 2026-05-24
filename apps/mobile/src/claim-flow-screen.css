@@ -4,14 +4,14 @@
   --cf-pad-x: 22px;
   --cf-content-width: 346px;
   min-height: 100%;
-  padding: 0 var(--cf-pad-x) 180px;
+  padding: 0 var(--cf-pad-x) 160px;
   overflow-x: hidden;
   overflow-y: auto;
   background: linear-gradient(180deg, #f4fff9 0%, #edf7f2 48%, #f8faf9 100%);
 }
 
 .screen.claim-flow-screen.claim-flow-screen--describe {
-  padding-bottom: 180px;
+  padding-bottom: 160px;
 }
 
 /* Header */

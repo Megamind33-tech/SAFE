@@ -264,8 +264,9 @@
   filter: brightness(0) saturate(100%) invert(28%) sepia(89%) saturate(1200%) hue-rotate(128deg) brightness(90%) contrast(101%);
 }
 
-/* Bottom nav — match Home / Cover premium dock */
-.phone-frame:has(.claims-screen-board) .bottom-nav {
+/* Bottom nav — match Home / Cover premium dock (Claims hub + Claim Flow) */
+.phone-frame:has(.claims-screen-board) .bottom-nav,
+.phone-frame:has(.claim-flow-screen--describe) .bottom-nav {
   left: 16px;
   right: 16px;
   bottom: 16px;
@@ -286,7 +287,8 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.phone-frame:has(.claims-screen-board) .bottom-nav .nav-item {
+.phone-frame:has(.claims-screen-board) .bottom-nav .nav-item,
+.phone-frame:has(.claim-flow-screen--describe) .bottom-nav .nav-item {
   width: 72px;
   height: 60px;
   min-height: 60px;
@@ -303,13 +305,15 @@
   transition: all 180ms ease;
 }
 
-.phone-frame:has(.claims-screen-board) .bottom-nav .nav-item img.nav-item-icon {
+.phone-frame:has(.claims-screen-board) .bottom-nav .nav-item img.nav-item-icon,
+.phone-frame:has(.claim-flow-screen--describe) .bottom-nav .nav-item img.nav-item-icon {
   width: 22px;
   height: 22px;
   transition: all 180ms ease;
 }
 
-.phone-frame:has(.claims-screen-board) .bottom-nav .nav-item svg.nav-item-icon {
+.phone-frame:has(.claims-screen-board) .bottom-nav .nav-item svg.nav-item-icon,
+.phone-frame:has(.claim-flow-screen--describe) .bottom-nav .nav-item svg.nav-item-icon {
   width: 22px;
   height: 22px;
   flex-shrink: 0;
