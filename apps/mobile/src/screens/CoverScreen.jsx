@@ -3,7 +3,6 @@ import vehicleAsset from '../assets/safe/transport/green_bus_with_protective_emb
 import iconArrowRight from '../assets/pack/icons/arrow-right.svg';
 import mapStart from '../assets/pack/icons/map-start-marker.svg';
 import mapDest from '../assets/pack/icons/map-destination-pin.svg';
-import mapBus from '../assets/pack/icons/map-bus-marker.svg';
 import { coverDurationMins, formatPlanLabel } from '../hooks/useActiveTrip.js';
 
 function policyId(cover) {
@@ -50,10 +49,17 @@ function planCoverTitle(plan) {
   return label === 'Pending' ? 'Cover' : `${label} Cover`;
 }
 
-function durationLabel(cover) {
-  const mins = coverDurationMins(cover?.startedAt, cover?.endsAt);
+function glanceSupportLine(cover, isActive) {
+  if (!isActive || !cover) return 'Pending';
+  const mins = coverDurationMins(cover.startedAt, cover.endsAt);
   if (!mins) return 'Pending';
-  return `${mins} mins`;
+  if (mins >= 60) {
+    const hrs = Math.floor(mins / 60);
+    const rem = mins % 60;
+    if (rem === 0) return `Cover duration • ${hrs} hours`;
+    return `Cover duration • ${hrs}h ${rem}m`;
+  }
+  return `Cover duration • ${mins} mins`;
 }
 
 export default function CoverScreen({
@@ -159,31 +165,50 @@ export default function CoverScreen({
 
       <section className="cover-screen-board__glance" aria-label="Cover at a glance">
         <h3 className="cover-screen-board__glance-title">Cover at a Glance</h3>
-        <div className="cover-screen-board__route-visual">
-          <div className="cover-screen-board__route-end cover-screen-board__route-end--from">
-            <img src={mapStart} alt="" aria-hidden="true" />
-            <span>{origin || 'Start'}</span>
-          </div>
-          <div className="cover-screen-board__route-track">
-            <svg viewBox="0 0 220 36" preserveAspectRatio="none" aria-hidden="true">
+
+        <div className="cover-screen-board__route-strip">
+          <img
+            className="cover-screen-board__route-pin cover-screen-board__route-pin--start"
+            src={mapStart}
+            alt=""
+            aria-hidden="true"
+          />
+          <div className="cover-screen-board__route-line-area">
+            <svg viewBox="0 0 260 24" preserveAspectRatio="none" aria-hidden="true">
               <path
-                d="M8 18 C60 6, 100 30, 140 18 S200 10, 212 18"
+                d="M6 12 Q 130 10, 254 12"
                 fill="none"
                 stroke="#007A3D"
-                strokeWidth="3"
+                strokeWidth="2.5"
                 strokeLinecap="round"
               />
             </svg>
-            <img className="cover-screen-board__route-bus" src={mapBus} alt="" aria-hidden="true" />
+            <svg
+              className="cover-screen-board__route-vehicle"
+              viewBox="0 0 20 16"
+              aria-hidden="true"
+            >
+              <rect x="2" y="3" width="16" height="8" rx="2" fill="#007A3D" />
+              <rect x="4" y="5" width="5" height="3" rx="0.5" fill="#B8E6C8" />
+              <circle cx="6" cy="13" r="1.5" fill="#101820" />
+              <circle cx="14" cy="13" r="1.5" fill="#101820" />
+            </svg>
           </div>
-          <div className="cover-screen-board__route-end cover-screen-board__route-end--to">
-            <img src={mapDest} alt="" aria-hidden="true" />
-            <span>{destination || 'Destination'}</span>
-          </div>
-          <p className="cover-screen-board__route-duration">
-            Est. duration • {isActive ? durationLabel(activeCoverState) : 'Pending'}
-          </p>
+          <img
+            className="cover-screen-board__route-pin cover-screen-board__route-pin--end"
+            src={mapDest}
+            alt=""
+            aria-hidden="true"
+          />
         </div>
+
+        <div className="cover-screen-board__route-labels">
+          <span>{origin || 'Start'}</span>
+          <span>{destination || 'Destination'}</span>
+        </div>
+        <p className="cover-screen-board__route-meta">
+          {glanceSupportLine(activeCoverState, isActive)}
+        </p>
       </section>
 
       <div className="cover-screen-board__actions">
