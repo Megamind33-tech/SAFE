@@ -299,23 +299,25 @@ export default function ClaimFlowUploadStep({
         </div>
       </article>
 
-      <p className="claim-flow-upload-hint">
-        You can still submit basic claim details, but evidence helps review.
-      </p>
+      <section className="claim-flow-upload-actions" aria-label="Claim upload actions">
+        <p className="claim-flow-upload-hint">
+          You can still submit basic claim details, but evidence helps review.
+        </p>
 
-      <button
-        type="button"
-        className="claim-flow-screen__next"
-        disabled={!canProceed}
-        onClick={onNext}
-      >
-        <span>Next: Review Claim</span>
-        <ArrowRight size={18} strokeWidth={2.25} aria-hidden="true" />
-      </button>
+        <button
+          type="button"
+          className="claim-flow-screen__next claim-flow-screen__next--upload"
+          disabled={!canProceed}
+          onClick={onNext}
+        >
+          <span>Next: Review Claim</span>
+          <ArrowRight size={18} strokeWidth={2.25} aria-hidden="true" />
+        </button>
 
-      <button type="button" className="claim-flow-screen__secondary" onClick={onUploadLater}>
-        I&apos;ll upload later
-      </button>
+        <button type="button" className="claim-flow-screen__secondary" onClick={onUploadLater}>
+          I&apos;ll upload later
+        </button>
+      </section>
     </main>
   );
 }
