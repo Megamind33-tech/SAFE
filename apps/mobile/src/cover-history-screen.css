@@ -140,6 +140,11 @@
   cursor: pointer;
   text-align: left;
   font-family: inherit;
+  overflow: visible;
+}
+
+button.cover-history-card {
+  appearance: none;
 }
 
 .cover-history-card__date {
@@ -172,20 +177,29 @@
 
 .cover-history-card__body {
   min-width: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 6px;
 }
 
 .cover-history-card__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 8px;
+  width: 100%;
+}
+
+.cover-history-card__details {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  min-width: 0;
 }
 
 .cover-history-card__route {
-  flex: 1;
   min-width: 0;
   font-size: 15px;
   line-height: 18px;
@@ -197,15 +211,23 @@
   font-size: 12px;
   line-height: 16px;
   color: rgba(16, 24, 32, 0.58);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cover-history-card__meta--policy {
+  font-size: 13px;
+  line-height: 18px;
+  color: rgba(16, 24, 32, 0.58);
   display: block;
+  width: 100%;
   max-width: 100%;
   white-space: normal;
   overflow: visible;
-  word-break: break-word;
-  line-height: 16px;
+  overflow-wrap: anywhere;
+  text-overflow: unset;
+  word-break: normal;
 }
 
 .cover-history-card__pill {

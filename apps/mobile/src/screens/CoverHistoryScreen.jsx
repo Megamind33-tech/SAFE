@@ -121,11 +121,13 @@ export default function CoverHistoryScreen({
                       {item.statusLabel}
                     </span>
                   </div>
-                  <span className="cover-history-card__meta">Vehicle: {item.vehicle}</span>
-                  <span className="cover-history-card__meta">Plan: {item.planLine}</span>
-                  <span className="cover-history-card__meta cover-history-card__meta--policy">
-                    Policy ID: {item.policyId}
-                  </span>
+                  <div className="cover-history-card__details">
+                    <span className="cover-history-card__meta">Vehicle: {item.vehicle}</span>
+                    <span className="cover-history-card__meta">Plan: {item.planLine}</span>
+                    <span className="cover-history-card__meta cover-history-card__meta--policy">
+                      Policy ID: {item.policyId}
+                    </span>
+                  </div>
                 </div>
               </button>
             ))}
