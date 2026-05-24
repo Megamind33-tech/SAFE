@@ -588,19 +588,22 @@ button.claim-flow-upload-option:disabled {
 .claim-flow-screen.claim-flow-screen--review {
   --cf-pad-x: 22px;
   --cf-content-width: 346px;
-  --cf-bottom-clearance: 240px;
+  --cf-bottom-nav-height: 82px;
+  --cf-bottom-nav-inset: 16px;
+  --cf-bottom-nav-zone: calc(var(--cf-bottom-nav-height) + var(--cf-bottom-nav-inset));
+  --cf-bottom-clearance: max(280px, calc(var(--cf-bottom-nav-zone) + 150px));
   min-height: 100%;
   padding: 0 var(--cf-pad-x) var(--cf-bottom-clearance);
   overflow-x: hidden;
   overflow-y: auto;
-  scroll-padding-bottom: 130px;
+  scroll-padding-bottom: calc(var(--cf-bottom-nav-zone) + 32px);
   background: linear-gradient(180deg, #f4fff9 0%, #edf7f2 48%, #f8faf9 100%);
 }
 
 .screen.claim-flow-screen.claim-flow-screen--review {
   height: 100%;
   padding: 0 var(--cf-pad-x) var(--cf-bottom-clearance);
-  scroll-padding-bottom: 130px;
+  scroll-padding-bottom: calc(var(--cf-bottom-nav-zone) + 32px);
 }
 
 .claim-flow-review-summary {
@@ -819,6 +822,11 @@ button.claim-flow-upload-option:disabled {
 .claim-flow-review-footer {
   width: var(--cf-content-width);
   max-width: 100%;
+  padding-bottom: 48px;
+}
+
+.claim-flow-review-card:has(.claim-flow-review-evidence) {
+  scroll-margin-bottom: var(--cf-bottom-nav-zone, 98px);
 }
 
 .claim-flow-review-notice p {
