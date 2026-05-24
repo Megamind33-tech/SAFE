@@ -30,11 +30,11 @@ export default function HomeScreen({
 
       <header className="home-screen-board__header">
         <div className="home-screen-board__brand">
-          <img className="home-screen-board__logo" src={safeLogo} alt="" aria-hidden="true" />
-          <div className="home-screen-board__brand-text">
-            <span className="home-screen-board__brand-name">SAFE</span>
-            <span className="home-screen-board__brand-sub">commuter cover</span>
-          </div>
+          <img
+            className="home-screen-board__logo-lockup"
+            src={safeLogo}
+            alt="SAFE commuter cover"
+          />
         </div>
         <span className="home-screen-board__location">Lusaka</span>
       </header>
