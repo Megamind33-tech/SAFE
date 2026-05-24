@@ -1,8 +1,6 @@
 import safeShieldIcon from '../assets/real/safe_shield_clean.png';
 import vehicleAsset from '../assets/safe/transport/green_bus_with_protective_emblem_transparent.png';
 import iconArrowRight from '../assets/pack/icons/arrow-right.svg';
-import mapStart from '../assets/pack/icons/map-start-marker.svg';
-import mapDest from '../assets/pack/icons/map-destination-pin.svg';
 import { coverDurationMins, formatPlanLabel } from '../hooks/useActiveTrip.js';
 
 function policyId(cover) {
@@ -49,17 +47,29 @@ function planCoverTitle(plan) {
   return label === 'Pending' ? 'Cover' : `${label} Cover`;
 }
 
-function glanceSupportLine(cover, isActive) {
-  if (!isActive || !cover) return 'Pending';
+function glanceCoverChip(cover, isActive) {
+  if (!isActive || !cover) return 'No cover';
   const mins = coverDurationMins(cover.startedAt, cover.endsAt);
   if (!mins) return 'Pending';
   if (mins >= 60) {
     const hrs = Math.floor(mins / 60);
     const rem = mins % 60;
-    if (rem === 0) return `Cover duration • ${hrs} hours`;
-    return `Cover duration • ${hrs}h ${rem}m`;
+    if (rem === 0) return `${hrs}h cover`;
+    return `${hrs}h ${rem}m cover`;
   }
-  return `Cover duration • ${mins} mins`;
+  return `${mins}m cover`;
+}
+
+function glanceRouteChip(cover, isActive) {
+  if (!isActive || !cover) return 'Route pending';
+  const route = routeRecord(cover);
+  if (!route?.origin || !route?.destination) return 'Route set';
+  return `${route.origin} → ${route.destination}`;
+}
+
+function glanceVehicleChip(cover, isActive) {
+  if (!isActive || !cover?.vehicle?.plateNumber) return 'No vehicle';
+  return cover.vehicle.plateNumber;
 }
 
 export default function CoverScreen({
@@ -164,51 +174,53 @@ export default function CoverScreen({
       </div>
 
       <section className="cover-screen-board__glance" aria-label="Cover at a glance">
-        <h3 className="cover-screen-board__glance-title">Cover at a Glance</h3>
+        <div className="cover-screen-board__glance-head">
+          <h3 className="cover-screen-board__glance-title">Cover at a Glance</h3>
+          {isActive ? (
+            <span className="cover-screen-board__glance-status">Protected</span>
+          ) : (
+            <span className="cover-screen-board__glance-status cover-screen-board__glance-status--muted">
+              Unprotected
+            </span>
+          )}
+        </div>
 
-        <div className="cover-screen-board__route-strip">
-          <img
-            className="cover-screen-board__route-pin cover-screen-board__route-pin--start"
-            src={mapStart}
-            alt=""
-            aria-hidden="true"
-          />
-          <div className="cover-screen-board__route-line-area">
-            <svg viewBox="0 0 260 24" preserveAspectRatio="none" aria-hidden="true">
+        <div className="cover-screen-board__route-summary">
+          <div className="cover-screen-board__route-loc">
+            <span className="cover-screen-board__route-loc-label">FROM</span>
+            <span className="cover-screen-board__route-loc-value">{origin || '—'}</span>
+          </div>
+
+          <div className="cover-screen-board__route-connector" aria-hidden="true">
+            <svg viewBox="0 0 72 28" width="72" height="28">
               <path
-                d="M6 12 Q 130 10, 254 12"
+                d="M6 14 H58 M58 14 L52 10 M58 14 L52 18"
                 fill="none"
                 stroke="#007A3D"
-                strokeWidth="2.5"
+                strokeWidth="2"
                 strokeLinecap="round"
+                strokeLinejoin="round"
               />
             </svg>
-            <svg
-              className="cover-screen-board__route-vehicle"
-              viewBox="0 0 20 16"
-              aria-hidden="true"
-            >
-              <rect x="2" y="3" width="16" height="8" rx="2" fill="#007A3D" />
-              <rect x="4" y="5" width="5" height="3" rx="0.5" fill="#B8E6C8" />
-              <circle cx="6" cy="13" r="1.5" fill="#101820" />
-              <circle cx="14" cy="13" r="1.5" fill="#101820" />
-            </svg>
           </div>
-          <img
-            className="cover-screen-board__route-pin cover-screen-board__route-pin--end"
-            src={mapDest}
-            alt=""
-            aria-hidden="true"
-          />
+
+          <div className="cover-screen-board__route-loc cover-screen-board__route-loc--to">
+            <span className="cover-screen-board__route-loc-label">TO</span>
+            <span className="cover-screen-board__route-loc-value">{destination || '—'}</span>
+          </div>
         </div>
 
-        <div className="cover-screen-board__route-labels">
-          <span>{origin || 'Start'}</span>
-          <span>{destination || 'Destination'}</span>
+        <div className="cover-screen-board__glance-chips">
+          <span className="cover-screen-board__glance-chip">
+            {glanceCoverChip(activeCoverState, isActive)}
+          </span>
+          <span className="cover-screen-board__glance-chip">
+            {glanceRouteChip(activeCoverState, isActive)}
+          </span>
+          <span className="cover-screen-board__glance-chip">
+            {glanceVehicleChip(activeCoverState, isActive)}
+          </span>
         </div>
-        <p className="cover-screen-board__route-meta">
-          {glanceSupportLine(activeCoverState, isActive)}
-        </p>
       </section>
 
       <div className="cover-screen-board__actions">
