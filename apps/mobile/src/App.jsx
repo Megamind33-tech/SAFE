@@ -46,6 +46,7 @@ import HomeScreen from './screens/HomeScreen.jsx';
 import CoverScreen from './screens/CoverScreen.jsx';
 import ViewPolicyScreen from './screens/ViewPolicyScreen.jsx';
 import ClaimsScreen from './screens/ClaimsScreen.jsx';
+import ClaimFlowDescribeStep from './screens/ClaimFlowDescribeStep.jsx';
 import navHomeIcon from './assets/pack/icons/nav-home.svg';
 import navCoverIcon from './assets/pack/icons/nav-cover-active.svg';
 import navClaimsIcon from './assets/pack/icons/nav-claims.svg';
@@ -1176,6 +1177,20 @@ function ClaimScreen({
     );
   }
 
+  if (step === 1) {
+    return (
+      <ClaimFlowDescribeStep
+        incidentNarrative={claimText}
+        onNarrativeChange={(value) => {
+          setClaimText(value);
+          setError('');
+        }}
+        onBack={() => setScreen('claim')}
+        onNext={() => setStep(2)}
+      />
+    );
+  }
+
   return (
     <main className="screen padded claim-screen overflow-y-auto pb-24">
       <TopBar 
@@ -1187,7 +1202,6 @@ function ClaimScreen({
           }
         }} 
         title={
-          step === 1 ? 'Describe Incident' :
           step === 2 ? 'Attach Documents' : 'Police Reference'
         }
       />
@@ -1200,46 +1214,6 @@ function ClaimScreen({
 
       {error && <p className="payment-error mb-4">{error}</p>}
 
-      {step === 1 && (
-        <div className="step-container">
-          <section className="page-heading mb-4">
-            <h1>What happened?</h1>
-          </section>
-
-          <section className="claim-card vertical bg-white border border-slate-200 rounded-2xl p-4 shadow-[0_8px_20px_rgba(0,0,0,0.03)] mb-4">
-            <div className="claim-title-row flex items-center gap-3 mb-3 pb-2 border-b border-slate-100">
-              <span className="claim-icon note h-10 w-10 bg-amber-50 text-amber-500 rounded-xl grid place-items-center"><FileText size={20} /></span>
-              <div>
-                <strong className="block text-xs font-black text-safe-ink">Accident Narrative</strong>
-                <small className="block text-[10px] font-semibold text-slate-400">Min 10 characters required</small>
-              </div>
-            </div>
-            <label className="textarea-wrap block relative">
-              <textarea
-                maxLength={500}
-                value={claimText}
-                onChange={(event) => {
-                  setClaimText(event.target.value);
-                  setError('');
-                }}
-                className="w-full min-h-[140px] text-xs border border-slate-200 rounded-xl p-3 focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 resize-none"
-                placeholder="Describe the minibus journey, what time the accident happened, and any injuries sustained..."
-              />
-              <span className="absolute bottom-2 right-3 text-[9px] font-bold text-slate-400">{chars}/500</span>
-            </label>
-          </section>
-
-          <button 
-            className="primary-btn w-full flex items-center justify-center gap-2 mt-4" 
-            type="button"
-            disabled={chars < 10}
-            onClick={() => setStep(2)}
-          >
-            <span>Next: Upload Documents</span>
-            <ArrowRight size={18} />
-          </button>
-        </div>
-      )}
 
       {step === 2 && (
         <div className="step-container">
