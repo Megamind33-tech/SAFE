@@ -811,9 +811,8 @@ button {
 
 .mobility-hero {
   position: relative;
-  min-height: 380px;
-  padding: 28px 18px 16px;
-  overflow: hidden;
+  min-height: auto;
+  padding: 28px 18px 20px;
 }
 
 .hero-environment {
@@ -835,7 +834,7 @@ button {
 }
 
 .home-top-row,
-.active-cover-card,
+.safe-hero-wrapper,
 .home-content-flow {
   position: relative;
   z-index: 1;
@@ -908,6 +907,208 @@ button {
   border-radius: 999px;
   background: #ffc700;
   box-shadow: 0 0 0 3px rgba(255,199,0,.14);
+}
+
+.safe-hero-wrapper {
+  position: relative;
+  margin-top: 28px;
+  width: 100%;
+}
+
+.safe-hero-stage {
+  position: relative;
+  width: 100%;
+  min-height: 220px;
+  aspect-ratio: 820 / 380;
+}
+
+.safe-hero-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.safe-hero-container-mobile {
+  display: block;
+}
+
+.safe-hero-container-desktop {
+  display: none;
+}
+
+@media (min-width: 431px) {
+  .safe-hero-container-mobile {
+    display: none;
+  }
+
+  .safe-hero-container-desktop {
+    display: block;
+  }
+}
+
+.safe-hero-route {
+  position: absolute;
+  left: 4%;
+  right: 8%;
+  bottom: 10%;
+  height: 58%;
+  object-fit: contain;
+  object-position: center bottom;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.92;
+}
+
+.safe-hero-vehicle {
+  position: absolute;
+  right: -1%;
+  bottom: 8%;
+  width: 46%;
+  max-height: 68%;
+  object-fit: contain;
+  object-position: right bottom;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.95;
+}
+
+.safe-hero-shield {
+  position: absolute;
+  right: 5%;
+  top: 10%;
+  width: 26%;
+  max-width: 104px;
+  height: auto;
+  object-fit: contain;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0.92;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.28));
+}
+
+.safe-hero-content {
+  position: absolute;
+  left: 6%;
+  top: 12%;
+  z-index: 5;
+  max-width: 54%;
+}
+
+.safe-hero-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #d9ffe8;
+  background: rgba(7, 20, 43, 0.42);
+  border: 1px solid rgba(186, 255, 210, 0.34);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+}
+
+.safe-hero-title {
+  margin: 10px 0 0;
+  color: #fff;
+  font-family: "Hanken Grotesk", Inter, sans-serif;
+  font-size: clamp(1.55rem, 5.2vw, 2rem);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.28);
+}
+
+.safe-hero-subtitle {
+  margin: 6px 0 0;
+  color: rgba(248, 250, 252, 0.86);
+  font-size: clamp(0.78rem, 2.8vw, 0.92rem);
+  line-height: 1.35;
+  font-weight: 650;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.24);
+}
+
+.safe-hero-countdown {
+  display: block;
+  margin-top: 8px;
+  color: #ffc700;
+  font-family: "Hanken Grotesk", Inter, sans-serif;
+  font-size: clamp(1rem, 3.6vw, 1.2rem);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.safe-hero-intel {
+  position: relative;
+  z-index: 5;
+  margin: 14px 0 0;
+}
+
+.safe-hero-share {
+  position: relative;
+  z-index: 5;
+  margin-top: 12px;
+}
+
+.safe-hero-wrapper-unprotected {
+  padding-bottom: 0;
+}
+
+.safe-hero-wrapper-unprotected .safe-hero-actions {
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  margin-top: 12px;
+}
+
+.safe-hero-route-muted,
+.safe-hero-vehicle-muted,
+.safe-hero-shield-muted {
+  opacity: 0.85;
+  filter: grayscale(0.35) brightness(0.92);
+}
+
+.safe-hero-status-muted {
+  color: rgba(248, 250, 252, 0.78);
+  background: rgba(7, 20, 43, 0.5);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.safe-hero-actions {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.safe-hero-action {
+  flex: 1;
+  min-height: 42px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  border: 0;
+}
+
+.safe-hero-action-primary {
+  color: #07142b;
+  background: #ffc700;
+  box-shadow: 0 10px 24px rgba(255, 199, 0, 0.22);
+}
+
+.safe-hero-action-secondary {
+  color: #fff;
+  background: rgba(7, 20, 43, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .active-cover-card {
@@ -2576,7 +2777,28 @@ button {
     margin-top: 54px;
   }
 
-  .cover-intel-grid {
+  .safe-hero-wrapper {
+    margin-top: 22px;
+  }
+
+  .safe-hero-stage {
+    min-height: 196px;
+  }
+
+  .safe-hero-title {
+    font-size: 1.48rem;
+  }
+
+  .safe-hero-shield {
+    width: 24%;
+    max-width: 88px;
+  }
+
+  .safe-hero-vehicle {
+    width: 42%;
+  }
+
+  .safe-hero-intel {
     grid-template-columns: repeat(2, 1fr);
   }
 

@@ -49,6 +49,11 @@ import iconPhoneRinging from './assets/icons/phone-ringing-premium.png';
 import iconShield from './assets/icons/sheild-premium.png';
 import iconTravel from './assets/icons/travel-premium.png';
 import iconWallet from './assets/icons/wallet-premium.png';
+import heroContainerSvg from './assets/hero/safe_hero_container_transparent.svg';
+import heroContainerMobile from './assets/hero/safe_hero_container_mobile_transparent.png';
+import heroRouteAsset from './assets/transport/road-to-security.png';
+import heroVehicleAsset from './assets/transport/hero-minibus-asset.png';
+import heroShieldAsset from './assets/transport/verified-bus-shield.png';
 import { buyCover, clearToken, createClaim, loadToken, login, me, registerPassenger, saveToken, activeCover, coverHistory, listClaims, verifyVehicle } from './api/safeApi.js';
 
 const bgImage = zambiaScene;
@@ -765,6 +770,10 @@ function SignupScreen({ setScreen, setSession, auth }) {
 }
 
 function HomeScreen({ setScreen, activeCoverState, countdown, setShowScannerModal, setScannerType }) {
+  const coverDurationMins = activeCoverState?.endsAt && activeCoverState?.startedAt
+    ? Math.max(1, Math.round((new Date(activeCoverState.endsAt) - new Date(activeCoverState.startedAt)) / 60000))
+    : 30;
+
   const quickActions = [
     { label: 'Scan QR', detail: 'Board faster', asset: iconCamera, action: () => { setScannerType('qr'); setShowScannerModal(true); }, tone: 'yellow' },
     { label: 'Enter Vehicle', detail: 'Use plate number', asset: iconMobile, action: () => { setScannerType('plate'); setShowScannerModal(true); }, tone: 'blue' },
@@ -796,52 +805,62 @@ function HomeScreen({ setScreen, activeCoverState, countdown, setShowScannerModa
         </header>
 
         {activeCoverState ? (
-          <section className="active-cover-card" aria-label="Active cover">
-            <div className="cover-card-glow" />
-            <div className="cover-card-head">
-              <span className="protection-status"><i />Protected</span>
-              <span className="cover-countdown">{countdown}</span>
+          <section className="safe-hero-wrapper" aria-label="Active cover">
+            <div className="safe-hero-stage">
+              <img className="safe-hero-container safe-hero-container-desktop" src={heroContainerSvg} alt="" aria-hidden="true" />
+              <img className="safe-hero-container safe-hero-container-mobile" src={heroContainerMobile} alt="" aria-hidden="true" />
+              <img className="safe-hero-route" src={heroRouteAsset} alt="" aria-hidden="true" />
+              <img className="safe-hero-vehicle" src={heroVehicleAsset} alt="" aria-hidden="true" />
+              <img className="safe-hero-shield" src={heroShieldAsset} alt="" aria-hidden="true" />
+              <div className="safe-hero-content">
+                <span className="safe-hero-status">Valid • Today • {coverDurationMins} mins</span>
+                <h1 className="safe-hero-title">Active Cover</h1>
+                <p className="safe-hero-subtitle">Protected for this trip</p>
+                <span className="safe-hero-countdown">{countdown}</span>
+              </div>
             </div>
-            <img className="cover-orb-icon" src={iconShield} alt="" />
-            <h1>{activeCoverState.route ? `${activeCoverState.route.origin} to ${activeCoverState.route.destination}` : 'Lusaka Commute'}</h1>
-            <p className="route-subtitle">Live commuter protection for this minibus trip</p>
 
-            <div className="cover-intel-grid">
+            <div className="cover-intel-grid safe-hero-intel">
               <div><span>Vehicle</span><strong>{activeCoverState.vehicle?.plateNumber || 'LSK 2481'}</strong></div>
               <div><span>Driver</span><strong>Verified</strong></div>
               <div><span>Started</span><strong>{new Date(activeCoverState.startedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong></div>
               <div><span>Cover</span><strong>{activeCoverState.plan === 'basic' ? 'Basic' : 'Plus'}</strong></div>
             </div>
 
-            <button className="share-trip-btn" type="button" onClick={() => setScreen('chat')}>
+            <button className="share-trip-btn safe-hero-share" type="button" onClick={() => setScreen('chat')}>
               <Share2 size={18} />
               <span>Share protected trip</span>
               <ArrowRight size={17} />
             </button>
           </section>
         ) : (
-          <section className="active-cover-card select-none" aria-label="Get covered">
-            <div className="cover-card-glow" />
-            <div className="cover-card-head">
-              <span className="protection-status bg-slate-800/80 border border-slate-700 text-slate-300"><i className="bg-slate-400" />Unprotected</span>
+          <section className="safe-hero-wrapper safe-hero-wrapper-unprotected select-none" aria-label="Get covered">
+            <div className="safe-hero-stage">
+              <img className="safe-hero-container safe-hero-container-desktop" src={heroContainerSvg} alt="" aria-hidden="true" />
+              <img className="safe-hero-container safe-hero-container-mobile" src={heroContainerMobile} alt="" aria-hidden="true" />
+              <img className="safe-hero-route safe-hero-route-muted" src={heroRouteAsset} alt="" aria-hidden="true" />
+              <img className="safe-hero-vehicle safe-hero-vehicle-muted" src={heroVehicleAsset} alt="" aria-hidden="true" />
+              <img className="safe-hero-shield safe-hero-shield-muted" src={heroShieldAsset} alt="" aria-hidden="true" />
+            <div className="safe-hero-content">
+              <span className="safe-hero-status safe-hero-status-muted">Unprotected</span>
+              <h1 className="safe-hero-title">Secure Your Ride</h1>
+              <p className="safe-hero-subtitle">Protect your current commute with instant accident medical coverage</p>
+              </div>
             </div>
-            <img className="cover-orb-icon opacity-40 grayscale" src={iconShield} alt="" />
-            <h1 className="text-xl font-black text-white">Secure Your Ride</h1>
-            <p className="route-subtitle text-slate-400 text-xs">Protect your current commute with instant accident medical coverage</p>
-            
-            <div className="flex gap-3 mt-5">
-              <button 
+
+            <div className="safe-hero-actions">
+              <button
                 type="button"
                 onClick={() => { setScannerType('qr'); setShowScannerModal(true); }}
-                className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-lg active:scale-95 cursor-pointer"
+                className="safe-hero-action safe-hero-action-primary"
               >
-                <span className="p-0.5 bg-slate-950/10 rounded"><ShieldCheck size={14} /></span>
+                <ShieldCheck size={14} />
                 Scan QR Code
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => { setScannerType('plate'); setShowScannerModal(true); }}
-                className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-xl transition-all border border-slate-700 hover:border-slate-600 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                className="safe-hero-action safe-hero-action-secondary"
               >
                 <Bus size={14} />
                 Enter Plate
