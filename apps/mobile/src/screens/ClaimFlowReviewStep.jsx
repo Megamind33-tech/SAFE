@@ -149,28 +149,30 @@ export default function ClaimFlowReviewStep({
         </div>
       </article>
 
-      <aside className="claim-flow-review-notice" aria-label="Document review notice">
-        <Info size={18} strokeWidth={2.25} color="#A86B00" aria-hidden="true" />
-        <p>
-          SAFE reviews claim documents before approval. Uploading a police report does not automatically
-          verify a claim.
-        </p>
-      </aside>
+      <div className="claim-flow-review-footer">
+        <aside className="claim-flow-review-notice" aria-label="Document review notice">
+          <Info size={18} strokeWidth={2.25} color="#A86B00" aria-hidden="true" />
+          <p>
+            SAFE reviews claim documents before approval. Uploading a police report does not automatically
+            verify a claim.
+          </p>
+        </aside>
 
-      {error && (
-        <p className="claim-flow-review-error" role="alert">
-          {error}
-        </p>
-      )}
+        {error && (
+          <p className="claim-flow-review-error" role="alert">
+            {error}
+          </p>
+        )}
 
-      <button
-        type="button"
-        className="claim-flow-screen__submit"
-        disabled={!canSubmit || busy}
-        onClick={onSubmit}
-      >
-        {busy ? 'Submitting…' : 'Submit Claim'}
-      </button>
+        <button
+          type="button"
+          className="claim-flow-screen__submit"
+          disabled={!canSubmit || busy}
+          onClick={onSubmit}
+        >
+          {busy ? 'Submitting…' : 'Submit Claim'}
+        </button>
+      </div>
     </main>
   );
 }
