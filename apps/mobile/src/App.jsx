@@ -43,6 +43,7 @@ import safeRoadBackground from './assets/safe-road-background.png';
 import shareTrackMap from './assets/share-track-map.png';
 import lusakaNightAerial from './assets/lusaka-night-aerial.png';
 import HomeScreen from './screens/HomeScreen.jsx';
+import CoverScreen from './screens/CoverScreen.jsx';
 import navHomeIcon from './assets/pack/icons/nav-home.svg';
 import navCoverIcon from './assets/pack/icons/nav-cover-active.svg';
 import navClaimsIcon from './assets/pack/icons/nav-claims.svg';
@@ -301,7 +302,7 @@ function App() {
         {screen === 'home' && <HomeScreen {...screenProps} goCover={goCover} />}
         {screen === 'choose' && <ChooseCoverScreen {...screenProps} />}
         {screen === 'payment' && <PaymentScreen {...screenProps} />}
-        {screen === 'active' && <ActiveCoverScreen {...screenProps} />}
+        {screen === 'active' && <CoverScreen {...screenProps} />}
         {screen === 'history' && <HistoryScreen {...screenProps} />}
         {screen === 'claim' && <ClaimScreen {...screenProps} />}
         {screen === 'profile' && <ProfileScreen {...screenProps} />}
@@ -911,51 +912,6 @@ function PaymentScreen({ activePlan, paymentMethod, selectedPlan, session, setPa
   );
 }
 
-function ActiveCoverScreen({ openHistory, setScreen, activeCoverState, countdown }) {
-  return (
-    <main className="screen active-screen">
-      <section className="cover-hero" style={{ backgroundImage: `linear-gradient(180deg, rgba(248,249,250,.88), rgba(248,249,250,.55), rgba(248,249,250,1)), url(${bgImage})` }}>
-        <header className="cover-top">
-          <IconButton label="Menu" quiet><Menu size={22} /></IconButton>
-          <strong>SAFE</strong>
-          <IconButton label="Notifications" quiet onClick={() => setScreen('notifications')}><Bell size={22} /></IconButton>
-        </header>
-        <div className="protected-lockup">
-          <div>
-            <h1>You're protected</h1>
-          </div>
-          <span className="big-shield"><ShieldCheck size={116} /></span>
-        </div>
-      </section>
-
-      <section className="active-content">
-        <div className="timer-block">
-          <span>Cover active</span>
-          <strong>{countdown}</strong>
-          <small>remaining</small>
-        </div>
-
-        <section className="policy-card">
-          <div><span>Policy ID</span><strong>{activeCoverState?.id ? `SAFE-${activeCoverState.id.slice(-8).toUpperCase()}` : 'SAFE-ACTIVE-PLAN'}</strong></div>
-          <div><span>Vehicle</span><strong>{activeCoverState?.vehicle?.plateNumber || 'Not assigned'}</strong></div>
-          <div><span>Route</span><strong>{activeCoverState?.route ? `${activeCoverState.route.origin} to ${activeCoverState.route.destination}` : 'Not assigned'}</strong></div>
-          <div><span>Valid until</span><strong>{activeCoverState?.endsAt ? new Date(activeCoverState.endsAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Pending'}</strong></div>
-        </section>
-
-        <section className="stacked-actions">
-          <button className="secondary-btn" type="button" onClick={() => openHistory('active')}>
-            <FileText size={19} />
-            <span>View Policy</span>
-          </button>
-          <button className="danger-btn" type="button" onClick={() => setScreen('claim')}>
-            <Siren size={19} />
-            <span>Report Accident</span>
-          </button>
-        </section>
-      </section>
-    </main>
-  );
-}
 
 function HistoryScreen({ historyReturn, setScreen, coversHistory, claimsList }) {
   const [filter, setFilter] = useState('All');
