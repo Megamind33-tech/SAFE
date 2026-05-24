@@ -59,7 +59,7 @@ export function formatPlanLabel(plan) {
 }
 
 export function formatDriverLabel(driver) {
-  if (!driver) return 'Awaiting trip';
+  if (!driver) return 'Vehicle pending';
   if (driver.verified) return driver.name || 'Verified';
   return driver.name || 'Not assigned';
 }
@@ -76,4 +76,17 @@ export function formatStartedAt(iso) {
 export function coverDurationMins(startedAt, expiresAt) {
   if (!startedAt || !expiresAt) return null;
   return Math.max(1, Math.round((new Date(expiresAt) - new Date(startedAt)) / 60000));
+}
+
+export function remainingCoverLabel(endsAt) {
+  if (!endsAt) return 'Pending';
+  const diff = new Date(endsAt).getTime() - Date.now();
+  if (diff <= 0) return 'Expired';
+  const mins = Math.ceil(diff / 60000);
+  if (mins >= 60) {
+    const hrs = Math.floor(mins / 60);
+    const rem = mins % 60;
+    return `Valid • Today • ${hrs}h ${rem}m`;
+  }
+  return `Valid • Today • ${mins} mins`;
 }

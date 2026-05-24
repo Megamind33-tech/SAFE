@@ -1,31 +1,25 @@
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MapPin, Navigation2, RefreshCw, ShieldCheck } from 'lucide-react';
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+import mapStartIcon from '../assets/pack/icons/map-start-marker.svg';
+import mapDestIcon from '../assets/pack/icons/map-destination-pin.svg';
+import mapBusIcon from '../assets/pack/icons/map-bus-marker.svg';
+import mapUserIcon from '../assets/pack/icons/map-user-marker.svg';
 
-const startIcon = L.divIcon({
-  className: 'live-map-marker live-map-marker-start',
-  html: '<span>S</span>',
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
-});
+function svgIcon(url, size, anchor) {
+  return L.icon({
+    iconUrl: url,
+    iconSize: size,
+    iconAnchor: anchor,
+    popupAnchor: [0, -anchor[1]],
+  });
+}
 
-const endIcon = L.divIcon({
-  className: 'live-map-marker live-map-marker-end',
-  html: '<span>D</span>',
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
-});
-
-const vehicleIcon = L.divIcon({
-  className: 'live-map-marker live-map-marker-vehicle',
-  html: '<span>🚌</span>',
-  iconSize: [34, 34],
-  iconAnchor: [17, 17],
-});
+const startIcon = svgIcon(mapStartIcon, [32, 32], [16, 16]);
+const endIcon = svgIcon(mapDestIcon, [32, 40], [16, 40]);
+const vehicleIcon = svgIcon(mapBusIcon, [36, 36], [18, 18]);
+const userIcon = svgIcon(mapUserIcon, [32, 32], [16, 16]);
 
 function FitBounds({ points }) {
   const map = useMap();
@@ -40,19 +34,46 @@ function FitBounds({ points }) {
   return null;
 }
 
+function useUserLocation(enabled) {
+  const [location, setLocation] = useState(null);
+
+  useEffect(() => {
+    if (!enabled || typeof navigator === 'undefined' || !navigator.geolocation) return undefined;
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setLocation({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        });
+      },
+      () => {
+        /* permission denied or unavailable */
+      },
+      { enableHighAccuracy: false, maximumAge: 30000, timeout: 12000 },
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [enabled]);
+
+  return location;
+}
+
 export default function LiveRouteMap({ trip, loading, error, onRetry }) {
   const polyline = trip?.route?.polyline ?? [];
   const vehicle = trip?.vehicleLocation;
   const hasRoute = polyline.length >= 2 || (trip?.route?.start && trip?.route?.destination);
+  const userLocation = useUserLocation(Boolean(trip && hasRoute));
 
   const mapPoints = useMemo(() => {
     const pts = [];
     if (trip?.route?.start) pts.push([trip.route.start.lat, trip.route.start.lng]);
     polyline.forEach((p) => pts.push([p.lat, p.lng]));
     if (vehicle?.lat != null && vehicle?.lng != null) pts.push([vehicle.lat, vehicle.lng]);
+    if (userLocation) pts.push([userLocation.lat, userLocation.lng]);
     if (trip?.route?.destination) pts.push([trip.route.destination.lat, trip.route.destination.lng]);
     return pts;
-  }, [trip, polyline, vehicle]);
+  }, [trip, polyline, vehicle, userLocation]);
 
   const linePositions = useMemo(() => {
     if (polyline.length >= 2) return polyline.map((p) => [p.lat, p.lng]);
@@ -100,7 +121,7 @@ export default function LiveRouteMap({ trip, loading, error, onRetry }) {
     return (
       <div className="live-route-map live-route-map-empty">
         <Navigation2 size={28} />
-        <strong>Route not assigned</strong>
+        <strong>Awaiting route</strong>
         <p>Waiting for admin route assignment for this cover.</p>
       </div>
     );
@@ -138,6 +159,9 @@ export default function LiveRouteMap({ trip, loading, error, onRetry }) {
         ) : null}
         {vehicle?.lat != null && vehicle?.lng != null ? (
           <Marker position={[vehicle.lat, vehicle.lng]} icon={vehicleIcon} />
+        ) : null}
+        {userLocation ? (
+          <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon} />
         ) : null}
         <FitBounds points={mapPoints} />
       </MapContainer>

@@ -42,27 +42,11 @@ import safeLogo from './assets/SAFE_app_icon_master_3D_1024.png';
 import safeRoadBackground from './assets/safe-road-background.png';
 import shareTrackMap from './assets/share-track-map.png';
 import lusakaNightAerial from './assets/lusaka-night-aerial.png';
-import iconCamera from './assets/icons/camera-premium.png';
-import iconLink from './assets/icons/link-premium.png';
-import iconMobile from './assets/icons/mobile-premium.png';
-import iconPhoneRinging from './assets/icons/phone-ringing-premium.png';
-import iconShield from './assets/icons/sheild-premium.png';
-import iconTravel from './assets/icons/travel-premium.png';
-import iconWallet from './assets/icons/wallet-premium.png';
-import heroContainerSvg from './assets/hero/safe_hero_container_transparent.svg';
-import heroContainerMobile from './assets/hero/safe_hero_container_mobile_transparent.png';
-import heroRouteAsset from './assets/real/route_strip_bus_clean.png';
-import heroVehicleAsset from './assets/real/verified_vehicle_clean.png';
-import heroShieldAsset from './assets/real/safe_shield_clean.png';
-import LiveRouteMap from './components/LiveRouteMap.jsx';
-import {
-  coverDurationMins,
-  formatDriverLabel,
-  formatPlanLabel,
-  formatStartedAt,
-  formatVehicleLabel,
-  useActiveTrip,
-} from './hooks/useActiveTrip.js';
+import HomeScreen from './screens/HomeScreen.jsx';
+import navHomeIcon from './assets/pack/icons/nav-home.svg';
+import navCoverIcon from './assets/pack/icons/nav-cover-active.svg';
+import navClaimsIcon from './assets/pack/icons/nav-claims.svg';
+import navAccountIcon from './assets/pack/icons/nav-account.svg';
 import { buyCover, clearToken, createClaim, loadToken, login, me, registerPassenger, saveToken, activeCover, coverHistory, listClaims, verifyVehicle } from './api/safeApi.js';
 
 const bgImage = zambiaScene;
@@ -314,7 +298,7 @@ function App() {
         {screen === 'onboarding3' && <OnboardingThree {...screenProps} />}
         {screen === 'login' && <LoginScreen {...screenProps} />}
         {screen === 'signup' && <SignupScreen {...screenProps} />}
-        {screen === 'home' && <HomeScreen {...screenProps} />}
+        {screen === 'home' && <HomeScreen {...screenProps} goCover={goCover} />}
         {screen === 'choose' && <ChooseCoverScreen {...screenProps} />}
         {screen === 'payment' && <PaymentScreen {...screenProps} />}
         {screen === 'active' && <ActiveCoverScreen {...screenProps} />}
@@ -510,20 +494,19 @@ function TopBar({ onBack, title, action }) {
 
 function BottomNav({ current, onHome, onCover, onClaims, onProfile }) {
   const items = [
-    { id: 'home', label: 'Home', icon: Home, onClick: onHome },
-    { id: 'cover', label: 'Cover', icon: Shield, onClick: onCover },
-    { id: 'claims', label: 'Claims', icon: FileText, onClick: onClaims },
-    { id: 'profile', label: 'Profile', icon: User, onClick: onProfile },
+    { id: 'home', label: 'Home', icon: navHomeIcon, onClick: onHome },
+    { id: 'cover', label: 'Cover', icon: navCoverIcon, onClick: onCover },
+    { id: 'claims', label: 'Claims', icon: navClaimsIcon, onClick: onClaims },
+    { id: 'profile', label: 'Profile', icon: navAccountIcon, onClick: onProfile },
   ];
 
   return (
     <nav className="bottom-nav" aria-label="Primary">
       {items.map((item) => {
-        const Icon = item.icon;
         const active = current === item.id;
         return (
           <button className={`nav-item ${active ? 'active' : ''}`} key={item.id} type="button" onClick={item.onClick}>
-            <Icon size={22} strokeWidth={active ? 2.6 : 2} fill={active ? 'currentColor' : 'none'} />
+            <img className="nav-item-icon" src={item.icon} alt="" aria-hidden="true" />
             <span>{item.label}</span>
           </button>
         );
@@ -774,170 +757,6 @@ function SignupScreen({ setScreen, setSession, auth }) {
 
         <p className="auth-switch">Already have an account? <button type="button" onClick={() => setScreen('login')}>Log in</button></p>
       </section>
-    </main>
-  );
-}
-
-function HomeScreen({ setScreen, activeCoverState, countdown, setShowScannerModal, setScannerType }) {
-  const { trip: liveTrip, loading: tripLoading, error: tripError, refresh: refreshTrip } = useActiveTrip();
-  const durationMins = coverDurationMins(activeCoverState?.startedAt, activeCoverState?.endsAt);
-  const statusChip = activeCoverState && durationMins
-    ? `Valid • Today • ${durationMins} mins`
-    : null;
-
-  const quickActions = [
-    { label: 'Scan QR', detail: 'Board faster', asset: iconCamera, action: () => { setScannerType('qr'); setShowScannerModal(true); }, tone: 'yellow' },
-    { label: 'Enter Vehicle', detail: 'Use plate number', asset: iconMobile, action: () => { setScannerType('plate'); setShowScannerModal(true); }, tone: 'blue' },
-    { label: 'Monthly Cover', detail: 'Commuter pass', asset: iconWallet, action: () => { setScannerType('plate'); setShowScannerModal(true); }, tone: 'navy' },
-    { label: 'SOS Emergency', detail: 'Fast claim help', asset: iconPhoneRinging, action: () => setScreen('claim'), tone: 'danger' },
-    { label: 'Share Trip', detail: 'Live route link', asset: iconLink, action: () => setScreen('chat'), tone: 'glass' },
-    { label: 'Verified Buses', detail: 'Nearby routes', asset: iconTravel, action: () => { setScannerType('qr'); setShowScannerModal(true); }, tone: 'glass' },
-  ];
-
-  return (
-    <main className="screen home-screen premium-home">
-      <header className="home-top-row">
-        <div className="home-identity">
-          <p>Good morning, Moses</p>
-          <strong>SAFE active in motion</strong>
-        </div>
-        <div className="home-top-actions">
-          <button className="location-pill" type="button" aria-label="Current city">
-            <MapPin size={15} />
-            <span>Lusaka</span>
-          </button>
-          <button className="notify-btn" type="button" aria-label="Notifications" onClick={() => setScreen('notifications')}>
-            <Bell size={19} />
-            <i />
-          </button>
-        </div>
-      </header>
-
-      <div className="home-scroll-content">
-        {activeCoverState ? (
-          <section className="safe-hero-wrapper" aria-label="Active cover">
-            <div className="safe-hero-stage">
-              <img className="safe-hero-container safe-hero-container-desktop" src={heroContainerSvg} alt="" aria-hidden="true" />
-              <img className="safe-hero-container safe-hero-container-mobile" src={heroContainerMobile} alt="" aria-hidden="true" />
-              <img className="safe-hero-route" src={heroRouteAsset} alt="" aria-hidden="true" />
-              <img className="safe-hero-vehicle" src={heroVehicleAsset} alt="" aria-hidden="true" />
-              <img className="safe-hero-shield" src={heroShieldAsset} alt="" aria-hidden="true" />
-              <div className="safe-hero-content">
-                <span className="safe-hero-status">{statusChip || 'Inactive'}</span>
-                <h1 className="safe-hero-title">Active Cover</h1>
-                <p className="safe-hero-subtitle">Protected for this trip</p>
-                {countdown && countdown !== '00:00:00' ? (
-                  <span className="safe-hero-countdown">{countdown}</span>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="cover-intel-grid safe-hero-intel">
-              <div><span>Vehicle</span><strong>{formatVehicleLabel(activeCoverState?.vehicle)}</strong></div>
-              <div><span>Driver</span><strong>{formatDriverLabel(liveTrip?.driver)}</strong></div>
-              <div><span>Started</span><strong>{formatStartedAt(activeCoverState?.startedAt)}</strong></div>
-              <div><span>Cover</span><strong>{formatPlanLabel(activeCoverState?.plan)}</strong></div>
-            </div>
-
-            <button
-              className="share-trip-btn safe-hero-share"
-              type="button"
-              disabled={!liveTrip?.tripId}
-              title={liveTrip?.tripId ? 'Share link coming soon' : 'Start a cover to share'}
-              onClick={() => {}}>
-              <Share2 size={18} />
-              <span>Share protected trip</span>
-              <ArrowRight size={17} />
-            </button>
-          </section>
-        ) : (
-          <section className="safe-hero-wrapper safe-hero-wrapper-unprotected select-none" aria-label="Get covered">
-            <div className="safe-hero-stage">
-              <img className="safe-hero-container safe-hero-container-desktop" src={heroContainerSvg} alt="" aria-hidden="true" />
-              <img className="safe-hero-container safe-hero-container-mobile" src={heroContainerMobile} alt="" aria-hidden="true" />
-              <img className="safe-hero-route safe-hero-route-muted" src={heroRouteAsset} alt="" aria-hidden="true" />
-              <img className="safe-hero-vehicle safe-hero-vehicle-muted" src={heroVehicleAsset} alt="" aria-hidden="true" />
-              <img className="safe-hero-shield safe-hero-shield-muted" src={heroShieldAsset} alt="" aria-hidden="true" />
-              <div className="safe-hero-content">
-                <span className="safe-hero-status safe-hero-status-muted">Unprotected</span>
-                <h1 className="safe-hero-title">Secure Your Ride</h1>
-                <p className="safe-hero-subtitle">Protect your current commute with instant accident medical coverage</p>
-              </div>
-            </div>
-
-            <div className="safe-hero-actions">
-              <button
-                type="button"
-                onClick={() => { setScannerType('qr'); setShowScannerModal(true); }}
-                className="safe-hero-action safe-hero-action-primary"
-              >
-                <ShieldCheck size={14} />
-                Scan QR Code
-              </button>
-              <button
-                type="button"
-                onClick={() => { setScannerType('plate'); setShowScannerModal(true); }}
-                className="safe-hero-action safe-hero-action-secondary"
-              >
-                <Bus size={14} />
-                Enter Plate
-              </button>
-            </div>
-          </section>
-        )}
-
-        <section className="home-content-flow">
-        <section className="live-route-panel">
-          <div className="section-title-row">
-            <div>
-              <p className="eyebrow">Live route intelligence</p>
-              <h2>Protected route map</h2>
-            </div>
-          </div>
-          <LiveRouteMap
-            trip={liveTrip}
-            loading={tripLoading}
-            error={tripError}
-            onRetry={refreshTrip}
-          />
-        </section>
-
-        <section className="quick-action-section">
-          <div className="section-title-row">
-            <div>
-              <p className="eyebrow">Move faster</p>
-              <h2>Quick actions</h2>
-            </div>
-          </div>
-          <div className="premium-action-grid">
-            {quickActions.map((action) => {
-              return (
-                <button className={`premium-action-card ${action.tone}`} key={action.label} type="button" onClick={action.action}>
-                  <span><img src={action.asset} alt="" /></span>
-                  <strong>{action.label}</strong>
-                  <small>{action.detail}</small>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="trust-activity-panel">
-          <div className="section-title-row">
-            <div>
-              <p className="eyebrow">SAFE network</p>
-              <h2>Live trust activity</h2>
-            </div>
-          </div>
-          <div className="activity-grid">
-            <div><strong>18,420</strong><span>protected commuters today</span></div>
-            <div><strong>94%</strong><span>claims reviewed under 24h</span></div>
-            <div><strong>126</strong><span>verified minibuses nearby</span></div>
-            <div><strong>31</strong><span>active Lusaka routes</span></div>
-          </div>
-        </section>
-      </section>
-      </div>
     </main>
   );
 }
