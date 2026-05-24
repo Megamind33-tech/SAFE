@@ -4,13 +4,13 @@
   --vp-pad-x: 22px;
   --vp-content-width: 346px;
   min-height: 100%;
-  padding: 0 var(--vp-pad-x) 160px;
+  padding: 0 var(--vp-pad-x) 190px;
   overflow-x: hidden;
   background: linear-gradient(180deg, #f4fff9 0%, #edf7f2 48%, #f8faf9 100%);
 }
 
 .screen.view-policy-screen {
-  padding-bottom: 160px;
+  padding-bottom: 190px;
 }
 
 .view-policy-screen__header {
@@ -145,6 +145,7 @@
   width: var(--vp-content-width);
   max-width: 100%;
   margin-top: 18px;
+  margin-bottom: 18px;
   padding: 6px 18px;
   border-radius: 24px;
   background: #ffffff;
@@ -187,9 +188,10 @@
   width: var(--vp-content-width);
   max-width: 100%;
   margin-top: 18px;
+  margin-bottom: 32px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .view-policy-screen__btn {
@@ -206,7 +208,7 @@
 }
 
 .view-policy-screen__btn--document {
-  height: 54px;
+  height: 56px;
   background: #ffffff;
   border: 1px solid rgba(16, 24, 32, 0.08);
   color: #101820;
@@ -214,7 +216,7 @@
 }
 
 .view-policy-screen__btn--danger {
-  height: 56px;
+  height: 58px;
   background: #c9161d;
   color: #ffffff;
   box-shadow: 0 12px 26px rgba(201, 22, 29, 0.22);
@@ -224,7 +226,8 @@
 .view-policy-screen__secondary {
   width: var(--vp-content-width);
   max-width: 100%;
-  margin-top: 18px;
+  margin-top: 0;
+  margin-bottom: 12px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
