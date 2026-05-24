@@ -22,9 +22,10 @@ function routeRecord(cover) {
 
 function driverValue(cover) {
   const driver = cover?.vehicle?.driver;
+  if (driver?.verified === true) return 'Verified';
   if (driver?.licenseNumber) return 'Verified';
-  if (cover?.vehicle && !driver) return 'Pending';
   if (driver) return 'Pending';
+  if (cover?.vehicle) return 'Verified';
   return 'Not assigned';
 }
 
