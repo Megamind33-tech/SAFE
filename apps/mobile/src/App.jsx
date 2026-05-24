@@ -51,12 +51,15 @@ import ClaimFlowUploadStep from './screens/ClaimFlowUploadStep.jsx';
 import ClaimFlowReviewStep from './screens/ClaimFlowReviewStep.jsx';
 import ClaimFlowSubmittedStep from './screens/ClaimFlowSubmittedStep.jsx';
 import ProfileScreen from './screens/ProfileScreen.jsx';
+import {
+  resolveActiveCover,
+} from './utils/activeCover.js';
 import { createEmptyClaimDraft, buildClaimSubmitPayload, hasUploadInProgress, normalizeClaimDraft, normalizeClaimDocuments, primaryClaimSlipUrl } from './claimDraftUtils.js';
 import navHomeIcon from './assets/pack/icons/nav-home.svg';
 import navCoverIcon from './assets/pack/icons/nav-cover-active.svg';
 import navClaimsIcon from './assets/pack/icons/nav-claims.svg';
 import navAccountIcon from './assets/pack/icons/nav-account.svg';
-import { buyCover, clearToken, createClaim, loadToken, login, me, registerPassenger, saveToken, activeCover, coverHistory, listClaims, verifyVehicle } from './api/safeApi.js';
+import { buyCover, clearToken, createClaim, loadToken, login, me, registerPassenger, saveToken, activeCover as fetchActiveCover, coverHistory, listClaims, verifyVehicle } from './api/safeApi.js';
 
 const bgImage = zambiaScene;
 
@@ -169,7 +172,7 @@ function App() {
     if (!token) return;
     try {
       const [activeRes, historyRes, claimsRes] = await Promise.all([
-        activeCover(token),
+        fetchActiveCover(token),
         coverHistory(token),
         listClaims(token),
       ]);
@@ -243,6 +246,17 @@ function App() {
     [selectedPlan]
   );
 
+  const activeCover = useMemo(
+    () => resolveActiveCover(activeCoverState, coversHistory),
+    [activeCoverState, coversHistory]
+  );
+
+  useEffect(() => {
+    if (screen === 'profile' && session.token) {
+      refreshPassengerData(session.token);
+    }
+  }, [screen, session.token]);
+
   const goHome = () => setScreen('home');
   const goCover = () => setScreen('active');
   const goClaims = () => setScreen('claim');
@@ -297,6 +311,7 @@ function App() {
     },
     // New Dynamic Props
     activeCoverState,
+    activeCover,
     countdown,
     scannedVehicle,
     setScannedVehicle,
@@ -693,7 +708,7 @@ function OnboardingThree({ setScreen }) {
   );
 }
 
-function LoginScreen({ setScreen, setSession, auth }) {
+function LoginScreen({ setScreen, setSession, auth, refreshPassengerData }) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -717,7 +732,17 @@ function LoginScreen({ setScreen, setSession, auth }) {
             try {
               const data = await auth.login({ identifier, password });
               auth.saveToken(data.token);
-              setSession({ token: data.token, user: data.user ?? null, ready: true });
+              let user = data.user ?? null;
+              try {
+                const meData = await me(data.token);
+                user = meData?.user ?? user;
+              } catch {
+                /* keep login payload user if profile fetch fails */
+              }
+              if (refreshPassengerData) {
+                await refreshPassengerData(data.token);
+              }
+              setSession({ token: data.token, user, ready: true });
               setScreen('home');
             } catch (e) {
               setError(e?.message || 'Login failed');
@@ -1087,6 +1112,7 @@ function ClaimScreen({
   refreshPassengerData,
   setScreen,
   activeCoverState,
+  activeCover,
   coversHistory = [],
   claimFlowStep = 1,
 }) {
@@ -1096,8 +1122,6 @@ function ClaimScreen({
 
   const draft = normalizeClaimDraft(claimDraft);
   const draftDocuments = draft.documents;
-
-  const activeCover = activeCoverState || coversHistory[0];
 
   const finishClaimFlow = () => {
     setClaimDraft(createEmptyClaimDraft());

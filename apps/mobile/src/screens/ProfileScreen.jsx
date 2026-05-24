@@ -9,7 +9,13 @@ import {
 } from 'lucide-react';
 import safeShieldIcon from '../assets/real/safe_shield_clean.png';
 import BottomScrollSpacer from '../components/BottomScrollSpacer.jsx';
-import { formatPlanLabel } from '../hooks/useActiveTrip.js';
+import {
+  isUserVerified,
+  resolveClaimsCount,
+  resolveCurrentPlanLabel,
+  resolveTripsCoveredCount,
+  resolveUserName,
+} from '../utils/activeCover.js';
 
 const SAFE_GREEN = '#007A3D';
 const ICON_SIZE = 21;
@@ -32,33 +38,6 @@ function formatPhoneDisplay(phone) {
     return `+${digits.slice(0, 3)} ${digits.slice(3, 5)} ${digits.slice(5, 8)} ${digits.slice(8)}`;
   }
   return phone;
-}
-
-function resolveUserName(user) {
-  if (!user) return null;
-  const profileName = user.passengerProfile?.fullName?.trim();
-  if (profileName) return profileName;
-  const directName = user.fullName?.trim() || user.name?.trim();
-  if (directName) return directName;
-  return null;
-}
-
-function isUserVerified(user) {
-  if (!user) return false;
-  return Boolean(user.phoneVerified || user.emailVerified);
-}
-
-function resolveActiveCover(activeCoverState, coversHistory) {
-  if (activeCoverState?.plan) return activeCoverState;
-  const history = Array.isArray(coversHistory) ? coversHistory : [];
-  const activeFromHistory = history.find((cover) => cover?.status === 'active' && cover?.plan);
-  if (activeFromHistory) return activeFromHistory;
-  return activeCoverState || null;
-}
-
-function resolvePlanLabel(activeCover) {
-  if (!activeCover?.plan) return 'None';
-  return formatPlanLabel(activeCover.plan);
 }
 
 function ProfileMenuIcon({ Icon }) {
@@ -121,7 +100,7 @@ export default function ProfileScreen({
   setScreen,
   coversHistory = [],
   claimsList = [],
-  activeCoverState,
+  activeCover,
   session,
 }) {
   const user = session?.user ?? null;
@@ -129,10 +108,9 @@ export default function ProfileScreen({
   const phone = user?.phone || null;
   const displayName = userName || (user ? 'SAFE member' : 'Guest');
   const verified = isUserVerified(user);
-  const tripsCount = Array.isArray(coversHistory) ? coversHistory.length : 0;
-  const claimsCount = Array.isArray(claimsList) ? claimsList.length : 0;
-  const activeCover = resolveActiveCover(activeCoverState, coversHistory);
-  const planLabel = resolvePlanLabel(activeCover);
+  const tripsCount = resolveTripsCoveredCount(coversHistory, user);
+  const claimsCount = resolveClaimsCount(claimsList, user);
+  const planLabel = resolveCurrentPlanLabel(activeCover);
 
   const handleMenuClick = (item) => {
     if (item.useHistory) {
