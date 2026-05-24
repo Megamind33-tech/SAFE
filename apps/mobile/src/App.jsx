@@ -51,6 +51,7 @@ import ClaimFlowUploadStep from './screens/ClaimFlowUploadStep.jsx';
 import ClaimFlowReviewStep from './screens/ClaimFlowReviewStep.jsx';
 import ClaimFlowSubmittedStep from './screens/ClaimFlowSubmittedStep.jsx';
 import ProfileScreen from './screens/ProfileScreen.jsx';
+import CoverHistoryScreen, { CoverHistoryDetailScreen } from './screens/CoverHistoryScreen.jsx';
 import {
   resolveActiveCover,
 } from './utils/activeCover.js';
@@ -90,49 +91,6 @@ const coverPlans = [
   },
 ];
 
-const historyItems = [
-  {
-    day: '18',
-    month: 'May',
-    year: '2026',
-    route: 'Matero to Town',
-    vehicle: 'LSK 2481',
-    cover: 'Plus Cover (K5)',
-    status: 'Active',
-    type: 'active',
-  },
-  {
-    day: '17',
-    month: 'May',
-    year: '2026',
-    route: 'Kwino to Town',
-    vehicle: 'BAE 5677',
-    cover: 'Plus Cover (K5)',
-    status: 'Active',
-    type: 'active',
-  },
-  {
-    day: '15',
-    month: 'May',
-    year: '2026',
-    route: 'Matero to Town',
-    vehicle: 'LSK 2481',
-    cover: 'Basic Cover (K3)',
-    status: 'Claim submitted',
-    type: 'claim',
-  },
-  {
-    day: '14',
-    month: 'May',
-    year: '2026',
-    route: 'Chawama to Town',
-    vehicle: 'BAE 5677',
-    cover: 'Basic Cover (K3)',
-    status: 'Expired',
-    type: 'expired',
-  },
-];
-
 const paymentMethods = [
   { id: 'airtel', name: 'Airtel Money', detail: 'Pay with Airtel Money', icon: Smartphone, accent: 'red' },
   { id: 'mtn', name: 'MTN Mobile Money', detail: 'Pay with MTN MoMo', icon: WalletCards, accent: 'yellow' },
@@ -149,6 +107,7 @@ function App() {
   const [hospitalSlipUrl, setHospitalSlipUrl] = useState('');
   const [historyReturn, setHistoryReturn] = useState('active');
   const [viewPolicyReturn, setViewPolicyReturn] = useState('active');
+  const [selectedHistoryCover, setSelectedHistoryCover] = useState(null);
   const [claimFlowStep, setClaimFlowStep] = useState(1);
   const [session, setSession] = useState(() => ({ token: loadToken(), user: null, ready: false }));
 
@@ -252,7 +211,7 @@ function App() {
   );
 
   useEffect(() => {
-    if (screen === 'profile' && session.token) {
+    if ((screen === 'profile' || screen === 'history' || screen === 'coverHistoryDetail') && session.token) {
       refreshPassengerData(session.token);
     }
   }, [screen, session.token]);
@@ -264,6 +223,10 @@ function App() {
   const openHistory = (returnTo = 'active') => {
     setHistoryReturn(returnTo);
     setScreen('history');
+  };
+  const openCoverHistoryDetail = (cover) => {
+    setSelectedHistoryCover(cover ?? null);
+    setScreen('coverHistoryDetail');
   };
   const openViewPolicy = (returnTo = 'active') => {
     setViewPolicyReturn(returnTo);
@@ -292,6 +255,7 @@ function App() {
     setHospitalSlipUrl,
     historyReturn,
     openHistory,
+    openCoverHistoryDetail,
     viewPolicyReturn,
     openViewPolicy,
     openClaimFlow,
@@ -317,6 +281,7 @@ function App() {
     setScannedVehicle,
     coversHistory,
     claimsList,
+    selectedHistoryCover,
     refreshPassengerData,
     setShowScannerModal,
     setScannerType,
@@ -347,7 +312,20 @@ function App() {
         {screen === 'payment' && <PaymentScreen {...screenProps} />}
         {screen === 'active' && <CoverScreen {...screenProps} />}
         {screen === 'viewPolicy' && <ViewPolicyScreen {...screenProps} />}
-        {screen === 'history' && <HistoryScreen {...screenProps} />}
+        {screen === 'history' && (
+          <CoverHistoryScreen
+            {...screenProps}
+            onSelectCover={openCoverHistoryDetail}
+            onStartCover={() => setScreen('choose')}
+          />
+        )}
+        {screen === 'coverHistoryDetail' && (
+          <CoverHistoryDetailScreen
+            {...screenProps}
+            selectedCover={selectedHistoryCover}
+            historyReturn="history"
+          />
+        )}
         {screen === 'claim' && <ClaimsScreen {...screenProps} />}
         {screen === 'claimFlow' && <ClaimScreen {...screenProps} />}
         {screen === 'profile' && <ProfileScreen {...screenProps} />}
@@ -515,8 +493,11 @@ function App() {
 
 function navState(screen) {
   if (screen === 'home') return 'home';
-  if (['choose', 'payment', 'active', 'history', 'viewPolicy'].includes(screen)) return 'cover';
+  if (['choose', 'payment', 'active', 'viewPolicy'].includes(screen)) return 'cover';
   if (['claim', 'claimFlow'].includes(screen)) return 'claims';
+  if (['history', 'coverHistoryDetail', 'profile', 'profilePayments', 'trustedContacts', 'settings', 'notifications', 'helpSafety'].includes(screen)) {
+    return 'profile';
+  }
   return 'profile';
 }
 
@@ -995,109 +976,6 @@ function PaymentScreen({ activePlan, paymentMethod, selectedPlan, session, setPa
   );
 }
 
-
-function HistoryScreen({ historyReturn, setScreen, coversHistory, claimsList }) {
-  const [filter, setFilter] = useState('All');
-
-  const visibleItems = useMemo(() => {
-    const items = coversHistory.map((cover) => {
-      const date = new Date(cover.createdAt);
-      const day = String(date.getDate());
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const month = months[date.getMonth()];
-      const year = String(date.getFullYear());
-      
-      const route = cover.route ? `${cover.route.origin} to ${cover.route.destination}` : 'Lusaka Commute';
-      const vehicle = cover.vehicle?.plateNumber || 'LSK 2481';
-      const coverPlanName = `${cover.plan === 'basic' ? 'Basic' : 'Plus'} Cover (K${cover.amount})`;
-      
-      // Find matching claim
-      const claim = claimsList.find((c) => c.tripCoverId === cover.id);
-      let status = 'Expired';
-      let type = 'expired';
-      
-      if (claim) {
-        type = 'claim';
-        if (claim.status === 'submitted') status = 'Claim submitted';
-        else if (claim.status === 'processing') status = 'Processing';
-        else if (claim.status === 'approved') status = 'Approved';
-        else if (claim.status === 'rejected') status = 'Rejected';
-        else if (claim.status === 'paid') status = 'Paid';
-      } else {
-        const isCurrentlyActive = cover.status === 'active' && new Date(cover.endsAt).getTime() > Date.now();
-        if (isCurrentlyActive) {
-          status = 'Active';
-          type = 'active';
-        }
-      }
-      
-      return {
-        id: cover.id,
-        day,
-        month,
-        year,
-        route,
-        vehicle,
-        cover: coverPlanName,
-        status,
-        type,
-      };
-    });
-    
-    if (filter === 'All') return items;
-    if (filter === 'Active') return items.filter((item) => item.type === 'active');
-    if (filter === 'Expired') return items.filter((item) => item.type === 'expired');
-    if (filter === 'Claim') return items.filter((item) => item.type === 'claim');
-    return items;
-  }, [coversHistory, claimsList, filter]);
-
-  return (
-    <main className="screen padded">
-      <header className="history-top">
-        <IconButton label="Back" quiet onClick={() => setScreen(historyReturn)}><ArrowLeft size={22} /></IconButton>
-        <div>
-          <IconButton label="Search" quiet><Search size={22} /></IconButton>
-          <span className="avatar">M</span>
-        </div>
-      </header>
-
-      <section className="page-heading">
-        <h1>My cover history</h1>
-      </section>
-
-      <section className="filter-row" aria-label="Cover filters">
-        {['All', 'Active', 'Expired', 'Claim'].map((item) => (
-          <button className={filter === item ? 'active' : ''} type="button" key={item} onClick={() => setFilter(item)}>
-            {item === 'Claim' ? 'Claims' : item}
-          </button>
-        ))}
-      </section>
-
-      <section className="history-list">
-        {visibleItems.map((item) => (
-          <article className={`history-card ${item.type}`} key={`${item.day}-${item.vehicle}-${item.status}`}>
-            <div className="date-tile">
-              <strong>{item.day}</strong>
-              <span>{item.month}</span>
-              <small>{item.year}</small>
-            </div>
-            <div className="history-main">
-              <strong>{item.route}</strong>
-              <span>{item.vehicle}</span>
-              <span>{item.cover}</span>
-            </div>
-            <span className={`status-pill ${item.type}`}>
-              {item.type === 'active' && <CheckCircle2 size={14} />}
-              {item.type === 'claim' && <FileText size={14} />}
-              {item.type === 'expired' && <Lock size={14} />}
-              {item.status}
-            </span>
-          </article>
-        ))}
-      </section>
-    </main>
-  );
-}
 
 function ClaimScreen({
   claimDraft,
