@@ -50,6 +50,7 @@ import ClaimFlowDescribeStep from './screens/ClaimFlowDescribeStep.jsx';
 import ClaimFlowUploadStep from './screens/ClaimFlowUploadStep.jsx';
 import ClaimFlowReviewStep from './screens/ClaimFlowReviewStep.jsx';
 import ClaimFlowSubmittedStep from './screens/ClaimFlowSubmittedStep.jsx';
+import ProfileScreen from './screens/ProfileScreen.jsx';
 import { createEmptyClaimDraft, buildClaimSubmitPayload, hasUploadInProgress, normalizeClaimDraft, normalizeClaimDocuments, primaryClaimSlipUrl } from './claimDraftUtils.js';
 import navHomeIcon from './assets/pack/icons/nav-home.svg';
 import navCoverIcon from './assets/pack/icons/nav-cover-active.svg';
@@ -336,6 +337,8 @@ function App() {
         {screen === 'claimFlow' && <ClaimScreen {...screenProps} />}
         {screen === 'profile' && <ProfileScreen {...screenProps} />}
         {screen === 'profilePayments' && <ProfilePaymentMethodsScreen {...screenProps} />}
+        {screen === 'trustedContacts' && <TrustedContactsScreen {...screenProps} />}
+        {screen === 'settings' && <SettingsScreen {...screenProps} />}
         {screen === 'notifications' && <NotificationsScreen {...screenProps} />}
         {screen === 'helpSafety' && <HelpSafetyScreen {...screenProps} />}
         {screen === 'chat' && <ChatScreen {...screenProps} />}
@@ -1209,38 +1212,6 @@ function ClaimScreen({
   }
 
   return null;
-}
-
-function ProfileScreen({ openHistory, setScreen, coversHistory = [], claimsList = [], activeCoverState, session }) {
-  const fullName = session?.user?.passengerProfile?.fullName || 'Moses Banda';
-  const phone = session?.user?.phone || '+260 97 000 0000';
-  const planLabel = activeCoverState ? (activeCoverState.plan === 'basic' ? 'K3' : 'K5') : 'None';
-
-  return (
-    <main className="screen padded profile-screen">
-      <header className="profile-head">
-        <span className="profile-avatar"><CircleUserRound size={58} /></span>
-        <div>
-          <p className="eyebrow">SAFE member</p>
-          <h1>{fullName}</h1>
-          <span>{phone}</span>
-        </div>
-      </header>
-
-      <section className="profile-stats">
-        <div><strong>{coversHistory.length}</strong><span>Trips covered</span></div>
-        <div><strong>{claimsList.length}</strong><span>Claim{claimsList.length !== 1 ? 's' : ''}</span></div>
-        <div><strong>{planLabel}</strong><span>Current plan</span></div>
-      </section>
-
-      <section className="settings-list">
-        <button type="button" onClick={() => openHistory('profile')}><FileText size={19} /><span>Cover history</span><ChevronRight size={18} /></button>
-        <button type="button" onClick={() => setScreen('profilePayments')}><WalletCards size={19} /><span>Payment methods</span><ChevronRight size={18} /></button>
-        <button type="button" onClick={() => setScreen('notifications')}><Bell size={19} /><span>Notifications</span><ChevronRight size={18} /></button>
-        <button type="button" onClick={() => setScreen('helpSafety')}><ShieldCheck size={19} /><span>Help and safety</span><ChevronRight size={18} /></button>
-      </section>
-    </main>
-  );
 }
 
 function ProfilePaymentMethodsScreen({ paymentMethod, setPaymentMethod, setScreen }) {
