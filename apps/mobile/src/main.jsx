@@ -4,6 +4,11 @@ import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import './styles.css';
 
+// react-leaflet expects React on window in dev bundles
+if (typeof window !== 'undefined') {
+  window.React = React;
+}
+
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />
