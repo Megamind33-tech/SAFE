@@ -785,25 +785,24 @@ function HomeScreen({ setScreen, activeCoverState, countdown, setShowScannerModa
 
   return (
     <main className="screen home-screen premium-home">
-      <section className="mobility-hero">
-        <div className="hero-environment" style={{ backgroundImage: `url(${lusakaNightAerial})` }} />
-        <header className="home-top-row">
-          <div className="home-identity">
-            <p>Good morning, Moses</p>
-            <strong>SAFE active in motion</strong>
-          </div>
-          <div className="home-top-actions">
-            <button className="location-pill" type="button" aria-label="Current city">
-              <MapPin size={15} />
-              <span>Lusaka</span>
-            </button>
-            <button className="notify-btn" type="button" aria-label="Notifications" onClick={() => setScreen('notifications')}>
-              <Bell size={19} />
-              <i />
-            </button>
-          </div>
-        </header>
+      <header className="home-top-row">
+        <div className="home-identity">
+          <p>Good morning, Moses</p>
+          <strong>SAFE active in motion</strong>
+        </div>
+        <div className="home-top-actions">
+          <button className="location-pill" type="button" aria-label="Current city">
+            <MapPin size={15} />
+            <span>Lusaka</span>
+          </button>
+          <button className="notify-btn" type="button" aria-label="Notifications" onClick={() => setScreen('notifications')}>
+            <Bell size={19} />
+            <i />
+          </button>
+        </div>
+      </header>
 
+      <div className="home-scroll-content">
         {activeCoverState ? (
           <section className="safe-hero-wrapper" aria-label="Active cover">
             <div className="safe-hero-stage">
@@ -841,10 +840,10 @@ function HomeScreen({ setScreen, activeCoverState, countdown, setShowScannerModa
               <img className="safe-hero-route safe-hero-route-muted" src={heroRouteAsset} alt="" aria-hidden="true" />
               <img className="safe-hero-vehicle safe-hero-vehicle-muted" src={heroVehicleAsset} alt="" aria-hidden="true" />
               <img className="safe-hero-shield safe-hero-shield-muted" src={heroShieldAsset} alt="" aria-hidden="true" />
-            <div className="safe-hero-content">
-              <span className="safe-hero-status safe-hero-status-muted">Unprotected</span>
-              <h1 className="safe-hero-title">Secure Your Ride</h1>
-              <p className="safe-hero-subtitle">Protect your current commute with instant accident medical coverage</p>
+              <div className="safe-hero-content">
+                <span className="safe-hero-status safe-hero-status-muted">Unprotected</span>
+                <h1 className="safe-hero-title">Secure Your Ride</h1>
+                <p className="safe-hero-subtitle">Protect your current commute with instant accident medical coverage</p>
               </div>
             </div>
 
@@ -868,9 +867,8 @@ function HomeScreen({ setScreen, activeCoverState, countdown, setShowScannerModa
             </div>
           </section>
         )}
-      </section>
 
-      <section className="home-content-flow">
+        <section className="home-content-flow">
         <section className="live-route-panel">
           <div className="section-title-row">
             <div>
@@ -924,6 +922,7 @@ function HomeScreen({ setScreen, activeCoverState, countdown, setShowScannerModa
           </div>
         </section>
       </section>
+      </div>
     </main>
   );
 }
