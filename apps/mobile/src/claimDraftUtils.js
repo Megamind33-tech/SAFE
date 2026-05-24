@@ -33,4 +33,28 @@ export function createLocalFileId() {
   return `cf-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+export function buildClaimPolicyId(cover) {
+  if (!cover?.id) return null;
+  const stamp = cover.createdAt || cover.startedAt;
+  const date = stamp ? new Date(stamp) : new Date();
+  const ymd = date.toISOString().slice(0, 10).replace(/-/g, '');
+  return `SAFE-${ymd}-${cover.id.slice(-4).toUpperCase()}`;
+}
+
+export function buildClaimRoute(cover) {
+  const route = cover?.route ?? cover?.vehicle?.route ?? null;
+  if (!route?.origin || !route?.destination) return null;
+  return `${route.origin} → ${route.destination}`;
+}
+
+export function readyClaimFiles(documents, categoryKey) {
+  return (documents?.[categoryKey] || []).filter((file) => file.status === 'ready');
+}
+
+export function hasUploadInProgress(documents) {
+  return Object.values(documents || {})
+    .flat()
+    .some((file) => file?.status === 'uploading');
+}
+
 // TODO(backend): POST multipart files to /api/mobile/claims/documents and store returned file IDs.

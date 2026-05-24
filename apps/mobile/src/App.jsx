@@ -48,7 +48,8 @@ import ViewPolicyScreen from './screens/ViewPolicyScreen.jsx';
 import ClaimsScreen from './screens/ClaimsScreen.jsx';
 import ClaimFlowDescribeStep from './screens/ClaimFlowDescribeStep.jsx';
 import ClaimFlowUploadStep from './screens/ClaimFlowUploadStep.jsx';
-import { EMPTY_CLAIM_DOCUMENTS } from './claimDraftUtils.js';
+import ClaimFlowReviewStep from './screens/ClaimFlowReviewStep.jsx';
+import { EMPTY_CLAIM_DOCUMENTS, hasUploadInProgress } from './claimDraftUtils.js';
 import navHomeIcon from './assets/pack/icons/nav-home.svg';
 import navCoverIcon from './assets/pack/icons/nav-cover-active.svg';
 import navClaimsIcon from './assets/pack/icons/nav-claims.svg';
@@ -1069,6 +1070,7 @@ function ClaimScreen({
   setHospitalSlipUrl,
   claimDocuments,
   setClaimDocuments,
+  refreshPassengerData,
   setScreen,
   openHistory,
   activeCoverState,
@@ -1217,99 +1219,52 @@ function ClaimScreen({
   }
 
   if (step === 3) {
+    const narrativeValid = claimText.trim().length >= 10;
+    const canSubmit = narrativeValid && !hasUploadInProgress(claimDocuments);
+
     return (
-      <main className="screen padded claim-screen overflow-y-auto pb-24">
-        <TopBar onBack={() => setStep(2)} title="Police Reference" />
-      
-        <section className="steps" aria-label="Claim progress">
-          <span className="active">1</span>
-          <span className="active">2</span>
-          <span className="active">3</span>
-        </section>
-
-      {error && <p className="payment-error mb-4">{error}</p>}
-
-
-        <div className="step-container">
-          <section className="page-heading mb-4">
-            <h1>Police Reference</h1>
-          </section>
-
-          <section className="claim-card vertical bg-white border border-slate-200 rounded-2xl p-4 shadow-[0_8px_20px_rgba(0,0,0,0.03)] mb-4">
-            <div className="claim-title-row flex items-center gap-3 mb-3 pb-2 border-b border-slate-100">
-              <span className="claim-icon police h-10 w-10 bg-red-50 text-red-500 rounded-xl grid place-items-center"><Shield size={20} /></span>
-              <div>
-                <strong className="block text-xs font-black text-safe-ink">Police / RTSA Reference</strong>
-                <small className="block text-[10px] font-semibold text-slate-400">Optional but speeds up approval</small>
-              </div>
-            </div>
-            
-            <div className="input-wrap">
-              <input 
-                type="text" 
-                value={policeReference}
-                onChange={(event) => setPoliceReference(event.target.value)}
-                placeholder="e.g. POL-18492-LSK or RTSA-093"
-                className="w-full text-xs border border-slate-200 rounded-xl p-3 focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10"
-              />
-            </div>
-          </section>
-
-          <section className="summary-confirm-card bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-4">
-            <h4 className="text-[10px] font-black tracking-wider text-slate-500 uppercase mb-3 border-b border-slate-200 pb-1.5">Claim Preview Summary</h4>
-            <div className="space-y-2 text-xs">
-              <div className="summary-confirm-row flex justify-between">
-                <span className="text-slate-400 font-semibold">Active Policy ID</span>
-                <strong className="text-safe-ink font-bold">{activePolicyId}</strong>
-              </div>
-              <div className="summary-confirm-row flex justify-between">
-                <span className="text-slate-400 font-semibold">Narrative</span>
-                <strong className="text-safe-ink font-bold max-w-[150px] truncate">{claimText}</strong>
-              </div>
-              <div className="summary-confirm-row flex justify-between">
-                <span className="text-slate-400 font-semibold">Hospital Slip</span>
-                <strong className={hospitalSlipUrl ? 'text-emerald-700 font-bold' : 'text-slate-500 font-semibold'}>
-                  {hospitalSlipUrl ? 'Attached ✓' : 'Not Attached'}
-                </strong>
-              </div>
-              <div className="summary-confirm-row flex justify-between">
-                <span className="text-slate-400 font-semibold">Police Reference</span>
-                <strong className="text-safe-ink font-bold">{policeReference || 'None Provided'}</strong>
-              </div>
-            </div>
-          </section>
-
-          <button
-            className="primary-btn w-full flex items-center justify-center gap-2 mt-4"
-            type="button"
-            disabled={busy}
-            onClick={async () => {
-              setError('');
-              if (!session?.token) {
-                setScreen('login');
-                return;
-              }
-              setBusy(true);
-              try {
-                await createClaim(session.token, { 
-                  tripCoverId: activeCover?.id || undefined,
-                  description: claimText.trim(),
-                  policeReference: policeReference.trim() || undefined,
-                  hospitalSlipUrl: hospitalSlipUrl || undefined
-                });
-                setClaimSent(true);
-              } catch (e) {
-                setError(e?.message || 'Failed to submit claim');
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            <Send size={18} />
-            <span>{busy ? 'Submitting…' : 'Submit Claim'}</span>
-          </button>
-        </div>
-      </main>
+      <ClaimFlowReviewStep
+        incidentNarrative={claimText}
+        documents={claimDocuments}
+        activeCover={activeCover}
+        fallbackPolicyId={trip.policy}
+        fallbackVehicle={trip.vehicle}
+        fallbackRoute={trip.route.replace(' to ', ' → ')}
+        busy={busy}
+        error={error}
+        canSubmit={canSubmit}
+        onBack={() => setStep(2)}
+        onEditNarrative={() => setStep(1)}
+        onEditEvidence={() => setStep(2)}
+        onSubmit={async () => {
+          setError('');
+          if (!session?.token) {
+            setScreen('login');
+            return;
+          }
+          if (!narrativeValid) {
+            setError('Please add an accident narrative of at least 10 characters.');
+            return;
+          }
+          setBusy(true);
+          try {
+            await createClaim(session.token, {
+              tripCoverId: activeCover?.id || undefined,
+              description: claimText.trim(),
+              policeReference: policeReference.trim() || undefined,
+              hospitalSlipUrl: hospitalSlipUrl || undefined,
+            });
+            if (refreshPassengerData) {
+              await refreshPassengerData(session.token);
+            }
+            setClaimSent(true);
+          } catch (e) {
+            setError(e?.message || 'Failed to submit claim');
+          } finally {
+            setBusy(false);
+          }
+        }}
+      />
     );
   }
 
