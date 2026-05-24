@@ -8,6 +8,7 @@ import {
   formatCoverPlanLine,
   formatCoverRouteTitle,
   formatCoverVehicle,
+  formatPolicyIdListDisplay,
   getCoverPolicyId,
   getEffectiveCoverStatus,
   mapCoverHistoryItem,
@@ -92,8 +93,13 @@ export default function CoverHistoryScreen({
           </section>
         ) : visibleItems.length === 0 ? (
           <section className="cover-history-empty cover-history-empty--filtered" aria-label="No matching covers">
-            <h3 className="cover-history-empty__title">No {filter.toLowerCase()} covers</h3>
-            <p className="cover-history-empty__subtitle">Try another filter to view your trip protection records.</p>
+            <h3 className="cover-history-empty__title">No records found</h3>
+            <p className="cover-history-empty__subtitle">
+              Try another filter or start a new cover.
+            </p>
+            <button type="button" className="cover-history-empty__cta" onClick={onStartCover}>
+              Start a cover
+            </button>
           </section>
         ) : (
           <section className="cover-history-list" aria-label="Cover records">
@@ -113,7 +119,9 @@ export default function CoverHistoryScreen({
                   <strong className="cover-history-card__route">{item.routeTitle}</strong>
                   <span className="cover-history-card__meta">Vehicle: {item.vehicle}</span>
                   <span className="cover-history-card__meta">Plan: {item.planLine}</span>
-                  <span className="cover-history-card__meta">Policy ID: {item.policyId}</span>
+                  <span className="cover-history-card__meta cover-history-card__meta--policy">
+                    Policy ID: {formatPolicyIdListDisplay(item.policyId)}
+                  </span>
                 </div>
                 <span className={`cover-history-card__pill cover-history-card__pill--${item.statusType}`}>
                   {item.statusLabel}
@@ -123,7 +131,7 @@ export default function CoverHistoryScreen({
           </section>
         )}
 
-        <BottomScrollSpacer height={160} />
+        <BottomScrollSpacer height={170} />
       </div>
     </main>
   );
@@ -250,7 +258,7 @@ export function CoverHistoryDetailScreen({
 
         <p className="cover-history-detail-note">Status: {statusLabel}</p>
 
-        <BottomScrollSpacer height={160} />
+        <BottomScrollSpacer height={170} />
       </div>
     </main>
   );

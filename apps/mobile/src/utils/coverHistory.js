@@ -34,6 +34,12 @@ export function getCoverPolicyId(cover) {
   return buildClaimPolicyId(cover) || 'Pending';
 }
 
+export function formatPolicyIdListDisplay(policyId, maxLen = 22) {
+  const value = policyId || 'Pending';
+  if (value.length <= maxLen) return value;
+  return `${value.slice(0, maxLen)}…`;
+}
+
 export function formatCoverDateParts(cover) {
   const stamp = cover?.createdAt || cover?.startedAt;
   const date = stamp ? new Date(stamp) : new Date();
@@ -98,8 +104,8 @@ export function buildCoverHistoryItems(coversHistory = [], claimsList = []) {
 
 export function filterCoverHistoryItems(items, filter) {
   if (filter === 'All') return items;
-  if (filter === 'Active') return items.filter((item) => item.statusType === 'active');
-  if (filter === 'Expired') return items.filter((item) => item.statusType === 'expired');
+  if (filter === 'Active') return items.filter((item) => item.effectiveStatus === 'active');
+  if (filter === 'Expired') return items.filter((item) => item.effectiveStatus !== 'active');
   if (filter === 'Claims') return items.filter((item) => item.hasClaim);
   return items;
 }

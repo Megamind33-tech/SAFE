@@ -218,7 +218,8 @@
 }
 
 /* Bottom nav — match Home / Cover premium dock (Profile active) */
-.phone-frame:has(.profile-screen-board) .bottom-nav {
+.phone-frame:has(.profile-screen-board) .bottom-nav,
+.phone-frame:has(.cover-history-screen-board) .bottom-nav {
   left: 16px;
   right: 16px;
   bottom: 16px;
@@ -239,7 +240,8 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.phone-frame:has(.profile-screen-board) .bottom-nav .nav-item {
+.phone-frame:has(.profile-screen-board) .bottom-nav .nav-item,
+.phone-frame:has(.cover-history-screen-board) .bottom-nav .nav-item {
   width: 72px;
   height: 60px;
   min-height: 60px;
@@ -257,18 +259,22 @@
 }
 
 .phone-frame:has(.profile-screen-board) .bottom-nav .nav-item img.nav-item-icon,
-.phone-frame:has(.profile-screen-board) .bottom-nav .nav-item svg.nav-item-icon {
+.phone-frame:has(.profile-screen-board) .bottom-nav .nav-item svg.nav-item-icon,
+.phone-frame:has(.cover-history-screen-board) .bottom-nav .nav-item img.nav-item-icon,
+.phone-frame:has(.cover-history-screen-board) .bottom-nav .nav-item svg.nav-item-icon {
   width: 22px;
   height: 22px;
   transition: all 180ms ease;
 }
 
-.phone-frame:has(.profile-screen-board) .bottom-nav .nav-item:not(.active) img.nav-item-icon {
+.phone-frame:has(.profile-screen-board) .bottom-nav .nav-item:not(.active) img.nav-item-icon,
+.phone-frame:has(.cover-history-screen-board) .bottom-nav .nav-item:not(.active) img.nav-item-icon {
   opacity: 0.58;
   filter: brightness(0) saturate(100%) invert(100%);
 }
 
-.phone-frame:has(.profile-screen-board) .bottom-nav .nav-item.active {
+.phone-frame:has(.profile-screen-board) .bottom-nav .nav-item.active,
+.phone-frame:has(.cover-history-screen-board) .bottom-nav .nav-item.active {
   width: 84px;
   height: 62px;
   min-height: 62px;
@@ -282,11 +288,13 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-.phone-frame:has(.profile-screen-board) .bottom-nav .nav-item.active span {
+.phone-frame:has(.profile-screen-board) .bottom-nav .nav-item.active span,
+.phone-frame:has(.cover-history-screen-board) .bottom-nav .nav-item.active span {
   color: #ffc612;
 }
 
-.phone-frame:has(.profile-screen-board) .bottom-nav .nav-item.active::after {
+.phone-frame:has(.profile-screen-board) .bottom-nav .nav-item.active::after,
+.phone-frame:has(.cover-history-screen-board) .bottom-nav .nav-item.active::after {
   content: '';
   position: absolute;
   bottom: 6px;
@@ -298,7 +306,8 @@
   background: #ffc612;
 }
 
-.phone-frame:has(.profile-screen-board) .bottom-nav .nav-item.active img.nav-item-icon {
+.phone-frame:has(.profile-screen-board) .bottom-nav .nav-item.active img.nav-item-icon,
+.phone-frame:has(.cover-history-screen-board) .bottom-nav .nav-item.active img.nav-item-icon {
   opacity: 1;
   filter: brightness(0) saturate(100%) invert(78%) sepia(61%) saturate(600%) hue-rotate(359deg) brightness(103%) contrast(101%);
 }
