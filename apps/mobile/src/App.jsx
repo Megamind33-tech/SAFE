@@ -45,6 +45,7 @@ import lusakaNightAerial from './assets/lusaka-night-aerial.png';
 import HomeScreen from './screens/HomeScreen.jsx';
 import CoverScreen from './screens/CoverScreen.jsx';
 import ViewPolicyScreen from './screens/ViewPolicyScreen.jsx';
+import ClaimsScreen from './screens/ClaimsScreen.jsx';
 import navHomeIcon from './assets/pack/icons/nav-home.svg';
 import navCoverIcon from './assets/pack/icons/nav-cover-active.svg';
 import navClaimsIcon from './assets/pack/icons/nav-claims.svg';
@@ -139,6 +140,7 @@ function App() {
   const [hospitalSlipUrl, setHospitalSlipUrl] = useState('');
   const [historyReturn, setHistoryReturn] = useState('active');
   const [viewPolicyReturn, setViewPolicyReturn] = useState('active');
+  const [claimFlowStep, setClaimFlowStep] = useState(1);
   const [session, setSession] = useState(() => ({ token: loadToken(), user: null, ready: false }));
 
   // New Dynamic States
@@ -247,6 +249,10 @@ function App() {
     setViewPolicyReturn(returnTo);
     setScreen('viewPolicy');
   };
+  const openClaimFlow = (step = 1) => {
+    setClaimFlowStep(step);
+    setScreen('claimFlow');
+  };
   const showBottomNav = !['splash', 'onboarding1', 'onboarding2', 'onboarding3', 'login', 'signup', 'chat', 'offline'].includes(screen);
 
   const screenProps = {
@@ -261,6 +267,8 @@ function App() {
     openHistory,
     viewPolicyReturn,
     openViewPolicy,
+    openClaimFlow,
+    claimFlowStep,
     paymentMethod,
     selectedPlan,
     setClaimSent,
@@ -313,7 +321,8 @@ function App() {
         {screen === 'active' && <CoverScreen {...screenProps} />}
         {screen === 'viewPolicy' && <ViewPolicyScreen {...screenProps} />}
         {screen === 'history' && <HistoryScreen {...screenProps} />}
-        {screen === 'claim' && <ClaimScreen {...screenProps} />}
+        {screen === 'claim' && <ClaimsScreen {...screenProps} />}
+        {screen === 'claimFlow' && <ClaimScreen {...screenProps} />}
         {screen === 'profile' && <ProfileScreen {...screenProps} />}
         {screen === 'profilePayments' && <ProfilePaymentMethodsScreen {...screenProps} />}
         {screen === 'notifications' && <NotificationsScreen {...screenProps} />}
@@ -478,7 +487,7 @@ function App() {
 function navState(screen) {
   if (screen === 'home') return 'home';
   if (['choose', 'payment', 'active', 'history', 'viewPolicy'].includes(screen)) return 'cover';
-  if (screen === 'claim') return 'claims';
+  if (['claim', 'claimFlow'].includes(screen)) return 'claims';
   return 'profile';
 }
 
@@ -1039,8 +1048,9 @@ function ClaimScreen({
   openHistory,
   activeCoverState,
   coversHistory = [],
+  claimFlowStep = 1,
 }) {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(claimFlowStep);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const chars = claimText.length;
@@ -1163,7 +1173,7 @@ function ClaimScreen({
           if (step > 1) {
             setStep(step - 1);
           } else {
-            setScreen('active');
+            setScreen('claim');
           }
         }} 
         title={

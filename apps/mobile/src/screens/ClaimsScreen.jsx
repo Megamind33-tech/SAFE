@@ -1,0 +1,189 @@
+import React from 'react';
+import safeShieldIcon from '../assets/real/safe_shield_clean.png';
+import phoneIcon from '../assets/icons/phone-ringing-premium.png';
+import cameraIcon from '../assets/icons/camera-premium.png';
+import arrowRight from '../assets/pack/icons/arrow-right.svg';
+
+const ACTIVE_STATUSES = new Set(['submitted', 'processing', 'pending', 'under_review', 'needs_documents']);
+
+function formatClaimStatus(status) {
+  const s = String(status || '').toLowerCase();
+  if (s === 'processing' || s === 'under_review') return 'Under review';
+  if (s === 'submitted' || s === 'pending') return 'Submitted';
+  if (s === 'needs_documents') return 'Needs documents';
+  if (s === 'approved') return 'Approved';
+  if (s === 'rejected') return 'Rejected';
+  if (s === 'paid') return 'Paid';
+  return status ? String(status).replace(/_/g, ' ') : 'Submitted';
+}
+
+function claimProgress(status) {
+  const s = String(status || '').toLowerCase();
+  if (s === 'submitted' || s === 'pending') return 25;
+  if (s === 'processing' || s === 'under_review') return 55;
+  if (s === 'needs_documents') return 40;
+  if (s === 'approved') return 85;
+  if (s === 'paid') return 100;
+  return 30;
+}
+
+function pickActiveClaim(claimsList) {
+  if (!Array.isArray(claimsList) || claimsList.length === 0) return null;
+  const active = claimsList.find((c) => ACTIVE_STATUSES.has(String(c?.status || '').toLowerCase()));
+  return active || null;
+}
+
+function IncidentIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function MedicalIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 6v12M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function DocumentIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M14 2v6h6M8 13h8M8 17h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export default function ClaimsScreen({
+  cityLabel = 'Lusaka',
+  claimsList = [],
+  openClaimFlow,
+  setScreen,
+}) {
+  const activeClaim = pickActiveClaim(claimsList);
+
+  const optionCards = [
+    {
+      key: 'medical',
+      title: 'Medical support',
+      subtitle: 'Claim medical expenses',
+      icon: <MedicalIcon />,
+      onClick: () => openClaimFlow?.(2),
+    },
+    {
+      key: 'photo',
+      title: 'Photo evidence',
+      subtitle: 'Attach accident photos',
+      icon: <img src={cameraIcon} alt="" className="claims-option-card__img" />,
+      onClick: () => openClaimFlow?.(2),
+    },
+    {
+      key: 'police',
+      title: 'Police report',
+      subtitle: 'Add official documents',
+      icon: <DocumentIcon />,
+      onClick: () => openClaimFlow?.(3),
+    },
+    {
+      key: 'support',
+      title: 'Support line',
+      subtitle: 'Call or message support',
+      icon: <img src={phoneIcon} alt="" className="claims-option-card__img" />,
+      onClick: () => setScreen?.('chat'),
+    },
+  ];
+
+  return (
+    <main className="screen claims-screen claims-screen-board">
+      <header className="cover-screen-board__header">
+        <div className="cover-screen-board__brand">
+          <img
+            className="cover-screen-board__brand-icon"
+            src={safeShieldIcon}
+            alt=""
+            aria-hidden="true"
+          />
+          <div className="cover-screen-board__brand-text">
+            <span className="cover-screen-board__brand-name">SAFE</span>
+            <span className="cover-screen-board__brand-sub">commuter cover</span>
+          </div>
+        </div>
+        <span className="cover-screen-board__location">{cityLabel}</span>
+      </header>
+
+      <section className="claims-screen-board__title-area">
+        <h1 className="claims-screen-board__title">Claims</h1>
+        <p className="claims-screen-board__title-sub">
+          Serious reporting. Clear evidence. Fast support.
+        </p>
+      </section>
+
+      <article className="claims-primary-card">
+        <div className="claims-primary-card__icon" aria-hidden="true">
+          <IncidentIcon />
+        </div>
+        <div className="claims-primary-card__body">
+          <h2 className="claims-primary-card__title">Report Incident</h2>
+          <p className="claims-primary-card__desc">Upload trip, hospital or police details.</p>
+          <button type="button" className="claims-primary-card__btn" onClick={() => openClaimFlow?.(1)}>
+            Start claim
+          </button>
+        </div>
+      </article>
+
+      {activeClaim ? (
+        <article className="claims-status-card">
+          <div className="claims-status-card__top">
+            <span className="claims-status-card__label">Active claim</span>
+            <span className="claims-status-card__id">
+              #{String(activeClaim.id || '').slice(0, 8).toUpperCase()}
+            </span>
+          </div>
+          <p className="claims-status-card__status">{formatClaimStatus(activeClaim.status)}</p>
+          <div className="claims-status-card__progress" aria-hidden="true">
+            <div
+              className="claims-status-card__progress-fill"
+              style={{ width: `${claimProgress(activeClaim.status)}%` }}
+            />
+          </div>
+        </article>
+      ) : (
+        <p className="claims-empty-hint">
+          <span className="claims-empty-hint__title">No active claims</span>
+          <span className="claims-empty-hint__text">
+            Start a claim if you were involved in an accident.
+          </span>
+        </p>
+      )}
+
+      <div className="claims-options">
+        {optionCards.map((card) => (
+          <button key={card.key} type="button" className="claims-option-card" onClick={card.onClick}>
+            <div className="claims-option-card__icon">{card.icon}</div>
+            <div className="claims-option-card__text">
+              <span className="claims-option-card__title">{card.title}</span>
+              <span className="claims-option-card__subtitle">{card.subtitle}</span>
+            </div>
+            <img src={arrowRight} alt="" className="claims-option-card__arrow" aria-hidden="true" />
+          </button>
+        ))}
+      </div>
+    </main>
+  );
+}
