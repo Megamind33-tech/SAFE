@@ -1,9 +1,19 @@
 import React from 'react';
+import {
+  AlertTriangle,
+  BriefcaseMedical,
+  Camera,
+  FileText,
+  Headphones,
+} from 'lucide-react';
 import safeShieldIcon from '../assets/real/safe_shield_clean.png';
 import arrowRight from '../assets/pack/icons/arrow-right.svg';
 
-const ICON_SIZE = 22;
-const LINE_STROKE = 2;
+const OPTION_ICON_SIZE = 22;
+const INCIDENT_ICON_SIZE = 26;
+const ICON_STROKE = 2;
+const SAFE_GREEN = '#007A3D';
+const INCIDENT_RED = '#DC2626';
 
 const ACTIVE_STATUSES = new Set(['submitted', 'processing', 'pending', 'under_review', 'needs_documents']);
 
@@ -34,88 +44,15 @@ function pickActiveClaim(claimsList) {
   return active || null;
 }
 
-function LineIcon({ children, size = ICON_SIZE }) {
+function OptionIcon({ Icon }) {
   return (
-    <svg
+    <Icon
       className="claims-line-icon"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
+      size={OPTION_ICON_SIZE}
+      strokeWidth={ICON_STROKE}
+      color={SAFE_GREEN}
       aria-hidden="true"
-    >
-      {children}
-    </svg>
-  );
-}
-
-function IncidentIcon() {
-  return (
-    <LineIcon size={26}>
-      <path
-        d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
-        stroke="currentColor"
-        strokeWidth={LINE_STROKE}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </LineIcon>
-  );
-}
-
-function MedicalIcon() {
-  return (
-    <LineIcon>
-      <rect x="4" y="4" width="16" height="16" rx="4" stroke="currentColor" strokeWidth={LINE_STROKE} />
-      <path d="M12 8v8M8 12h8" stroke="currentColor" strokeWidth={LINE_STROKE} strokeLinecap="round" />
-    </LineIcon>
-  );
-}
-
-function CameraIcon() {
-  return (
-    <LineIcon>
-      <path
-        d="M5 9h3l1.5-2.5h5L16 9h3a1 1 0 011 1v8a1 1 0 01-1 1H5a1 1 0 01-1-1v-8a1 1 0 011-1z"
-        stroke="currentColor"
-        strokeWidth={LINE_STROKE}
-        strokeLinejoin="round"
-      />
-      <circle cx="12" cy="14" r="3" stroke="currentColor" strokeWidth={LINE_STROKE} />
-    </LineIcon>
-  );
-}
-
-function DocumentIcon() {
-  return (
-    <LineIcon>
-      <path
-        d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"
-        stroke="currentColor"
-        strokeWidth={LINE_STROKE}
-        strokeLinejoin="round"
-      />
-      <path d="M14 3v5h5M9 13h6M9 17h4" stroke="currentColor" strokeWidth={LINE_STROKE} strokeLinecap="round" />
-    </LineIcon>
-  );
-}
-
-function SupportIcon() {
-  return (
-    <LineIcon>
-      <path
-        d="M4 14v-2a8 8 0 0116 0v2"
-        stroke="currentColor"
-        strokeWidth={LINE_STROKE}
-        strokeLinecap="round"
-      />
-      <path
-        d="M6 14v2a2 2 0 002 2h1v-6H7a1 1 0 00-1 1zM18 14v2a2 2 0 01-2 2h-1v-6h2a1 1 0 011 1z"
-        stroke="currentColor"
-        strokeWidth={LINE_STROKE}
-        strokeLinejoin="round"
-      />
-    </LineIcon>
+    />
   );
 }
 
@@ -132,28 +69,28 @@ export default function ClaimsScreen({
       key: 'medical',
       title: 'Medical support',
       subtitle: 'Claim medical expenses',
-      icon: <MedicalIcon />,
+      icon: <OptionIcon Icon={BriefcaseMedical} />,
       onClick: () => openClaimFlow?.(2),
     },
     {
       key: 'photo',
       title: 'Photo evidence',
       subtitle: 'Attach accident photos',
-      icon: <CameraIcon />,
+      icon: <OptionIcon Icon={Camera} />,
       onClick: () => openClaimFlow?.(2),
     },
     {
       key: 'police',
       title: 'Police report',
       subtitle: 'Add official documents',
-      icon: <DocumentIcon />,
+      icon: <OptionIcon Icon={FileText} />,
       onClick: () => openClaimFlow?.(3),
     },
     {
       key: 'support',
       title: 'Support line',
       subtitle: 'Call or message support',
-      icon: <SupportIcon />,
+      icon: <OptionIcon Icon={Headphones} />,
       onClick: () => setScreen?.('chat'),
     },
   ];
@@ -185,7 +122,13 @@ export default function ClaimsScreen({
 
       <article className="claims-primary-card">
         <div className="claims-primary-card__icon" aria-hidden="true">
-          <IncidentIcon />
+          <AlertTriangle
+            className="claims-line-icon claims-line-icon--incident"
+            size={INCIDENT_ICON_SIZE}
+            strokeWidth={ICON_STROKE}
+            color={INCIDENT_RED}
+            aria-hidden="true"
+          />
         </div>
         <div className="claims-primary-card__body">
           <h2 className="claims-primary-card__title">Report Incident</h2>

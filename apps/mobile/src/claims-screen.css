@@ -232,6 +232,11 @@
   flex-shrink: 0;
 }
 
+.claims-line-icon--incident {
+  width: 26px;
+  height: 26px;
+}
+
 .claims-option-card__text {
   flex: 1;
   min-width: 0;
