@@ -76,6 +76,7 @@ function glanceVehicleChip(cover, isActive) {
 export default function CoverScreen({
   activeCoverState,
   openHistory,
+  openViewPolicy,
   setScreen,
 }) {
   const isActive = Boolean(activeCoverState);
@@ -245,7 +246,7 @@ export default function CoverScreen({
         <button
           className="cover-screen-board__policy"
           type="button"
-          onClick={() => openHistory('active')}
+          onClick={() => openViewPolicy('active')}
         >
           <span className="cover-screen-board__policy-copy">
             <span className="cover-screen-board__policy-label">Policy ID</span>

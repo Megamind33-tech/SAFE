@@ -44,6 +44,7 @@ import shareTrackMap from './assets/share-track-map.png';
 import lusakaNightAerial from './assets/lusaka-night-aerial.png';
 import HomeScreen from './screens/HomeScreen.jsx';
 import CoverScreen from './screens/CoverScreen.jsx';
+import ViewPolicyScreen from './screens/ViewPolicyScreen.jsx';
 import navHomeIcon from './assets/pack/icons/nav-home.svg';
 import navCoverIcon from './assets/pack/icons/nav-cover-active.svg';
 import navClaimsIcon from './assets/pack/icons/nav-claims.svg';
@@ -137,6 +138,7 @@ function App() {
   const [policeReference, setPoliceReference] = useState('');
   const [hospitalSlipUrl, setHospitalSlipUrl] = useState('');
   const [historyReturn, setHistoryReturn] = useState('active');
+  const [viewPolicyReturn, setViewPolicyReturn] = useState('active');
   const [session, setSession] = useState(() => ({ token: loadToken(), user: null, ready: false }));
 
   // New Dynamic States
@@ -241,6 +243,10 @@ function App() {
     setHistoryReturn(returnTo);
     setScreen('history');
   };
+  const openViewPolicy = (returnTo = 'active') => {
+    setViewPolicyReturn(returnTo);
+    setScreen('viewPolicy');
+  };
   const showBottomNav = !['splash', 'onboarding1', 'onboarding2', 'onboarding3', 'login', 'signup', 'chat', 'offline'].includes(screen);
 
   const screenProps = {
@@ -253,6 +259,8 @@ function App() {
     setHospitalSlipUrl,
     historyReturn,
     openHistory,
+    viewPolicyReturn,
+    openViewPolicy,
     paymentMethod,
     selectedPlan,
     setClaimSent,
@@ -303,6 +311,7 @@ function App() {
         {screen === 'choose' && <ChooseCoverScreen {...screenProps} />}
         {screen === 'payment' && <PaymentScreen {...screenProps} />}
         {screen === 'active' && <CoverScreen {...screenProps} />}
+        {screen === 'viewPolicy' && <ViewPolicyScreen {...screenProps} />}
         {screen === 'history' && <HistoryScreen {...screenProps} />}
         {screen === 'claim' && <ClaimScreen {...screenProps} />}
         {screen === 'profile' && <ProfileScreen {...screenProps} />}
@@ -468,7 +477,7 @@ function App() {
 
 function navState(screen) {
   if (screen === 'home') return 'home';
-  if (['choose', 'payment', 'active', 'history'].includes(screen)) return 'cover';
+  if (['choose', 'payment', 'active', 'history', 'viewPolicy'].includes(screen)) return 'cover';
   if (screen === 'claim') return 'claims';
   return 'profile';
 }
