@@ -3,7 +3,8 @@
 .claim-flow-screen.claim-flow-screen--submitted {
   --cf-pad-x: 22px;
   --cf-content-width: 346px;
-  --cf-scroll-clearance: calc(180px + env(safe-area-inset-bottom, 0px));
+  --cf-scroll-clearance: calc(260px + env(safe-area-inset-bottom, 0px));
+  --cf-scroll-margin-bottom: 180px;
   position: relative;
   height: 100dvh;
   min-height: 100dvh;
@@ -107,6 +108,7 @@
   background: #ffffff;
   border: 1px solid rgba(0, 122, 61, 0.08);
   box-shadow: 0 12px 26px rgba(0, 45, 28, 0.07);
+  scroll-margin-bottom: var(--cf-scroll-margin-bottom);
 }
 
 .claim-submitted-row {
@@ -123,17 +125,35 @@
 }
 
 .claim-submitted-row__label {
+  flex-shrink: 0;
   font-size: 13px;
   line-height: 18px;
   color: rgba(16, 24, 32, 0.56);
 }
 
+.claim-submitted-row--reference {
+  align-items: flex-start;
+  min-height: 56px;
+  padding: 8px 0;
+}
+
+.claim-submitted-row--reference .claim-submitted-row__label {
+  padding-top: 2px;
+}
+
 .claim-submitted-row__value {
+  flex-shrink: 1;
+  min-width: 0;
   font-size: 14px;
   line-height: 18px;
   font-weight: 900;
   color: #101820;
   text-align: right;
+}
+
+.claim-submitted-row__value--reference {
+  max-width: 190px;
+  word-break: break-word;
 }
 
 .claim-submitted-row__pill {
@@ -155,7 +175,7 @@
   border-radius: 18px;
   background: rgba(255, 198, 18, 0.1);
   border: 1px solid rgba(255, 198, 18, 0.22);
-  scroll-margin-bottom: 180px;
+  scroll-margin-bottom: var(--cf-scroll-margin-bottom);
 }
 
 .claim-submitted-notice p {
@@ -175,6 +195,7 @@
   background: #ffffff;
   border: 1px solid rgba(0, 122, 61, 0.08);
   box-shadow: 0 10px 22px rgba(0, 45, 28, 0.06);
+  scroll-margin-bottom: var(--cf-scroll-margin-bottom);
 }
 
 .claim-submitted-next__title {
@@ -235,7 +256,7 @@
   font-weight: 900;
   cursor: pointer;
   box-shadow: 0 10px 22px rgba(0, 122, 61, 0.22);
-  scroll-margin-bottom: 180px;
+  scroll-margin-bottom: var(--cf-scroll-margin-bottom);
 }
 
 .claim-submitted-actions__primary:active {
@@ -258,7 +279,7 @@
   font-size: 15px;
   font-weight: 900;
   cursor: pointer;
-  scroll-margin-bottom: 180px;
+  scroll-margin-bottom: var(--cf-scroll-margin-bottom);
 }
 
 .claim-submitted-actions__secondary:active {

@@ -13,16 +13,22 @@ const NEXT_STEPS = [
   "You'll receive updates in Claims.",
 ];
 
-function ReferenceRow({ label, value, isLast = false, isStatus = false }) {
+function ReferenceRow({ label, value, isLast = false, isStatus = false, isReference = false }) {
   const statusLabel = isStatus ? formatClaimStatusLabel(value) : value;
 
   return (
-    <div className={`claim-submitted-row${isLast ? ' claim-submitted-row--last' : ''}`}>
+    <div
+      className={`claim-submitted-row${isReference ? ' claim-submitted-row--reference' : ''}${isLast ? ' claim-submitted-row--last' : ''}`}
+    >
       <span className="claim-submitted-row__label">{label}</span>
       {isStatus ? (
         <span className="claim-submitted-row__pill">{statusLabel}</span>
       ) : (
-        <span className="claim-submitted-row__value">{value}</span>
+        <span
+          className={`claim-submitted-row__value${isReference ? ' claim-submitted-row__value--reference' : ''}`}
+        >
+          {value}
+        </span>
       )}
     </div>
   );
@@ -69,7 +75,7 @@ export default function ClaimFlowSubmittedStep({
         </section>
 
         <article className="claim-submitted-reference">
-          <ReferenceRow label="Claim reference" value={claimReference} />
+          <ReferenceRow label="Claim reference" value={claimReference} isReference />
           <ReferenceRow label="Policy ID" value={policyId} />
           <ReferenceRow label="Vehicle" value={vehicle} />
           <ReferenceRow label="Status" value={status} isStatus />
