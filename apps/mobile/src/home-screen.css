@@ -44,7 +44,7 @@
   position: relative;
   width: 100%;
   max-width: calc(100vw - 44px);
-  margin-top: 44px;
+  margin-top: 50px;
   height: 42px;
   display: flex;
   align-items: center;
@@ -56,14 +56,18 @@
   align-items: center;
   width: auto;
   min-width: 0;
+  flex-shrink: 0;
 }
 
 .home-screen-board__logo-lockup {
   display: block;
-  max-height: 26px;
-  width: auto;
+  height: 32px;
+  max-height: 34px;
+  width: 92px;
+  max-width: 110px;
   object-fit: contain;
   object-position: left center;
+  opacity: 0.96;
 }
 
 .home-screen-board__location {
