@@ -1,6 +1,5 @@
 import heroContainer from '../assets/safe/hero/safe_hero_container_mobile_transparent.png';
 import vehicleAsset from '../assets/safe/transport/green_bus_with_protective_emblem_transparent.png';
-import shieldWatermark from '../assets/safe/brand/safe-shield-check.png';
 import {
   formatDriverLabel,
   formatPlanLabel,
@@ -10,8 +9,8 @@ import {
 } from '../hooks/useActiveTrip.js';
 
 /**
- * Clean two-zone hero card: text left (58%), one vehicle visual right (42%).
- * Decorative route curve and shield watermark stay inside the visual zone only.
+ * Two-zone hero: text left (60%), single vehicle visual right (40%).
+ * No shield overlays or route decorations — one composed panel.
  */
 export default function HomeHeroCard({
   activeCoverState,
@@ -49,15 +48,6 @@ export default function HomeHeroCard({
         </div>
 
         <div className={`home-hero-visual${isProtected ? '' : ' home-hero-visual--muted'}`}>
-          {isProtected ? (
-            <span className="home-hero-route-decor" aria-hidden="true" />
-          ) : null}
-          <img
-            className="home-hero-shield-watermark"
-            src={shieldWatermark}
-            alt=""
-            aria-hidden="true"
-          />
           <img
             className="home-hero-vehicle"
             src={vehicleAsset}
@@ -70,7 +60,7 @@ export default function HomeHeroCard({
       {isProtected ? (
         <div className="home-hero-meta">
           <div><span>Vehicle</span><strong>{formatVehicleLabel(activeCoverState?.vehicle)}</strong></div>
-          <div><span>Driver</span><strong>{formatDriverLabel(liveTrip?.driver)}</strong></div>
+          <div className="home-hero-meta-driver"><span>Driver</span><strong>{formatDriverLabel(liveTrip?.driver)}</strong></div>
           <div><span>Started</span><strong>{formatStartedAt(activeCoverState?.startedAt)}</strong></div>
           <div><span>Cover</span><strong>{formatPlanLabel(activeCoverState?.plan)}</strong></div>
         </div>
