@@ -49,7 +49,7 @@ import ClaimsScreen from './screens/ClaimsScreen.jsx';
 import ClaimFlowDescribeStep from './screens/ClaimFlowDescribeStep.jsx';
 import ClaimFlowUploadStep from './screens/ClaimFlowUploadStep.jsx';
 import ClaimFlowReviewStep from './screens/ClaimFlowReviewStep.jsx';
-import { EMPTY_CLAIM_DOCUMENTS, hasUploadInProgress } from './claimDraftUtils.js';
+import { createEmptyClaimDraft, buildClaimSubmitPayload, hasUploadInProgress, normalizeClaimDraft, normalizeClaimDocuments, primaryClaimSlipUrl } from './claimDraftUtils.js';
 import navHomeIcon from './assets/pack/icons/nav-home.svg';
 import navCoverIcon from './assets/pack/icons/nav-cover-active.svg';
 import navClaimsIcon from './assets/pack/icons/nav-claims.svg';
@@ -138,11 +138,10 @@ function App() {
   const [screen, setScreen] = useState('splash');
   const [selectedPlan, setSelectedPlan] = useState('plus');
   const [paymentMethod, setPaymentMethod] = useState('airtel');
-  const [claimText, setClaimText] = useState('');
+  const [claimDraft, setClaimDraft] = useState(() => createEmptyClaimDraft());
   const [claimSent, setClaimSent] = useState(false);
   const [policeReference, setPoliceReference] = useState('');
   const [hospitalSlipUrl, setHospitalSlipUrl] = useState('');
-  const [claimDocuments, setClaimDocuments] = useState(EMPTY_CLAIM_DOCUMENTS);
   const [historyReturn, setHistoryReturn] = useState('active');
   const [viewPolicyReturn, setViewPolicyReturn] = useState('active');
   const [claimFlowStep, setClaimFlowStep] = useState(1);
@@ -256,10 +255,9 @@ function App() {
   };
   const openClaimFlow = (step = 1) => {
     if (step === 1) {
-      setClaimText('');
+      setClaimDraft(createEmptyClaimDraft());
       setPoliceReference('');
       setHospitalSlipUrl('');
-      setClaimDocuments(EMPTY_CLAIM_DOCUMENTS);
       setClaimSent(false);
     }
     setClaimFlowStep(step);
@@ -270,13 +268,12 @@ function App() {
   const screenProps = {
     activePlan,
     claimSent,
-    claimText,
+    claimDraft,
+    setClaimDraft,
     policeReference,
     setPoliceReference,
     hospitalSlipUrl,
     setHospitalSlipUrl,
-    claimDocuments,
-    setClaimDocuments,
     historyReturn,
     openHistory,
     viewPolicyReturn,
@@ -286,7 +283,6 @@ function App() {
     paymentMethod,
     selectedPlan,
     setClaimSent,
-    setClaimText,
     setPaymentMethod,
     setScreen,
     setSelectedPlan,
@@ -1059,17 +1055,15 @@ function HistoryScreen({ historyReturn, setScreen, coversHistory, claimsList }) 
 }
 
 function ClaimScreen({
-  claimText,
+  claimDraft,
+  setClaimDraft,
   session,
-  setClaimText,
   claimSent,
   setClaimSent,
   policeReference,
   setPoliceReference,
   hospitalSlipUrl,
   setHospitalSlipUrl,
-  claimDocuments,
-  setClaimDocuments,
   refreshPassengerData,
   setScreen,
   openHistory,
@@ -1081,31 +1075,46 @@ function ClaimScreen({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
+  const draft = normalizeClaimDraft(claimDraft);
+  const draftDocuments = draft.documents;
+
   const activeCover = activeCoverState || coversHistory[0];
   const activePolicyId = activeCover?.id ? `SAFE-${activeCover.id.slice(-8).toUpperCase()}` : trip.policy;
   const activeVehicle = activeCover?.vehicle?.plateNumber || trip.vehicle;
 
   const handleReset = () => {
-    setClaimText('');
+    setClaimDraft(createEmptyClaimDraft());
     setPoliceReference('');
     setHospitalSlipUrl('');
-    setClaimDocuments(EMPTY_CLAIM_DOCUMENTS);
     setClaimSent(false);
     setStep(1);
   };
 
-  const syncHospitalSlipFromDocuments = (documents) => {
-    const readyMedical = documents.medicalDocuments?.find(
-      (file) => file.status === 'ready' && file.dataUrl
-    );
-    setHospitalSlipUrl(readyMedical?.dataUrl || '');
+  const syncHospitalSlipFromDraft = (documents) => {
+    setHospitalSlipUrl(primaryClaimSlipUrl(documents) || '');
+  };
+
+  const handleNarrativeChange = (value) => {
+    setClaimDraft((prev) => ({
+      ...normalizeClaimDraft(prev),
+      incidentNarrative: value,
+    }));
+    setError('');
   };
 
   const handleDocumentsChange = (nextOrUpdater) => {
-    setClaimDocuments((prev) => {
-      const next = typeof nextOrUpdater === 'function' ? nextOrUpdater(prev) : nextOrUpdater;
-      syncHospitalSlipFromDocuments(next);
-      return next;
+    setClaimDraft((prev) => {
+      const current = normalizeClaimDraft(prev);
+      const nextDocuments =
+        typeof nextOrUpdater === 'function'
+          ? nextOrUpdater(current.documents)
+          : normalizeClaimDocuments(nextOrUpdater);
+      const nextDraft = {
+        ...current,
+        documents: normalizeClaimDocuments(nextDocuments),
+      };
+      syncHospitalSlipFromDraft(nextDraft.documents);
+      return nextDraft;
     });
   };
 
@@ -1132,7 +1141,7 @@ function ClaimScreen({
           <div className="receipt-body space-y-2 text-xs">
             <div className="receipt-row flex justify-between">
               <span className="text-slate-400 font-semibold">Incident Details</span>
-              <strong className="text-safe-ink font-bold max-w-[150px] truncate">{claimText.length > 40 ? claimText.slice(0, 37) + '...' : claimText}</strong>
+              <strong className="text-safe-ink font-bold max-w-[150px] truncate">{draft.incidentNarrative.length > 40 ? draft.incidentNarrative.slice(0, 37) + '...' : draft.incidentNarrative}</strong>
             </div>
             {policeReference && (
               <div className="receipt-row flex justify-between">
@@ -1195,11 +1204,8 @@ function ClaimScreen({
   if (step === 1) {
     return (
       <ClaimFlowDescribeStep
-        incidentNarrative={claimText}
-        onNarrativeChange={(value) => {
-          setClaimText(value);
-          setError('');
-        }}
+        incidentNarrative={draft.incidentNarrative}
+        onNarrativeChange={handleNarrativeChange}
         onBack={() => setScreen('claim')}
         onNext={() => setStep(2)}
       />
@@ -1209,7 +1215,7 @@ function ClaimScreen({
   if (step === 2) {
     return (
       <ClaimFlowUploadStep
-        documents={claimDocuments}
+        documents={draftDocuments}
         onDocumentsChange={handleDocumentsChange}
         onBack={() => setStep(1)}
         onNext={() => setStep(3)}
@@ -1219,13 +1225,13 @@ function ClaimScreen({
   }
 
   if (step === 3) {
-    const narrativeValid = claimText.trim().length >= 10;
-    const canSubmit = narrativeValid && !hasUploadInProgress(claimDocuments);
+    const narrativeValid = draft.incidentNarrative.trim().length >= 10;
+    const canSubmit = narrativeValid && !hasUploadInProgress(draftDocuments);
 
     return (
       <ClaimFlowReviewStep
-        incidentNarrative={claimText}
-        documents={claimDocuments}
+        incidentNarrative={draft.incidentNarrative}
+        documents={draftDocuments}
         activeCover={activeCover}
         fallbackPolicyId={trip.policy}
         fallbackVehicle={trip.vehicle}
@@ -1248,12 +1254,12 @@ function ClaimScreen({
           }
           setBusy(true);
           try {
-            await createClaim(session.token, {
+            const payload = buildClaimSubmitPayload(draft, {
               tripCoverId: activeCover?.id || undefined,
-              description: claimText.trim(),
-              policeReference: policeReference.trim() || undefined,
-              hospitalSlipUrl: hospitalSlipUrl || undefined,
+              policeReference,
             });
+            await createClaim(session.token, payload);
+            syncHospitalSlipFromDraft(draftDocuments);
             if (refreshPassengerData) {
               await refreshPassengerData(session.token);
             }

@@ -9,6 +9,7 @@ import {
   buildClaimPolicyId,
   buildClaimRoute,
   formatFileSize,
+  normalizeClaimDocuments,
   readyClaimFiles,
 } from '../claimDraftUtils.js';
 import { formatPlanLabel } from '../hooks/useActiveTrip.js';
@@ -58,7 +59,7 @@ function EvidenceCategory({ label, files, isPolice }) {
 
 export default function ClaimFlowReviewStep({
   incidentNarrative = '',
-  documents = { accidentPhotos: [], medicalDocuments: [], policeReports: [] },
+  documents,
   activeCover,
   fallbackPolicyId,
   fallbackVehicle,
@@ -72,6 +73,7 @@ export default function ClaimFlowReviewStep({
   onSubmit,
 }) {
   const narrative = incidentNarrative.trim();
+  const draftDocuments = normalizeClaimDocuments(documents);
   const policyId = buildClaimPolicyId(activeCover) || fallbackPolicyId || 'Not available';
   const vehicle = activeCover?.vehicle?.plateNumber || fallbackVehicle || 'Not assigned';
   const route = buildClaimRoute(activeCover) || fallbackRoute || 'Not specified';
@@ -142,7 +144,7 @@ export default function ClaimFlowReviewStep({
             <EvidenceCategory
               key={group.key}
               label={group.label}
-              files={readyClaimFiles(documents, group.key)}
+              files={readyClaimFiles(draftDocuments, group.key)}
               isPolice={group.key === 'policeReports'}
             />
           ))}

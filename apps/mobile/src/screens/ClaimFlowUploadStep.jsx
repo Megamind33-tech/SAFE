@@ -14,7 +14,8 @@ import ClaimFlowSteps from './ClaimFlowSteps.jsx';
 import {
   createLocalFileId,
   formatFileSize,
-  totalClaimFiles,
+  normalizeClaimDocuments,
+  totalReadyClaimFiles,
   validateClaimFile,
 } from '../claimDraftUtils.js';
 
@@ -72,24 +73,28 @@ function fileStatusLabel(categoryKey, file) {
 }
 
 export default function ClaimFlowUploadStep({
-  documents = { accidentPhotos: [], medicalDocuments: [], policeReports: [] },
+  documents,
   onDocumentsChange,
   onBack,
   onNext,
   onUploadLater,
 }) {
+  const draftDocuments = normalizeClaimDocuments(documents);
   const inputRefs = useRef({});
   const [categoryErrors, setCategoryErrors] = useState({});
   const [uploading, setUploading] = useState(false);
 
-  const fileCount = totalClaimFiles(documents);
-  const canProceed = fileCount > 0 && !uploading;
+  const readyFileCount = totalReadyClaimFiles(draftDocuments);
+  const canProceed = readyFileCount > 0 && !uploading;
 
   const updateCategory = (categoryKey, updater) => {
-    onDocumentsChange?.((prev) => ({
-      ...prev,
-      [categoryKey]: updater(prev?.[categoryKey] || []),
-    }));
+    onDocumentsChange?.((prev) => {
+      const normalized = normalizeClaimDocuments(prev);
+      return {
+        ...normalized,
+        [categoryKey]: updater(normalized[categoryKey] || []),
+      };
+    });
   };
 
   const handlePickFile = (categoryKey) => {
@@ -197,7 +202,7 @@ export default function ClaimFlowUploadStep({
         <div className="claim-flow-upload-card__options">
           {UPLOAD_CATEGORIES.map((category) => {
             const Icon = category.icon;
-            const files = documents[category.key] || [];
+            const files = draftDocuments[category.key] || [];
             const error = categoryErrors[category.key];
 
             return (

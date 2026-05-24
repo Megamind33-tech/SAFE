@@ -4,6 +4,34 @@ export const EMPTY_CLAIM_DOCUMENTS = {
   policeReports: [],
 };
 
+export function createEmptyClaimDraft() {
+  return {
+    incidentNarrative: '',
+    documents: {
+      accidentPhotos: [],
+      medicalDocuments: [],
+      policeReports: [],
+    },
+  };
+}
+
+export const EMPTY_CLAIM_DRAFT = createEmptyClaimDraft();
+
+export function normalizeClaimDocuments(documents) {
+  return {
+    accidentPhotos: Array.isArray(documents?.accidentPhotos) ? documents.accidentPhotos : [],
+    medicalDocuments: Array.isArray(documents?.medicalDocuments) ? documents.medicalDocuments : [],
+    policeReports: Array.isArray(documents?.policeReports) ? documents.policeReports : [],
+  };
+}
+
+export function normalizeClaimDraft(draft) {
+  return {
+    incidentNarrative: draft?.incidentNarrative || '',
+    documents: normalizeClaimDocuments(draft?.documents),
+  };
+}
+
 export const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
 export const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
@@ -15,7 +43,16 @@ export function formatFileSize(bytes) {
 
 export function totalClaimFiles(documents) {
   if (!documents) return 0;
-  return Object.values(documents).reduce((sum, files) => sum + (files?.length || 0), 0);
+  return Object.values(normalizeClaimDocuments(documents)).reduce(
+    (sum, files) => sum + files.length,
+    0
+  );
+}
+
+export function totalReadyClaimFiles(documents) {
+  return Object.values(normalizeClaimDocuments(documents))
+    .flat()
+    .filter((file) => file?.status === 'ready').length;
 }
 
 export function validateClaimFile(file) {
@@ -48,13 +85,38 @@ export function buildClaimRoute(cover) {
 }
 
 export function readyClaimFiles(documents, categoryKey) {
-  return (documents?.[categoryKey] || []).filter((file) => file.status === 'ready');
+  return normalizeClaimDocuments(documents)[categoryKey].filter((file) => file.status === 'ready');
 }
 
 export function hasUploadInProgress(documents) {
-  return Object.values(documents || {})
+  return Object.values(normalizeClaimDocuments(documents))
     .flat()
     .some((file) => file?.status === 'uploading');
+}
+
+export function primaryClaimSlipUrl(documents) {
+  const docs = normalizeClaimDocuments(documents);
+  const medical = readyClaimFiles(docs, 'medicalDocuments')[0];
+  if (medical?.dataUrl) return medical.dataUrl;
+  const accident = readyClaimFiles(docs, 'accidentPhotos')[0];
+  if (accident?.dataUrl) return accident.dataUrl;
+  const police = readyClaimFiles(docs, 'policeReports')[0];
+  return police?.dataUrl || undefined;
+}
+
+export function buildClaimSubmitPayload(claimDraft, { tripCoverId, policeReference = '' } = {}) {
+  const draft = normalizeClaimDraft(claimDraft);
+  const docs = draft.documents;
+  const readyPolice = readyClaimFiles(docs, 'policeReports');
+
+  return {
+    tripCoverId,
+    description: draft.incidentNarrative.trim(),
+    hospitalSlipUrl: primaryClaimSlipUrl(docs),
+    policeReference:
+      policeReference.trim() ||
+      (readyPolice[0] ? `Police report file: ${readyPolice[0].name}` : undefined),
+  };
 }
 
 // TODO(backend): POST multipart files to /api/mobile/claims/documents and store returned file IDs.
