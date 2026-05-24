@@ -1,75 +1,17 @@
 import { Bell, MapPin } from 'lucide-react';
 import { useEffect } from 'react';
-import homeBgNight from '../assets/lusaka-night-aerial.png';
-import heroContainerMobile from '../assets/hero/safe_hero_container_mobile_transparent.png';
-import heroBusAsset from '../assets/real/verified_vehicle_clean.png';
-import heroShieldAsset from '../assets/real/safe_shield_clean.png';
-import routeLineAsset from '../assets/pack/icons/route-line.svg';
+import homeBgNight from '../assets/safe/backgrounds/safe_bg_home_night_commuter_1080x2400.png';
+import HomeHeroCard from '../components/HomeHeroCard.jsx';
 import iconQrScan from '../assets/pack/icons/qr-scan.svg';
 import iconVehicleFound from '../assets/pack/icons/vehicle-found.svg';
 import iconLockShield from '../assets/pack/icons/lock-shield.svg';
 import iconArrowRight from '../assets/pack/icons/arrow-right.svg';
 import LiveRouteMap from '../components/LiveRouteMap.jsx';
-import {
-  formatDriverLabel,
-  formatPlanLabel,
-  formatStartedAt,
-  formatVehicleLabel,
-  remainingCoverLabel,
-  useActiveTrip,
-} from '../hooks/useActiveTrip.js';
+import { useActiveTrip } from '../hooks/useActiveTrip.js';
 
 function openScanner(setScannerType, setShowScannerModal, type) {
   setScannerType(type);
   setShowScannerModal(true);
-}
-
-function HomeHeroCard({ activeCoverState, countdown, isProtected, liveTrip }) {
-  const statusChip = isProtected
-    ? remainingCoverLabel(activeCoverState?.endsAt)
-    : 'Unprotected';
-
-  return (
-    <section className="home-hero-card" aria-label={isProtected ? 'Active cover' : 'Get covered'}>
-      <div className="home-hero-stage">
-        <img className="home-hero-container" src={heroContainerMobile} alt="" aria-hidden="true" />
-        <img className="home-hero-route" src={routeLineAsset} alt="" aria-hidden="true" />
-        <img
-          className={`home-hero-bus${isProtected ? '' : ' home-hero-bus-muted'}`}
-          src={heroBusAsset}
-          alt=""
-          aria-hidden="true"
-        />
-        <img
-          className={`home-hero-shield${isProtected ? '' : ' home-hero-shield-muted'}`}
-          src={heroShieldAsset}
-          alt=""
-          aria-hidden="true"
-        />
-        <div className="home-hero-copy">
-          <span className={`home-hero-chip${isProtected ? '' : ' home-hero-chip-muted'}`}>{statusChip}</span>
-          <h1 className="home-hero-title">{isProtected ? 'Active Cover' : 'Secure Your Ride'}</h1>
-          <p className="home-hero-subtitle">
-            {isProtected
-              ? 'Protected for this trip'
-              : 'Protect your current commute with instant accident medical coverage.'}
-          </p>
-          {isProtected && countdown && countdown !== '00:00:00' ? (
-            <span className="home-hero-countdown">{countdown}</span>
-          ) : null}
-        </div>
-      </div>
-
-      {isProtected ? (
-        <div className="home-hero-meta">
-          <div><span>Vehicle</span><strong>{formatVehicleLabel(activeCoverState?.vehicle)}</strong></div>
-          <div><span>Driver</span><strong>{formatDriverLabel(liveTrip?.driver)}</strong></div>
-          <div><span>Started</span><strong>{formatStartedAt(activeCoverState?.startedAt)}</strong></div>
-          <div><span>Cover</span><strong>{formatPlanLabel(activeCoverState?.plan)}</strong></div>
-        </div>
-      ) : null}
-    </section>
-  );
 }
 
 function PrimaryActionButtons({ onScanQr, onEnterPlate }) {

@@ -122,12 +122,17 @@
   position: relative;
 }
 
-.home-hero-stage {
+.home-hero-shell {
   position: relative;
-  width: 100%;
+  display: grid;
+  grid-template-columns: 58fr 42fr;
+  align-items: center;
+  gap: 10px;
   min-height: 196px;
-  border-radius: 24px;
+  padding: 20px;
+  border-radius: 26px;
   overflow: hidden;
+  isolation: isolate;
 }
 
 .home-hero-container {
@@ -136,111 +141,121 @@
   width: 100%;
   height: 100%;
   object-fit: fill;
-  z-index: 1;
+  z-index: 0;
   pointer-events: none;
 }
 
-.home-hero-route {
-  position: absolute;
-  right: 0;
-  bottom: 22%;
-  width: 46%;
-  max-width: 180px;
-  height: auto;
-  object-fit: contain;
-  object-position: right bottom;
-  z-index: 2;
-  pointer-events: none;
-  opacity: 0.55;
-}
-
-.home-hero-bus {
-  position: absolute;
-  right: -2%;
-  bottom: 2%;
-  width: 46%;
-  max-width: 188px;
-  max-height: 82%;
-  object-fit: contain;
-  object-position: right bottom;
+.home-hero-text {
+  position: relative;
   z-index: 3;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.home-hero-visual {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 132px;
+  max-width: 100%;
+  overflow: hidden;
   pointer-events: none;
 }
 
-.home-hero-shield {
+.home-hero-route-decor {
   position: absolute;
-  right: 10%;
-  top: 12%;
-  width: 14%;
-  max-width: 46px;
+  right: 8%;
+  bottom: 16%;
+  width: 78%;
+  height: 34%;
+  border-top: 2px dashed rgba(255, 199, 0, 0.16);
+  border-radius: 100% 100% 0 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.home-hero-shield-watermark {
+  position: absolute;
+  width: 68%;
+  max-width: 82px;
   height: auto;
   object-fit: contain;
-  z-index: 4;
-  pointer-events: none;
-  opacity: 0.82;
-  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.24));
+  opacity: 0.1;
+  z-index: 1;
+  filter: saturate(0.9);
 }
 
-.home-hero-copy {
-  position: absolute;
-  left: 6%;
-  top: 14%;
-  z-index: 5;
-  max-width: 50%;
+.home-hero-vehicle {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 100%;
+  max-height: 132px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.home-hero-visual--muted .home-hero-vehicle {
+  opacity: 0.78;
+  filter: saturate(0.82) brightness(0.9);
+}
+
+.home-hero-visual--muted .home-hero-shield-watermark {
+  opacity: 0.06;
+}
+
+.home-hero-card--unprotected .home-hero-shield-watermark {
+  display: none;
 }
 
 .home-hero-chip {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  padding: 6px 10px;
+  padding: 5px 10px;
   color: #d9ffe8;
-  background: rgba(7, 20, 43, 0.55);
-  border: 1px solid rgba(186, 255, 210, 0.34);
-  font-size: 0.66rem;
+  background: rgba(7, 20, 43, 0.62);
+  border: 1px solid rgba(186, 255, 210, 0.28);
+  font-size: 0.64rem;
   font-weight: 900;
   letter-spacing: 0.01em;
 }
 
 .home-hero-chip-muted {
   color: rgba(248, 250, 252, 0.82);
-  background: rgba(7, 20, 43, 0.55);
-  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(7, 20, 43, 0.62);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .home-hero-title {
-  margin: 8px 0 0;
+  margin: 10px 0 0;
   color: #fff;
   font-family: "Hanken Grotesk", Inter, sans-serif;
-  font-size: 1.32rem;
-  line-height: 1.04;
+  font-size: clamp(1.5rem, 4.8vw, 2rem);
+  line-height: 1.08;
   letter-spacing: -0.02em;
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.32);
+  max-width: 12ch;
 }
 
 .home-hero-subtitle {
-  margin: 5px 0 0;
-  color: rgba(248, 250, 252, 0.86);
-  font-size: 0.76rem;
-  line-height: 1.38;
-  font-weight: 650;
-  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.24);
+  margin: 6px 0 0;
+  color: rgba(248, 250, 252, 0.84);
+  font-size: clamp(0.84rem, 2.4vw, 1rem);
+  line-height: 1.4;
+  font-weight: 600;
+  max-width: 22ch;
 }
 
 .home-hero-countdown {
   display: block;
-  margin-top: 6px;
+  margin-top: 8px;
   color: #ffc700;
   font-family: "Hanken Grotesk", Inter, sans-serif;
-  font-size: 0.92rem;
+  font-size: 1rem;
   font-weight: 900;
-  letter-spacing: 0.04em;
-}
-
-.home-hero-bus-muted,
-.home-hero-shield-muted {
-  opacity: 0.78;
-  filter: grayscale(0.25) brightness(0.9);
+  letter-spacing: 0.05em;
 }
 
 .home-hero-meta {
@@ -407,31 +422,29 @@
 }
 
 @media (min-width: 414px) {
-  .home-hero-stage {
-    min-height: 210px;
+  .home-hero-shell {
+    min-height: 208px;
+    padding: 22px;
   }
 
-  .home-hero-title {
-    font-size: 1.42rem;
-  }
-
-  .home-hero-bus {
-    width: 50%;
-    max-width: 220px;
+  .home-hero-vehicle {
+    max-height: 140px;
   }
 }
 
 @media (max-width: 380px) {
-  .home-hero-copy {
-    max-width: 52%;
+  .home-hero-shell {
+    grid-template-columns: 56fr 44fr;
+    padding: 18px;
+    min-height: 188px;
   }
 
   .home-hero-meta {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .home-hero-title {
-    font-size: 1.22rem;
+  .home-hero-vehicle {
+    max-height: 118px;
   }
 
   .home-primary-btn {
@@ -453,5 +466,14 @@
 
   .home-identity strong {
     font-size: 1.24rem;
+  }
+
+  .home-hero-shell {
+    min-height: 180px;
+    padding: 16px;
+  }
+
+  .home-hero-vehicle {
+    max-height: 108px;
   }
 }
