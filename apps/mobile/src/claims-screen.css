@@ -186,6 +186,7 @@
   width: var(--claims-content-width);
   max-width: 100%;
   margin-top: 20px;
+  padding-bottom: 12px;
 }
 
 .claims-option-card {
@@ -224,10 +225,11 @@
   color: #007a3d;
 }
 
-.claims-option-card__img {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
+.claims-line-icon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
 }
 
 .claims-option-card__text {

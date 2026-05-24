@@ -1,8 +1,9 @@
 import React from 'react';
 import safeShieldIcon from '../assets/real/safe_shield_clean.png';
-import phoneIcon from '../assets/icons/phone-ringing-premium.png';
-import cameraIcon from '../assets/icons/camera-premium.png';
 import arrowRight from '../assets/pack/icons/arrow-right.svg';
+
+const ICON_SIZE = 22;
+const LINE_STROKE = 2;
 
 const ACTIVE_STATUSES = new Set(['submitted', 'processing', 'pending', 'under_review', 'needs_documents']);
 
@@ -33,40 +34,88 @@ function pickActiveClaim(claimsList) {
   return active || null;
 }
 
+function LineIcon({ children, size = ICON_SIZE }) {
+  return (
+    <svg
+      className="claims-line-icon"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      {children}
+    </svg>
+  );
+}
+
 function IncidentIcon() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <LineIcon size={26}>
       <path
         d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
         stroke="currentColor"
-        strokeWidth="1.8"
+        strokeWidth={LINE_STROKE}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-    </svg>
+    </LineIcon>
   );
 }
 
 function MedicalIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 6v12M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.6" />
-    </svg>
+    <LineIcon>
+      <rect x="4" y="4" width="16" height="16" rx="4" stroke="currentColor" strokeWidth={LINE_STROKE} />
+      <path d="M12 8v8M8 12h8" stroke="currentColor" strokeWidth={LINE_STROKE} strokeLinecap="round" />
+    </LineIcon>
+  );
+}
+
+function CameraIcon() {
+  return (
+    <LineIcon>
+      <path
+        d="M5 9h3l1.5-2.5h5L16 9h3a1 1 0 011 1v8a1 1 0 01-1 1H5a1 1 0 01-1-1v-8a1 1 0 011-1z"
+        stroke="currentColor"
+        strokeWidth={LINE_STROKE}
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="14" r="3" stroke="currentColor" strokeWidth={LINE_STROKE} />
+    </LineIcon>
   );
 }
 
 function DocumentIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <LineIcon>
       <path
-        d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"
+        d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"
         stroke="currentColor"
-        strokeWidth="1.6"
+        strokeWidth={LINE_STROKE}
         strokeLinejoin="round"
       />
-      <path d="M14 2v6h6M8 13h8M8 17h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
+      <path d="M14 3v5h5M9 13h6M9 17h4" stroke="currentColor" strokeWidth={LINE_STROKE} strokeLinecap="round" />
+    </LineIcon>
+  );
+}
+
+function SupportIcon() {
+  return (
+    <LineIcon>
+      <path
+        d="M4 14v-2a8 8 0 0116 0v2"
+        stroke="currentColor"
+        strokeWidth={LINE_STROKE}
+        strokeLinecap="round"
+      />
+      <path
+        d="M6 14v2a2 2 0 002 2h1v-6H7a1 1 0 00-1 1zM18 14v2a2 2 0 01-2 2h-1v-6h2a1 1 0 011 1z"
+        stroke="currentColor"
+        strokeWidth={LINE_STROKE}
+        strokeLinejoin="round"
+      />
+    </LineIcon>
   );
 }
 
@@ -90,7 +139,7 @@ export default function ClaimsScreen({
       key: 'photo',
       title: 'Photo evidence',
       subtitle: 'Attach accident photos',
-      icon: <img src={cameraIcon} alt="" className="claims-option-card__img" />,
+      icon: <CameraIcon />,
       onClick: () => openClaimFlow?.(2),
     },
     {
@@ -104,7 +153,7 @@ export default function ClaimsScreen({
       key: 'support',
       title: 'Support line',
       subtitle: 'Call or message support',
-      icon: <img src={phoneIcon} alt="" className="claims-option-card__img" />,
+      icon: <SupportIcon />,
       onClick: () => setScreen?.('chat'),
     },
   ];
