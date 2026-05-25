@@ -148,9 +148,51 @@ export function maskPhoneNumber(phone) {
     return `+260 ${local.slice(0, 2)} *** ${local.slice(-4)}`;
   }
   if (digits.length >= 10 && digits.startsWith('0')) {
-    return `${digits.slice(0, 3)} *** ${digits.slice(-4)}`;
+    const local = digits.slice(1);
+    return `+260 ${local.slice(0, 2)} *** ${local.slice(-4)}`;
   }
   return phone;
+}
+
+function maskedPhoneIsComplete(value) {
+  const text = String(value || '').trim();
+  if (!text) return false;
+  const starCount = (text.match(/\*/g) || []).length;
+  return starCount >= 3 && /\d{4}\s*$/.test(text);
+}
+
+/**
+ * @param {Pick<PaymentMethod, 'maskedPhone' | 'maskedValue' | 'phoneNumber'>} method
+ */
+export function formatMaskedPhone(method) {
+  const masked = method.maskedPhone || method.maskedValue;
+  if (masked && maskedPhoneIsComplete(masked)) {
+    return String(masked).trim();
+  }
+
+  const phone = method.phoneNumber;
+  if (phone) {
+    const formatted = maskPhoneNumber(phone);
+    if (maskedPhoneIsComplete(formatted)) {
+      return formatted;
+    }
+  }
+
+  if (masked) {
+    const digits = `${masked}${phone || ''}`.replace(/\D/g, '');
+    if (digits.length >= 12 && digits.startsWith('260')) {
+      return maskPhoneNumber(`+${digits}`);
+    }
+    if (digits.length >= 10 && digits.startsWith('0')) {
+      return maskPhoneNumber(digits);
+    }
+  }
+
+  if (phone) {
+    return maskPhoneNumber(phone);
+  }
+
+  return masked && maskedPhoneIsComplete(masked) ? String(masked).trim() : '';
 }
 
 export function providerDisplayName(provider) {

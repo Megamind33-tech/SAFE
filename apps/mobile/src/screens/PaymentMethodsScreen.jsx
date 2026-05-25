@@ -5,6 +5,7 @@ import PaymentLogo from '../components/PaymentLogo.jsx';
 import {
   addMobileMoneyMethod,
   findExistingMobileMoneyMethod,
+  formatMaskedPhone,
   getPaymentMethods,
   providerSubtitle,
   readCachedPaymentMethods,
@@ -355,8 +356,10 @@ export default function PaymentMethodsScreen({
               const isBusy = busyId === method.id;
               const iconType = method.provider === 'visa' ? 'visa' : method.provider === 'mastercard' ? 'mastercard' : method.provider;
 
-              const subtitle =
-                method.maskedPhone || method.maskedValue || providerSubtitle(method.provider);
+              const maskedLine =
+                method.type === 'mobile_money'
+                  ? formatMaskedPhone(method)
+                  : method.maskedPhone || method.maskedValue || providerSubtitle(method.provider);
 
               if (isDefault) {
                 return (
@@ -364,10 +367,12 @@ export default function PaymentMethodsScreen({
                     key={method.id}
                     className="payment-method-card payment-method-card--default"
                   >
-                    <PaymentLogo provider={iconType} />
+                    <PaymentLogo provider={iconType} className="payment-method-card__logo" />
                     <div className="payment-method-card__body">
                       <strong className="payment-method-card__title">{method.displayName}</strong>
-                      <span className="payment-method-card__subtitle">{subtitle}</span>
+                      {maskedLine ? (
+                        <span className="payment-method-card__subtitle">{maskedLine}</span>
+                      ) : null}
                     </div>
                     <span className="payment-method-card__pill payment-method-card__pill--default">Default</span>
                   </article>
@@ -386,7 +391,9 @@ export default function PaymentMethodsScreen({
                   )}
                   <div className="payment-method-card__body">
                     <strong className="payment-method-card__title">{method.displayName}</strong>
-                    <span className="payment-method-card__subtitle">{subtitle}</span>
+                    {maskedLine ? (
+                      <span className="payment-method-card__subtitle">{maskedLine}</span>
+                    ) : null}
                   </div>
                   {method.provider === 'visa_mastercard' ? (
                     <span className="payment-method-card__pill payment-method-card__pill--coming-soon">
@@ -460,8 +467,8 @@ export default function PaymentMethodsScreen({
                           <span>Mastercard</span>
                         </strong>
                         <small>{option.subtitle}</small>
+                        <span className="payment-methods-sheet__coming-soon">Coming soon</span>
                       </span>
-                      <span className="payment-methods-sheet__coming-soon">Coming soon</span>
                     </div>
                   ) : (
                     <button
