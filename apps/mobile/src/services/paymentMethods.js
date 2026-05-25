@@ -1,6 +1,5 @@
 import { request } from '../api/safeApi.js';
 
-const STORAGE_KEY_PREFIX = 'safe_payment_methods_v1_';
 const API_PATH = '/api/mobile/payment-methods';
 
 /** @typedef {'mobile_money' | 'card'} PaymentMethodType */
@@ -17,39 +16,28 @@ const API_PATH = '/api/mobile/payment-methods';
  * @property {'active' | 'pending' | 'failed'} [status]
  */
 
-export class PaymentMethodsApiError extends Error {
-  constructor(message, { status, code } = {}) {
-    super(message);
-    this.name = 'PaymentMethodsApiError';
-    this.status = status;
-    this.code = code;
-  }
+function apiTypeToProvider(type) {
+  if (type === 'airtel_money') return 'airtel';
+  if (type === 'mtn_mobile_money') return 'mtn';
+  return 'visa_mastercard';
 }
 
-export class PaymentMethodsNotImplementedError extends Error {
-  constructor(message = 'Payment method API is not available yet.') {
-    super(message);
-    this.name = 'PaymentMethodsNotImplementedError';
-  }
+function apiTypeToMethodType(type) {
+  if (type === 'card') return 'card';
+  return 'mobile_money';
 }
 
-function storageKey(userId) {
-  return `${STORAGE_KEY_PREFIX}${userId || 'anonymous'}`;
-}
-
-function readLocalMethods(userId) {
-  try {
-    const raw = localStorage.getItem(storageKey(userId));
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeLocalMethods(userId, methods) {
-  localStorage.setItem(storageKey(userId), JSON.stringify(methods));
+function mapApiMethod(method) {
+  const provider = apiTypeToProvider(method.type);
+  return {
+    id: method.id,
+    type: apiTypeToMethodType(method.type),
+    provider,
+    displayName: method.label || method.displayName || providerDisplayName(provider),
+    maskedValue: method.maskedValue,
+    isDefault: Boolean(method.isDefault),
+    status: method.status || 'active',
+  };
 }
 
 function normalizePhoneDigits(phone) {
@@ -75,12 +63,14 @@ export function validateZambianPhone(phone) {
 
 export function maskPhoneNumber(phone) {
   const digits = normalizePhoneDigits(phone).replace(/\D/g, '');
-  if (digits.length < 4) return phone;
-  const tail = digits.slice(-3);
-  if (digits.startsWith('260') && digits.length >= 12) {
-    return `+260 ** *** ${tail}`;
+  if (digits.length >= 12 && digits.startsWith('260')) {
+    const local = digits.slice(3);
+    return `+260 ${local.slice(0, 2)} *** ${local.slice(-4)}`;
   }
-  return `*** *** ${tail}`;
+  if (digits.length >= 10 && digits.startsWith('0')) {
+    return `${digits.slice(0, 3)} *** ${digits.slice(-4)}`;
+  }
+  return phone;
 }
 
 export function providerDisplayName(provider) {
@@ -100,38 +90,32 @@ export function toCheckoutPaymentId(provider) {
   return provider;
 }
 
-export function fromCheckoutPaymentId(id) {
-  if (id === 'card') return 'visa_mastercard';
-  return id;
+export function resolveDefaultCheckoutId(methods) {
+  const defaultMethod = methods.find((method) => method.isDefault);
+  if (!defaultMethod) return null;
+  return toCheckoutPaymentId(defaultMethod.provider);
 }
 
-function createMethodId() {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
+function isNetworkError(error) {
+  const message = error?.message || '';
+  return /failed to fetch|network|load failed|networkerror/i.test(message);
+}
+
+/**
+ * @returns {Promise<PaymentMethod[]>}
+ */
+export async function getPaymentMethods(token) {
+  if (!token) {
+    return [];
   }
-  return `pm_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-}
 
-function mapApiMethod(method) {
-  return {
-    id: method.id,
-    type: method.type,
-    provider: method.provider,
-    displayName: method.displayName || providerDisplayName(method.provider),
-    maskedValue: method.maskedValue,
-    isDefault: Boolean(method.isDefault),
-    status: method.status || 'active',
-  };
-}
-
-async function tryApiRequest(path, options) {
   try {
-    return await request(path, options);
+    const data = await request(API_PATH, { token });
+    const list = data?.paymentMethods ?? data?.methods ?? [];
+    return Array.isArray(list) ? list.map(mapApiMethod) : [];
   } catch (error) {
-    const message = error?.message || '';
-    const notFound = /404|not found/i.test(message);
-    if (notFound) {
-      throw new PaymentMethodsNotImplementedError();
+    if (isNetworkError(error)) {
+      throw new Error('Could not load payment methods.');
     }
     throw error;
   }
@@ -140,55 +124,16 @@ async function tryApiRequest(path, options) {
 /**
  * @returns {Promise<PaymentMethod[]>}
  */
-export async function getPaymentMethods(token, userId) {
-  if (token) {
-    try {
-      const data = await tryApiRequest(API_PATH, { token });
-      const methods = (data?.methods || []).map(mapApiMethod);
-      writeLocalMethods(userId, methods);
-      return methods;
-    } catch (error) {
-      if (!(error instanceof PaymentMethodsNotImplementedError)) {
-        throw error;
-      }
-    }
-  }
-
-  return readLocalMethods(userId);
+export async function setDefaultPaymentMethod(token, methodId) {
+  const data = await request(`${API_PATH}/${methodId}/default`, { method: 'PUT', token });
+  const list = data?.paymentMethods ?? [];
+  return list.map(mapApiMethod);
 }
 
 /**
- * @returns {Promise<PaymentMethod[]>}
+ * @returns {Promise<PaymentMethod>}
  */
-export async function setDefaultPaymentMethod(token, userId, methodId) {
-  const methods = readLocalMethods(userId);
-  const exists = methods.some((method) => method.id === methodId);
-  if (!exists) {
-    throw new Error('Payment method not found.');
-  }
-
-  if (token) {
-    try {
-      await tryApiRequest(`${API_PATH}/${methodId}/default`, { method: 'PUT', token });
-    } catch (error) {
-      if (!(error instanceof PaymentMethodsNotImplementedError)) {
-        throw error;
-      }
-    }
-  }
-
-  const updated = methods.map((method) => ({
-    ...method,
-    isDefault: method.id === methodId,
-  }));
-  writeLocalMethods(userId, updated);
-  return updated;
-}
-
-/**
- * @returns {Promise<{ method: PaymentMethod, persistedLocally: boolean }>}
- */
-export async function addMobileMoneyMethod(token, userId, provider, phoneNumber) {
+export async function addMobileMoneyMethod(token, provider, phoneNumber) {
   const validation = validateZambianPhone(phoneNumber);
   if (!validation.valid) {
     throw new Error(validation.message);
@@ -198,86 +143,20 @@ export async function addMobileMoneyMethod(token, userId, provider, phoneNumber)
     throw new Error('Unsupported mobile money provider.');
   }
 
-  const normalizedPhone = validation.normalized;
-  const payload = { provider, phoneNumber: normalizedPhone };
+  const data = await request(API_PATH, {
+    method: 'POST',
+    token,
+    body: { provider, phoneNumber: validation.normalized },
+  });
 
-  if (token) {
-    try {
-      const data = await tryApiRequest(API_PATH, { method: 'POST', token, body: payload });
-      const method = mapApiMethod(data.method);
-      const methods = readLocalMethods(userId);
-      const withoutDuplicate = methods.filter(
-        (item) => !(item.provider === provider && item.maskedValue === maskPhoneNumber(normalizedPhone))
-      );
-      const next = withoutDuplicate.map((item) => ({ ...item, isDefault: false }));
-      next.unshift({ ...method, isDefault: next.length === 0 });
-      writeLocalMethods(userId, next);
-      return { method, persistedLocally: false };
-    } catch (error) {
-      if (!(error instanceof PaymentMethodsNotImplementedError)) {
-        throw error;
-      }
-    }
-  }
-
-  const methods = readLocalMethods(userId);
-  const duplicate = methods.find(
-    (item) => item.provider === provider && item.maskedValue === maskPhoneNumber(normalizedPhone)
-  );
-  if (duplicate) {
-    throw new Error('This mobile money number is already saved.');
-  }
-
-  const method = {
-    id: createMethodId(),
-    type: 'mobile_money',
-    provider,
-    displayName: providerDisplayName(provider),
-    maskedValue: maskPhoneNumber(normalizedPhone),
-    isDefault: methods.length === 0,
-    status: 'active',
-  };
-
-  const next = methods.map((item) => ({
-    ...item,
-    isDefault: method.isDefault ? false : item.isDefault,
-  }));
-  next.push(method);
-  writeLocalMethods(userId, next);
-
-  return { method, persistedLocally: true };
+  return mapApiMethod(data.paymentMethod);
 }
 
 /**
  * @returns {Promise<PaymentMethod[]>}
  */
-export async function removePaymentMethod(token, userId, methodId) {
-  const methods = readLocalMethods(userId);
-  const target = methods.find((method) => method.id === methodId);
-  if (!target) {
-    throw new Error('Payment method not found.');
-  }
-
-  if (token) {
-    try {
-      await tryApiRequest(`${API_PATH}/${methodId}`, { method: 'DELETE', token });
-    } catch (error) {
-      if (!(error instanceof PaymentMethodsNotImplementedError)) {
-        throw error;
-      }
-    }
-  }
-
-  let next = methods.filter((method) => method.id !== methodId);
-  if (target.isDefault && next.length > 0) {
-    next = next.map((method, index) => ({ ...method, isDefault: index === 0 }));
-  }
-  writeLocalMethods(userId, next);
-  return next;
-}
-
-export function resolveDefaultCheckoutId(methods) {
-  const defaultMethod = methods.find((method) => method.isDefault);
-  if (!defaultMethod) return null;
-  return toCheckoutPaymentId(defaultMethod.provider);
+export async function removePaymentMethod(token, methodId) {
+  const data = await request(`${API_PATH}/${methodId}`, { method: 'DELETE', token });
+  const list = data?.paymentMethods ?? [];
+  return list.map(mapApiMethod);
 }

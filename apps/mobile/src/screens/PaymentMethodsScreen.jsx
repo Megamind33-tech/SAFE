@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, Loader2, Lock, Plus, RefreshCcw, X } from 'lucide-react';
+import { ArrowLeft, Lock, Plus, RefreshCcw, X } from 'lucide-react';
 import BottomScrollSpacer from '../components/BottomScrollSpacer.jsx';
-import PaymentBrandIcon, { getMissingPaymentBrandAssets } from '../components/PaymentBrandIcon.jsx';
+import PaymentBrandIcon, { toPaymentBrandType } from '../components/PaymentBrandIcon.jsx';
 import {
   addMobileMoneyMethod,
   getPaymentMethods,
@@ -30,6 +30,22 @@ const ADD_OPTIONS = [
   },
 ];
 
+function LoadingSkeleton() {
+  return (
+    <section className="payment-methods-skeleton" aria-live="polite" aria-busy="true">
+      {[0, 1].map((item) => (
+        <div className="payment-methods-skeleton__row" key={item}>
+          <span className="payment-methods-skeleton__icon" />
+          <span className="payment-methods-skeleton__lines">
+            <span className="payment-methods-skeleton__line payment-methods-skeleton__line--title" />
+            <span className="payment-methods-skeleton__line payment-methods-skeleton__line--subtitle" />
+          </span>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 export default function PaymentMethodsScreen({
   session,
   setScreen,
@@ -47,33 +63,24 @@ export default function PaymentMethodsScreen({
   const [saveError, setSaveError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const userId = session?.user?.id || session?.user?.phone || 'anonymous';
   const token = session?.token || '';
-
-  useEffect(() => {
-    if (!import.meta.env.DEV) return;
-    const missing = getMissingPaymentBrandAssets();
-    if (missing.length > 0) {
-      console.warn('[Payment Methods] Official brand assets missing:', missing.join('; '));
-    }
-  }, []);
 
   const loadMethods = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const next = await getPaymentMethods(token, userId);
+      const next = await getPaymentMethods(token);
       setMethods(next);
       const defaultMethod = next.find((method) => method.isDefault);
       if (defaultMethod) {
         setPaymentMethod?.(toCheckoutPaymentId(defaultMethod.provider));
       }
-    } catch (err) {
-      setError(err?.message || 'Could not load payment methods.');
+    } catch {
+      setError('Could not load payment methods.');
     } finally {
       setLoading(false);
     }
-  }, [token, userId, setPaymentMethod]);
+  }, [token, setPaymentMethod]);
 
   useEffect(() => {
     loadMethods();
@@ -116,7 +123,7 @@ export default function PaymentMethodsScreen({
     setSaveError('');
     setSaving(true);
     try {
-      await addMobileMoneyMethod(token, userId, selectedProvider, phoneInput);
+      await addMobileMoneyMethod(token, selectedProvider, phoneInput);
       await loadMethods();
       setSheetOpen(false);
     } catch (err) {
@@ -130,20 +137,20 @@ export default function PaymentMethodsScreen({
     if (busyId) return;
     setBusyId(methodId);
     try {
-      const updated = await setDefaultPaymentMethod(token, userId, methodId);
+      const updated = await setDefaultPaymentMethod(token, methodId);
       setMethods(updated);
       const defaultMethod = updated.find((method) => method.isDefault);
       if (defaultMethod) {
         setPaymentMethod?.(toCheckoutPaymentId(defaultMethod.provider));
       }
-    } catch (err) {
-      setError(err?.message || 'Could not update default payment method.');
+    } catch {
+      setError('Could not update default payment method.');
     } finally {
       setBusyId('');
     }
   };
 
-  const showAddButton = !loading && !error;
+  const showHeaderActions = !loading && !error;
 
   return (
     <main className="screen payment-methods-screen payment-methods-screen-board">
@@ -158,7 +165,7 @@ export default function PaymentMethodsScreen({
             <ArrowLeft size={22} strokeWidth={2.25} color="#101820" />
           </button>
           <h1 className="payment-methods-header__title">Payment methods</h1>
-          {showAddButton ? (
+          {showHeaderActions ? (
             <button
               type="button"
               className="payment-methods-header__action"
@@ -179,12 +186,7 @@ export default function PaymentMethodsScreen({
           </p>
         </section>
 
-        {loading ? (
-          <section className="payment-methods-state" aria-live="polite" aria-busy="true">
-            <Loader2 className="payment-methods-state__spinner" size={28} strokeWidth={2.25} />
-            <p className="payment-methods-state__text">Loading payment methods…</p>
-          </section>
-        ) : null}
+        {loading ? <LoadingSkeleton /> : null}
 
         {!loading && error ? (
           <section className="payment-methods-error" aria-live="polite">
@@ -221,7 +223,7 @@ export default function PaymentMethodsScreen({
                   key={method.id}
                   className={`payment-method-card${isDefault ? ' payment-method-card--default' : ''}${isCard ? ' payment-method-card--coming-soon' : ''}`}
                 >
-                  <PaymentBrandIcon provider={method.provider} />
+                  <PaymentBrandIcon type={toPaymentBrandType(method.provider)} disabled={isCard} />
                   <div className="payment-method-card__body">
                     <strong className="payment-method-card__title">{method.displayName}</strong>
                     <span className="payment-method-card__subtitle">
@@ -293,7 +295,7 @@ export default function PaymentMethodsScreen({
                       className="payment-methods-sheet__option payment-methods-sheet__option--disabled"
                       aria-disabled="true"
                     >
-                      <PaymentBrandIcon provider={option.provider} />
+                      <PaymentBrandIcon type={toPaymentBrandType(option.provider)} disabled />
                       <span className="payment-methods-sheet__option-text">
                         <strong>{option.title}</strong>
                         <small>{option.subtitle}</small>
@@ -307,7 +309,7 @@ export default function PaymentMethodsScreen({
                       className="payment-methods-sheet__option"
                       onClick={() => handleSelectProvider(option.provider)}
                     >
-                      <PaymentBrandIcon provider={option.provider} />
+                      <PaymentBrandIcon type={toPaymentBrandType(option.provider)} />
                       <span className="payment-methods-sheet__option-text">
                         <strong>{option.title}</strong>
                         <small>{option.subtitle}</small>

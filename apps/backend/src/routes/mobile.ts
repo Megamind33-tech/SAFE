@@ -2,6 +2,13 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { serializeActiveTrip } from '../lib/activeTrip.js';
+import {
+  maskPhoneNumber,
+  normalizeZambianPhone,
+  providerToType,
+  serializePaymentMethod,
+  typeToLabel,
+} from '../lib/paymentMethods.js';
 import { requireAuth, type AuthedRequest } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
 
@@ -301,5 +308,137 @@ mobileRouter.get('/claims', async (req, res) => {
     take: 50,
   });
   res.json({ claims });
+});
+
+mobileRouter.get('/payment-methods', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const methods = await prisma.savedPaymentMethod.findMany({
+    where: { userId: authed.user.id },
+    orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+  });
+  res.json({ paymentMethods: methods.map(serializePaymentMethod) });
+});
+
+mobileRouter.post('/payment-methods', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const schema = z.object({
+    provider: z.enum(['airtel', 'mtn']),
+    phoneNumber: z.string().min(9),
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+    return;
+  }
+
+  const normalizedPhone = normalizeZambianPhone(parsed.data.phoneNumber);
+  if (!normalizedPhone) {
+    res.status(400).json({ error: 'Use +260XXXXXXXXX or 09XXXXXXXX.' });
+    return;
+  }
+
+  const type = providerToType(parsed.data.provider);
+  const { label, subtitle } = typeToLabel(type);
+  const maskedValue = maskPhoneNumber(normalizedPhone);
+
+  const duplicate = await prisma.savedPaymentMethod.findFirst({
+    where: {
+      userId: authed.user.id,
+      type,
+      phoneNumber: normalizedPhone,
+    },
+  });
+  if (duplicate) {
+    res.status(409).json({ error: 'This mobile money number is already saved.' });
+    return;
+  }
+
+  const existingCount = await prisma.savedPaymentMethod.count({
+    where: { userId: authed.user.id },
+  });
+
+  const method = await prisma.$transaction(async (tx) => {
+    if (existingCount === 0) {
+      await tx.savedPaymentMethod.updateMany({
+        where: { userId: authed.user.id },
+        data: { isDefault: false },
+      });
+    }
+
+    return tx.savedPaymentMethod.create({
+      data: {
+        userId: authed.user.id,
+        type,
+        label,
+        subtitle,
+        maskedValue,
+        phoneNumber: normalizedPhone,
+        isDefault: existingCount === 0,
+        status: 'active',
+      },
+    });
+  });
+
+  res.status(201).json({ paymentMethod: serializePaymentMethod(method) });
+});
+
+mobileRouter.put('/payment-methods/:methodId/default', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const method = await prisma.savedPaymentMethod.findFirst({
+    where: { id: req.params.methodId, userId: authed.user.id },
+  });
+  if (!method) {
+    res.status(404).json({ error: 'Payment method not found' });
+    return;
+  }
+
+  await prisma.$transaction([
+    prisma.savedPaymentMethod.updateMany({
+      where: { userId: authed.user.id },
+      data: { isDefault: false },
+    }),
+    prisma.savedPaymentMethod.update({
+      where: { id: method.id },
+      data: { isDefault: true },
+    }),
+  ]);
+
+  const methods = await prisma.savedPaymentMethod.findMany({
+    where: { userId: authed.user.id },
+    orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+  });
+  res.json({ paymentMethods: methods.map(serializePaymentMethod) });
+});
+
+mobileRouter.delete('/payment-methods/:methodId', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const method = await prisma.savedPaymentMethod.findFirst({
+    where: { id: req.params.methodId, userId: authed.user.id },
+  });
+  if (!method) {
+    res.status(404).json({ error: 'Payment method not found' });
+    return;
+  }
+
+  await prisma.savedPaymentMethod.delete({ where: { id: method.id } });
+
+  if (method.isDefault) {
+    const next = await prisma.savedPaymentMethod.findFirst({
+      where: { userId: authed.user.id },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (next) {
+      await prisma.savedPaymentMethod.update({
+        where: { id: next.id },
+        data: { isDefault: true },
+      });
+    }
+  }
+
+  const methods = await prisma.savedPaymentMethod.findMany({
+    where: { userId: authed.user.id },
+    orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+  });
+  res.json({ paymentMethods: methods.map(serializePaymentMethod) });
 });
 

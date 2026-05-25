@@ -219,7 +219,8 @@
 
 /* Bottom nav — match Home / Cover premium dock (Profile active) */
 .phone-frame:has(.profile-screen-board) .bottom-nav,
-.phone-frame:has(.cover-history-screen-board) .bottom-nav {
+.phone-frame:has(.cover-history-screen-board) .bottom-nav,
+.phone-frame:has(.payment-methods-screen-board) .bottom-nav {
   left: 16px;
   right: 16px;
   bottom: 16px;
@@ -241,7 +242,8 @@
 }
 
 .phone-frame:has(.profile-screen-board) .bottom-nav .nav-item,
-.phone-frame:has(.cover-history-screen-board) .bottom-nav .nav-item {
+.phone-frame:has(.cover-history-screen-board) .bottom-nav .nav-item,
+.phone-frame:has(.payment-methods-screen-board) .bottom-nav .nav-item {
   width: 72px;
   height: 60px;
   min-height: 60px;
@@ -374,6 +376,21 @@
   height: 3px;
   border-radius: 2px;
   background: #ffc612 !important;
+}
+
+/* Payment Methods — Profile tab only (never Claims active on this screen) */
+.phone-frame:has(.payment-methods-screen-board) .bottom-nav.bottom-nav--profile-current .nav-item.active svg.nav-item-icon--profile-active {
+  opacity: 1 !important;
+  filter: none !important;
+  color: #ffc612 !important;
+}
+
+.phone-frame:has(.payment-methods-screen-board) .bottom-nav .nav-item:not(.active)::after {
+  display: none !important;
+}
+
+.phone-frame:has(.payment-methods-screen-board) .bottom-nav.bottom-nav--profile-current .nav-item.active::after {
+  display: block !important;
 }
 
 @media (max-width: 374px) {

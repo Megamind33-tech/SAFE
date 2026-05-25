@@ -1,53 +1,47 @@
 /**
- * Official payment brand artwork for Payment Methods.
- *
- * Uses real assets from `assets/payment/` when present. When assets are missing,
- * DEV_FALLBACK_PAYMENT_ICON enables a neutral placeholder — never a fake brand mark.
+ * Renders official payment brand artwork from assets/payment/.
  */
 import {
-  DEV_FALLBACK_PAYMENT_ICON,
   getMissingPaymentBrandAssets,
   getPaymentBrandAsset,
+  toPaymentBrandType,
 } from '../utils/paymentBrandAssets.js';
 
-/** @typedef {'airtel' | 'mtn' | 'visa_mastercard'} PaymentBrandProvider */
+/** @typedef {'airtel_money' | 'mtn_mobile_money' | 'card'} PaymentBrandType */
 
 /**
- * @param {{ provider: PaymentBrandProvider, className?: string, label?: string }} props
+ * @param {{
+ *   type: PaymentBrandType | string;
+ *   className?: string;
+ *   disabled?: boolean;
+ * }} props
  */
-export default function PaymentBrandIcon({ provider, className = '', label = '' }) {
-  const src = getPaymentBrandAsset(provider);
-  const showDevFallback = DEV_FALLBACK_PAYMENT_ICON && !src;
+export default function PaymentBrandIcon({ type, className = '', disabled = false }) {
+  const brandType = toPaymentBrandType(type);
+  const src = getPaymentBrandAsset(brandType);
 
-  const ariaLabel =
-    label ||
-    (provider === 'airtel'
+  const label =
+    brandType === 'airtel_money'
       ? 'Airtel Money'
-      : provider === 'mtn'
+      : brandType === 'mtn_mobile_money'
         ? 'MTN Mobile Money'
-        : 'Visa Mastercard');
+        : 'Visa Mastercard';
+
+  if (!src && import.meta.env.DEV) {
+    console.warn(`Missing payment brand asset: ${label}`);
+  }
 
   return (
     <span
-      className={`payment-brand-icon payment-brand-icon--${provider}${showDevFallback ? ' payment-brand-icon--dev-fallback' : ''} ${className}`.trim()}
-      aria-hidden={!showDevFallback}
-      aria-label={showDevFallback ? undefined : ariaLabel}
-      title={showDevFallback ? `Dev fallback — ${getMissingPaymentBrandAssets().join(', ')}` : undefined}
+      className={`payment-brand-icon payment-brand-icon--${brandType}${disabled ? ' payment-brand-icon--disabled' : ''} ${className}`.trim()}
     >
       {src ? (
-        <img
-          src={src}
-          alt={ariaLabel}
-          className="payment-brand-icon__image"
-          draggable={false}
-        />
-      ) : showDevFallback ? (
-        <span className="payment-brand-icon__fallback" aria-hidden="true">
-          <span className="payment-brand-icon__fallback-mark" />
-        </span>
+        <img src={src} alt={label} className="payment-brand-icon__image" draggable={false} />
+      ) : import.meta.env.DEV ? (
+        <span className="payment-brand-icon__missing">Missing asset</span>
       ) : null}
     </span>
   );
 }
 
-export { DEV_FALLBACK_PAYMENT_ICON, getMissingPaymentBrandAssets };
+export { getMissingPaymentBrandAssets, toPaymentBrandType };

@@ -1,75 +1,44 @@
 /**
- * Payment brand asset registry.
- *
- * DEV WARNING — real payment brand files are not in the repo yet.
- * Upload official assets to `apps/mobile/src/assets/payment/` using names such as:
- *   - airtel-money.png (Airtel Money)
- *   - mtn-mobile-money.png (MTN Mobile Money)
- *   - visa-mastercard.png (Visa / Mastercard combined, or separate visa.png + mastercard.png)
- *
- * When all three providers resolve to a file, DEV_FALLBACK_PAYMENT_ICON becomes false
- * and PaymentBrandIcon renders only the official artwork (no generic icons).
+ * Official SAFE payment brand assets.
+ * Replace files in assets/payment/ with uploaded production artwork when available.
  */
-const paymentAssetModules = import.meta.glob('../assets/payment/*.{png,svg,webp,jpg,jpeg}', {
-  eager: true,
-  import: 'default',
-});
+import airtelMoneyAsset from '../assets/payment/airtel-money.svg';
+import mtnMobileMoneyAsset from '../assets/payment/mtn-mobile-money.svg';
+import visaMastercardAsset from '../assets/payment/visa-mastercard.svg';
 
-function resolveAsset(...namePatterns) {
-  const entries = Object.entries(paymentAssetModules);
-  for (const pattern of namePatterns) {
-    const normalized = pattern.toLowerCase();
-    const match = entries.find(([path]) => path.toLowerCase().includes(normalized));
-    if (match) return match[1];
-  }
-  return null;
-}
+/** @typedef {'airtel_money' | 'mtn_mobile_money' | 'card'} PaymentBrandType */
 
-/** @typedef {'airtel' | 'mtn' | 'visa_mastercard'} PaymentBrandProvider */
-
-export const airtelMoneyAsset = resolveAsset('airtel-money', 'airtel_money', 'airtel');
-export const mtnMobileMoneyAsset = resolveAsset(
-  'mtn-mobile-money',
-  'mtn_mobile_money',
-  'mtn-momo',
-  'mtn_momo',
-  'mtn-money',
-  'mtn_money',
-  'mtn'
-);
-export const visaMastercardAsset = resolveAsset(
-  'visa-mastercard',
-  'visa_mastercard',
-  'card-payment',
-  'card_payment',
-  'mastercard',
-  'visa'
-);
-
-/** @type {Record<PaymentBrandProvider, string | null>} */
+/** @type {Record<PaymentBrandType, string>} */
 export const PAYMENT_BRAND_ASSETS = {
-  airtel: airtelMoneyAsset,
-  mtn: mtnMobileMoneyAsset,
-  visa_mastercard: visaMastercardAsset,
+  airtel_money: airtelMoneyAsset,
+  mtn_mobile_money: mtnMobileMoneyAsset,
+  card: visaMastercardAsset,
 };
 
-export function getPaymentBrandAsset(provider) {
-  return PAYMENT_BRAND_ASSETS[provider] ?? null;
+/** @typedef {'airtel' | 'mtn' | 'visa_mastercard'} PaymentProvider */
+
+/** @param {PaymentProvider | PaymentBrandType | string} value */
+export function toPaymentBrandType(value) {
+  if (value === 'airtel' || value === 'airtel_money') return 'airtel_money';
+  if (value === 'mtn' || value === 'mtn_mobile_money') return 'mtn_mobile_money';
+  return 'card';
+}
+
+/** @param {PaymentBrandType} type */
+export function getPaymentBrandAsset(type) {
+  return PAYMENT_BRAND_ASSETS[type] ?? null;
 }
 
 export function getMissingPaymentBrandAssets() {
   const missing = [];
-  if (!airtelMoneyAsset) missing.push('Missing Airtel Money asset');
-  if (!mtnMobileMoneyAsset) missing.push('Missing MTN Mobile Money asset');
-  if (!visaMastercardAsset) missing.push('Missing Visa/Mastercard asset');
+  if (!PAYMENT_BRAND_ASSETS.airtel_money) missing.push('Airtel Money');
+  if (!PAYMENT_BRAND_ASSETS.mtn_mobile_money) missing.push('MTN Mobile Money');
+  if (!PAYMENT_BRAND_ASSETS.card) missing.push('Visa/Mastercard');
   return missing;
 }
 
-/** True while any official payment brand file is absent — enables temporary neutral placeholder only. */
-export const DEV_FALLBACK_PAYMENT_ICON = getMissingPaymentBrandAssets().length > 0;
-
-export const PAYMENT_BRAND_EXPECTED_PATHS = [
-  'apps/mobile/src/assets/payment/airtel-money.png',
-  'apps/mobile/src/assets/payment/mtn-mobile-money.png',
-  'apps/mobile/src/assets/payment/visa-mastercard.png',
-];
+export const PAYMENT_BRAND_PATHS = {
+  airtel_money: 'apps/mobile/src/assets/payment/airtel-money.svg',
+  mtn_mobile_money: 'apps/mobile/src/assets/payment/mtn-mobile-money.svg',
+  card: 'apps/mobile/src/assets/payment/visa-mastercard.svg',
+};

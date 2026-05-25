@@ -165,8 +165,7 @@ function App() {
   useEffect(() => {
     if (!session.ready) return;
 
-    const userId = session.user?.id || session.user?.phone || 'anonymous';
-    getPaymentMethods(session.token, userId)
+    getPaymentMethods(session.token)
       .then((methods) => {
         const defaultId = resolveDefaultCheckoutId(methods);
         if (defaultId) {
@@ -176,7 +175,7 @@ function App() {
       .catch((err) => {
         console.error('Failed to load saved payment methods:', err);
       });
-  }, [session.ready, session.token, session.user?.id, session.user?.phone]);
+  }, [session.ready, session.token]);
 
   useEffect(() => {
     if (session.token) {
