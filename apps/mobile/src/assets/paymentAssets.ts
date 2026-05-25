@@ -1,13 +1,12 @@
 /**
  * SAFE payment brand asset map — single source of truth for Payment Methods UI.
  *
- * Source: safe_payment_assets (Google Drive pack).
- * Uses *_icon_288px.png only — never tile PNGs (baked "Card payment" subtitle).
+ * Trimmed from safe_payment_assets *_icon_288px.png (no tile PNGs).
  */
-import airtelMoney from './payment/airtel-money.png';
-import mtnMoMo from './payment/mtn-mobile-money.png';
-import visa from './payment/visa.png';
-import mastercard from './payment/mastercard.png';
+import airtelMoney from './payment/airtel-money-trimmed.png';
+import mtnMoMo from './payment/mtn-momo-trimmed.png';
+import visa from './payment/visa-trimmed.png';
+import mastercard from './payment/mastercard-trimmed.png';
 
 export const paymentAssets = {
   airtelMoney,

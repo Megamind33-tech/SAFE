@@ -25,7 +25,7 @@ const ADD_OPTIONS = [
   },
   {
     provider: 'visa_mastercard',
-    titleLines: ['Visa /', 'Mastercard'],
+    title: 'Visa / Mastercard',
     subtitle: 'Card payment',
     comingSoon: true,
   },
@@ -279,34 +279,46 @@ export default function PaymentMethodsScreen({
               const isBusy = busyId === method.id;
               const iconType = method.provider === 'visa' ? 'visa' : method.provider === 'mastercard' ? 'mastercard' : method.provider;
 
+              const subtitle = method.maskedValue || providerSubtitle(method.provider);
+
               return (
                 <article
                   key={method.id}
                   className={`payment-method-card${isDefault ? ' payment-method-card--default' : ''}${method.provider === 'visa_mastercard' ? ' payment-method-card--coming-soon' : ''}`}
                 >
-                  {method.provider === 'visa_mastercard' ? (
-                    <PaymentBrandIcon type="visa_mastercard" dual disabled />
-                  ) : (
-                    <PaymentBrandIcon type={iconType} disabled={method.provider === 'visa_mastercard'} />
-                  )}
-                  <div className="payment-method-card__body">
-                    <strong className="payment-method-card__title">{method.displayName}</strong>
-                    <span className="payment-method-card__subtitle">
-                      {method.maskedValue || providerSubtitle(method.provider)}
-                    </span>
+                  <div className="payment-method-card__main">
+                    {method.provider === 'visa_mastercard' ? (
+                      <PaymentBrandIcon type="visa_mastercard" dual disabled className="payment-brand-icon--in-list" />
+                    ) : (
+                      <PaymentBrandIcon
+                        type={iconType}
+                        disabled={method.provider === 'visa_mastercard'}
+                        className={isDefault ? 'payment-brand-icon--in-saved' : 'payment-brand-icon--in-list'}
+                      />
+                    )}
+                    <div className="payment-method-card__body">
+                      <strong className="payment-method-card__title" title={method.displayName}>
+                        {method.displayName}
+                      </strong>
+                      <span className="payment-method-card__subtitle" title={subtitle}>
+                        {subtitle}
+                      </span>
+                    </div>
                   </div>
                   {method.provider === 'visa_mastercard' ? (
                     <span className="payment-method-card__pill payment-method-card__pill--coming-soon">
                       Coming soon
                     </span>
+                  ) : isDefault ? (
+                    <span className="payment-method-card__pill payment-method-card__pill--default">Default</span>
                   ) : (
                     <button
                       type="button"
-                      className={`payment-method-card__pill${isDefault ? ' payment-method-card__pill--default' : ''}`}
-                      disabled={isDefault || isBusy}
+                      className="payment-method-card__pill"
+                      disabled={isBusy}
                       onClick={() => handleSetDefault(method.id)}
                     >
-                      {isBusy ? 'Saving…' : isDefault ? 'Default' : 'Use'}
+                      {isBusy ? 'Saving…' : 'Use'}
                     </button>
                   )}
                 </article>
@@ -317,7 +329,7 @@ export default function PaymentMethodsScreen({
 
         {!loading && !error ? (
           <section className="payment-methods-security" aria-label="Security note">
-            <Lock size={22} strokeWidth={2.25} color="#007A3D" />
+            <Lock size={18} strokeWidth={2.25} color="#007A3D" />
             <p>
               <strong>SAFE never stores your full card details or mobile money PIN.</strong>
             </p>
@@ -360,12 +372,16 @@ export default function PaymentMethodsScreen({
                       className="payment-methods-sheet__option payment-methods-sheet__option--cards payment-methods-sheet__option--disabled"
                       aria-disabled="true"
                     >
-                      <PaymentBrandIcon type={option.provider} dual disabled />
+                      <PaymentBrandIcon
+                        type={option.provider}
+                        dual
+                        disabled
+                        className="payment-brand-icon--in-sheet-dual"
+                      />
                       <span className="payment-methods-sheet__option-text">
-                        <strong className="payment-methods-sheet__option-title payment-methods-sheet__option-title--wrap">
-                          {option.titleLines.map((line) => (
-                            <span key={line}>{line}</span>
-                          ))}
+                        <strong className="payment-methods-sheet__option-title payment-methods-sheet__option-title--cards">
+                          <span>Visa /</span>
+                          <span>Mastercard</span>
                         </strong>
                         <small>{option.subtitle}</small>
                       </span>
@@ -378,7 +394,7 @@ export default function PaymentMethodsScreen({
                       className="payment-methods-sheet__option"
                       onClick={() => handleSelectProvider(option.provider)}
                     >
-                      <PaymentBrandIcon type={option.provider} />
+                      <PaymentBrandIcon type={option.provider} className="payment-brand-icon--in-sheet" />
                       <span className="payment-methods-sheet__option-text">
                         <strong>{option.title}</strong>
                         <small>{option.subtitle}</small>

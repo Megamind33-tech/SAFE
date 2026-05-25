@@ -1,16 +1,10 @@
-PaymentBrandIcon asset map (safe_payment_assets Google Drive pack):
+PaymentBrandIcon — trimmed assets only (paymentAssets.ts):
 
-airtelMoney       -> payment/airtel-money.png     (from airtel_money_icon_288px.png)
-mtnMoMo           -> payment/mtn-mobile-money.png (from mtn_momo_icon_288px.png)
-visa              -> payment/visa.png             (split from visa_mastercard_icon_288px.png, left)
-mastercard        -> payment/mastercard.png       (split from visa_mastercard_icon_288px.png, right)
-dual_cards        -> visa + mastercard in PaymentBrandIcon
+airtelMoney    -> payment/airtel-money-trimmed.png   (from airtel_money_icon_288px.png)
+mtnMoMo        -> payment/mtn-momo-trimmed.png       (from mtn_momo_icon_288px.png)
+visa           -> payment/visa-trimmed.png           (split + trim visa_mastercard_icon_288px.png)
+mastercard     -> payment/mastercard-trimmed.png     (split + trim visa_mastercard_icon_288px.png)
 
-REJECTED (do not use):
-- png/*_tile_*.png (baked "Card payment" subtitle)
-- png/*_56px.png, *_112px.png (too low resolution)
-- svg/*.svg (handmade; pack icons preferred for PNG pipeline)
+Regenerate: node scripts/trim-payment-assets.mjs
 
-Logo slot: 96x64, radius 18px, white bg, border rgba(15,23,42,0.08).
-Airtel/MTN image: 76x42, object-fit contain.
-Visa/Mastercard dual slot: 104x64; each mark 42x28.
+REJECTED: *_tile_*.png (baked "Card payment"), svg/*, low-res icons

@@ -198,17 +198,18 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: var(--pm-content-width);
+  width: 100%;
   max-width: 100%;
-  margin-top: 28px;
+  margin: 28px 0 0;
+  padding: 0;
 }
 
 .payment-method-card {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 18px;
-  width: 100%;
+  position: relative;
+  box-sizing: border-box;
+  width: calc(100% - 0px);
+  max-width: var(--pm-content-width);
+  margin: 0 auto;
   min-height: 96px;
   padding: 16px 18px;
   border-radius: 24px;
@@ -218,46 +219,45 @@
 }
 
 .payment-method-card--default {
-  min-height: 96px;
-  border: 2px solid rgba(0, 135, 72, 0.45);
-  background: rgba(0, 135, 72, 0.04);
+  width: calc(100% - 0px);
+  min-height: 122px;
+  padding: 18px;
+  border-radius: 26px;
+  border: 2px solid rgba(0, 135, 72, 0.42);
+  background: rgba(0, 135, 72, 0.06);
+  box-shadow: 0 14px 30px rgba(0, 45, 28, 0.08);
 }
 
 .payment-method-card--coming-soon {
   opacity: 0.92;
 }
 
+.payment-method-card__main {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+}
+
+.payment-method-card--default .payment-method-card__main {
+  align-items: flex-start;
+  padding-right: 0;
+}
+
+/* ——— Brand logo slots ——— */
 .payment-brand-icon {
-  width: 96px;
-  height: 64px;
-  border-radius: 18px;
-  background: #ffffff;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
   overflow: hidden;
-}
-
-.payment-brand-icon--dual {
-  width: 104px;
-  height: 64px;
-  flex-direction: row;
-  gap: 8px;
-  padding: 0 8px;
-  box-sizing: border-box;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
 }
 
 .payment-brand-icon__image {
   display: block;
-  width: 76px;
-  height: 42px;
-  max-width: 76px;
-  max-height: 42px;
-  min-width: 76px;
-  min-height: 42px;
   object-fit: contain;
   object-position: center;
   opacity: 1;
@@ -265,18 +265,84 @@
   transform: none;
 }
 
-.payment-brand-icon--airtel .payment-brand-icon__image,
-.payment-brand-icon--mtn .payment-brand-icon__image {
-  width: 76px;
-  height: 42px;
+.payment-brand-icon--in-sheet {
+  width: 96px;
+  height: 68px;
+  margin-right: 0;
+  border-radius: 18px;
 }
 
-.payment-brand-icon--dual .payment-brand-icon__image--visa,
-.payment-brand-icon--dual .payment-brand-icon__image--mastercard {
+.payment-brand-icon--in-sheet .payment-brand-icon__image {
+  width: 76px;
+  height: 48px;
+  min-width: 0;
+  min-height: 0;
+  max-width: 76px;
+  max-height: 48px;
+}
+
+.payment-brand-icon--in-sheet-dual {
+  width: 106px;
+  height: 72px;
+  flex-direction: row;
+  gap: 8px;
+  padding: 0 10px;
+  border-radius: 18px;
+  box-sizing: border-box;
+}
+
+.payment-brand-icon--in-sheet-dual .payment-brand-icon__image--visa,
+.payment-brand-icon--in-sheet-dual .payment-brand-icon__image--mastercard {
   width: 42px;
   height: 28px;
-  min-width: 42px;
-  min-height: 28px;
+  min-width: 0;
+  min-height: 0;
+  max-width: 42px;
+  max-height: 28px;
+}
+
+.payment-brand-icon--in-saved {
+  width: 92px;
+  height: 68px;
+  border-radius: 18px;
+}
+
+.payment-brand-icon--in-saved .payment-brand-icon__image {
+  width: 72px;
+  height: 46px;
+  min-width: 0;
+  min-height: 0;
+  max-width: 72px;
+  max-height: 46px;
+}
+
+.payment-brand-icon--in-list {
+  width: 96px;
+  height: 64px;
+  border-radius: 18px;
+}
+
+.payment-brand-icon--in-list .payment-brand-icon__image {
+  width: 76px;
+  height: 48px;
+  min-width: 0;
+  min-height: 0;
+  max-width: 76px;
+  max-height: 48px;
+}
+
+.payment-brand-icon--dual.payment-brand-icon--in-list {
+  width: 104px;
+  height: 64px;
+  flex-direction: row;
+  gap: 8px;
+  padding: 0 8px;
+}
+
+.payment-brand-icon--dual.payment-brand-icon--in-list .payment-brand-icon__image--visa,
+.payment-brand-icon--dual.payment-brand-icon--in-list .payment-brand-icon__image--mastercard {
+  width: 42px;
+  height: 28px;
   max-width: 42px;
   max-height: 28px;
 }
@@ -288,22 +354,48 @@
 .payment-method-card__body {
   flex: 1;
   min-width: 0;
+  margin-left: 16px;
+}
+
+.payment-method-card--default .payment-method-card__body {
+  padding-right: 100px;
 }
 
 .payment-method-card__title {
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 18px;
   line-height: 22px;
   font-weight: 800;
   color: #101820;
 }
 
+.payment-method-card--default .payment-method-card__title {
+  font-size: 24px;
+  line-height: 29px;
+  font-weight: 800;
+  color: #0b1620;
+}
+
 .payment-method-card__subtitle {
   display: block;
   margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 15px;
   line-height: 20px;
   color: rgba(16, 24, 32, 0.58);
+}
+
+.payment-method-card--default .payment-method-card__subtitle {
+  margin-top: 6px;
+  font-size: 20px;
+  line-height: 25px;
+  font-weight: 600;
+  color: rgba(11, 22, 32, 0.58);
 }
 
 .payment-method-card__pill {
@@ -321,11 +413,22 @@
   cursor: pointer;
 }
 
-.payment-method-card__pill--default,
-.payment-method-card__pill:disabled {
-  background: rgba(0, 122, 61, 0.12);
-  border-color: transparent;
-  color: #007a3d;
+.payment-method-card__pill--default {
+  position: absolute;
+  right: 18px;
+  top: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(0, 135, 72, 0.12);
+  color: #008748;
+  font-size: 17px;
+  font-weight: 800;
   cursor: default;
 }
 
@@ -337,14 +440,29 @@
   min-width: 96px;
 }
 
+.payment-method-card:not(.payment-method-card--default) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+}
+
+.payment-method-card:not(.payment-method-card--default) .payment-method-card__main {
+  flex: 1;
+}
+
+.payment-method-card:not(.payment-method-card--default) .payment-method-card__pill {
+  margin-left: 12px;
+}
+
 .payment-methods-security {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
   width: var(--pm-content-width);
   max-width: 100%;
   margin-top: 20px;
-  padding: 14px 16px;
+  padding: 20px;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(0, 122, 61, 0.1);
@@ -353,13 +471,13 @@
 
 .payment-methods-security p {
   margin: 0;
-  font-size: 18px;
-  line-height: 1.35;
+  font-size: 20px;
+  line-height: 25px;
   color: #101820;
 }
 
 .payment-methods-security strong {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .payment-methods-sheet-overlay {
@@ -377,7 +495,7 @@
   max-height: 78dvh;
   overflow-y: auto;
   padding: 18px 24px calc(32px + env(safe-area-inset-bottom, 0px));
-  border-radius: 32px 32px 0 0;
+  border-radius: 34px 34px 0 0;
   background: #ffffff;
   box-shadow: 0 -16px 40px rgba(0, 45, 28, 0.14);
 }
@@ -385,33 +503,39 @@
 .payment-methods-sheet__handle {
   width: 44px;
   height: 5px;
-  margin: 0 auto 14px;
+  margin: 0 auto 22px;
   border-radius: 999px;
-  background: rgba(16, 24, 32, 0.14);
+  background: rgba(11, 22, 32, 0.14);
 }
 
 .payment-methods-sheet__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
+  position: relative;
+  min-height: 54px;
+  margin-bottom: 22px;
 }
 
 .payment-methods-sheet__title {
   margin: 0;
+  padding-right: 74px;
+  max-width: calc(100% - 74px);
   font-size: 28px;
-  line-height: 32px;
+  line-height: 34px;
   font-weight: 800;
-  color: #101820;
+  color: #0b1620;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .payment-methods-sheet__close {
-  width: 40px;
-  height: 40px;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 54px;
+  height: 54px;
   border: none;
-  border-radius: 14px;
-  background: rgba(16, 24, 32, 0.06);
+  border-radius: 18px;
+  background: #f5f6f6;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -424,12 +548,13 @@
 }
 
 .payment-methods-sheet__option {
+  position: relative;
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 18px;
+  box-sizing: border-box;
   width: 100%;
-  min-height: 96px;
+  min-height: 104px;
   margin-bottom: 16px;
   padding: 16px 18px;
   border: 1px solid rgba(15, 23, 42, 0.08);
@@ -441,18 +566,26 @@
   box-shadow: 0 8px 20px rgba(0, 45, 28, 0.06);
 }
 
-.payment-methods-sheet__option--cards {
-  min-height: 108px;
-  align-items: center;
+.payment-methods-sheet__option .payment-brand-icon--in-sheet {
+  margin-right: 18px;
+  flex-shrink: 0;
 }
 
-.payment-methods-sheet__option--cards .payment-brand-icon--dual {
+.payment-methods-sheet__option--cards {
+  min-height: 116px;
+  align-items: center;
+  padding-bottom: 52px;
+}
+
+.payment-methods-sheet__option--cards .payment-brand-icon--in-sheet-dual {
+  margin-right: 18px;
   flex-shrink: 0;
 }
 
 .payment-methods-sheet__option--cards .payment-methods-sheet__option-text {
   flex: 1;
   min-width: 0;
+  padding-right: 8px;
 }
 
 .payment-methods-sheet__option--disabled {
@@ -462,10 +595,11 @@
 }
 
 .payment-methods-sheet__coming-soon {
-  flex-shrink: 0;
-  margin-left: 8px;
+  position: absolute;
+  right: 18px;
+  bottom: 20px;
   height: 38px;
-  padding: 0 16px;
+  padding: 0 15px;
   border-radius: 999px;
   background: #f1f3f4;
   color: rgba(11, 22, 32, 0.48);
@@ -485,21 +619,34 @@
 .payment-methods-sheet__option-text strong,
 .payment-methods-sheet__option-title {
   display: block;
-  font-size: 21px;
-  line-height: 25px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 23px;
+  line-height: 28px;
   font-weight: 800;
   color: #0b1620;
 }
 
-.payment-methods-sheet__option-title--wrap span {
+.payment-methods-sheet__option-title--cards {
+  white-space: normal;
+  overflow: visible;
+  font-size: 22px;
+  line-height: 27px;
+}
+
+.payment-methods-sheet__option-title--cards span {
   display: block;
 }
 
 .payment-methods-sheet__option-text small {
   display: block;
   margin-top: 3px;
-  font-size: 17px;
-  line-height: 22px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 18px;
+  line-height: 23px;
   font-weight: 500;
   color: rgba(11, 22, 32, 0.55);
 }
@@ -609,5 +756,16 @@
   .payment-methods-title-area__heading {
     font-size: 40px;
     line-height: 44px;
+  }
+
+  .payment-method-card--default .payment-method-card__pill--default {
+    position: static;
+    align-self: flex-start;
+    margin-top: 12px;
+    margin-left: 108px;
+  }
+
+  .payment-method-card--default .payment-method-card__body {
+    padding-right: 0;
   }
 }
