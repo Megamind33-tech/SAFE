@@ -23,7 +23,6 @@ import {
   MessageCircle,
   Menu,
   Navigation2,
-  Plus,
   Radio,
   RefreshCcw,
   Search,
@@ -52,6 +51,8 @@ import ClaimFlowReviewStep from './screens/ClaimFlowReviewStep.jsx';
 import ClaimFlowSubmittedStep from './screens/ClaimFlowSubmittedStep.jsx';
 import ProfileScreen from './screens/ProfileScreen.jsx';
 import CoverHistoryScreen, { CoverHistoryDetailScreen } from './screens/CoverHistoryScreen.jsx';
+import PaymentMethodsScreen from './screens/PaymentMethodsScreen.jsx';
+import { getPaymentMethods, resolveDefaultCheckoutId } from './services/paymentMethods.js';
 import {
   resolveActiveCover,
 } from './utils/activeCover.js';
@@ -100,7 +101,7 @@ const paymentMethods = [
 function App() {
   const [screen, setScreen] = useState('splash');
   const [selectedPlan, setSelectedPlan] = useState('plus');
-  const [paymentMethod, setPaymentMethod] = useState('airtel');
+  const [paymentMethod, setPaymentMethod] = useState('');
   const [claimDraft, setClaimDraft] = useState(() => createEmptyClaimDraft());
   const [submittedClaim, setSubmittedClaim] = useState(null);
   const [policeReference, setPoliceReference] = useState('');
@@ -160,6 +161,22 @@ function App() {
         setSession({ token: '', user: null, ready: true });
       });
   }, []);
+
+  useEffect(() => {
+    if (!session.ready) return;
+
+    const userId = session.user?.id || session.user?.phone || 'anonymous';
+    getPaymentMethods(session.token, userId)
+      .then((methods) => {
+        const defaultId = resolveDefaultCheckoutId(methods);
+        if (defaultId) {
+          setPaymentMethod(defaultId);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load saved payment methods:', err);
+      });
+  }, [session.ready, session.token, session.user?.id, session.user?.phone]);
 
   useEffect(() => {
     if (session.token) {
@@ -329,7 +346,7 @@ function App() {
         {screen === 'claim' && <ClaimsScreen {...screenProps} />}
         {screen === 'claimFlow' && <ClaimScreen {...screenProps} />}
         {screen === 'profile' && <ProfileScreen {...screenProps} />}
-        {screen === 'profilePayments' && <ProfilePaymentMethodsScreen {...screenProps} />}
+        {screen === 'profilePayments' && <PaymentMethodsScreen {...screenProps} />}
         {screen === 'trustedContacts' && <TrustedContactsScreen {...screenProps} />}
         {screen === 'settings' && <SettingsScreen {...screenProps} />}
         {screen === 'notifications' && <NotificationsScreen {...screenProps} />}
@@ -943,7 +960,7 @@ function PaymentScreen({ activePlan, paymentMethod, selectedPlan, session, setPa
         <button
           className="primary-btn"
           type="button"
-          disabled={busy}
+          disabled={busy || !paymentMethod}
           onClick={async () => {
             setError('');
             if (!session?.token) {
@@ -1130,37 +1147,6 @@ function ClaimScreen({
   }
 
   return null;
-}
-
-function ProfilePaymentMethodsScreen({ paymentMethod, setPaymentMethod, setScreen }) {
-  return (
-    <main className="screen padded detail-screen">
-      <TopBar onBack={() => setScreen('profile')} title="Payment methods" action={<Plus size={21} />} />
-      <section className="page-heading compact">
-        <h1>How you pay</h1>
-      </section>
-      <section className="wallet-list">
-        {paymentMethods.map((method) => {
-          const Icon = method.icon;
-          const selected = paymentMethod === method.id;
-          return (
-            <button className={`wallet-card ${selected ? 'selected' : ''}`} key={method.id} type="button" onClick={() => setPaymentMethod(method.id)}>
-              <span className={`brand-mark ${method.accent}`}><Icon size={23} /></span>
-              <span>
-                <strong>{method.name}</strong>
-                <small>{method.detail}</small>
-              </span>
-              <span className="default-pill">{selected ? 'Default' : 'Use'}</span>
-            </button>
-          );
-        })}
-      </section>
-      <section className="secure-note">
-        <Lock size={20} />
-        <p>SAFE never stores your full card or mobile money PIN.</p>
-      </section>
-    </main>
-  );
 }
 
 function NotificationsScreen({ setScreen }) {

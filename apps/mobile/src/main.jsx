@@ -11,6 +11,7 @@ import './claim-flow-screen.css';
 import './claim-submitted-screen.css';
 import './profile-screen.css';
 import './cover-history-screen.css';
+import './payment-methods-screen.css';
 
 // react-leaflet expects React on window in dev bundles
 if (typeof window !== 'undefined') {
