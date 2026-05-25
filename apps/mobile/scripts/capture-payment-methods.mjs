@@ -24,6 +24,54 @@ const EMPTY_QA_NAME = 'QA Empty Payment Methods';
 const SAVED_QA_PHONE = '+260977123456';
 const SAVED_QA_PASSWORD = 'testpass123';
 
+async function enableHardRefresh(context) {
+  await context.addInitScript(() => {
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch {
+      /* ignore */
+    }
+  });
+  const page = await context.newPage();
+  const client = await context.newCDPSession(page);
+  await client.send('Network.setCacheDisabled', { cacheDisabled: true });
+  await page.close();
+}
+
+async function assertCurrentPaymentMethodsCss(page) {
+  const card = page.locator('.payment-method-card--default').first();
+  await card.waitFor({ timeout: 15000 });
+  const layout = await card.evaluate((el) => {
+    const style = window.getComputedStyle(el);
+    const pill = el.querySelector('.payment-method-card__pill--default');
+    const pillStyle = pill ? window.getComputedStyle(pill) : null;
+    const title = el.querySelector('.payment-method-card__title');
+    const subtitle = el.querySelector('.payment-method-card__subtitle');
+    return {
+      display: style.display,
+      gridTemplateColumns: style.gridTemplateColumns,
+      pillGridRow: pillStyle?.gridRow || '',
+      titleText: title?.textContent?.trim() || '',
+      phoneText: subtitle?.textContent?.trim() || '',
+    };
+  });
+  if (layout.display !== 'grid') {
+    throw new Error(
+      `Stale CSS: default card display is "${layout.display}", expected "grid". Restart Vite and clear cache.`
+    );
+  }
+  if (!layout.titleText.includes('Airtel Money')) {
+    throw new Error(`Expected Airtel Money title, got "${layout.titleText}"`);
+  }
+  if (!/\+260 97 \*\*\* 3456/.test(layout.phoneText)) {
+    throw new Error(`Expected full masked phone, got "${layout.phoneText}"`);
+  }
+  if (layout.pillGridRow !== '2') {
+    throw new Error(`Default badge grid-row is "${layout.pillGridRow}", expected "2" (below phone).`);
+  }
+}
+
 async function capturePhone(page, filename) {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(900);
@@ -129,9 +177,13 @@ async function seedPaymentMethodsCache(page, methods) {
 }
 
 async function gotoFresh(page) {
-  await page.goto(BASE_URL, { waitUntil: 'networkidle' });
-  await page.evaluate(() => localStorage.clear());
-  await page.goto(BASE_URL, { waitUntil: 'networkidle' });
+  const bust = `pm_qa=${Date.now()}`;
+  await page.goto(`${BASE_URL}/?${bust}`, { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+  await page.goto(`${BASE_URL}/?${bust}&reload=1`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(500);
 }
 
@@ -175,10 +227,12 @@ async function main() {
   const cachedSeed = (savedApiMethods.paymentMethods ?? []).map(mapApiToCachedMethod);
 
   const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext();
+  await enableHardRefresh(context);
 
   // 1. True empty state — empty user, API [], cache cleared before PM screen
   {
-    const page = await browser.newPage();
+    const page = await context.newPage();
     await loginInBrowser(page, EMPTY_QA_PHONE, EMPTY_QA_PASSWORD);
     await clearPaymentMethodsCache(page);
     await openPaymentMethods(page);
@@ -196,15 +250,30 @@ async function main() {
 
   // 2–4. Saved user flows
   {
-    const page = await browser.newPage();
+    const page = await context.newPage();
     await loginInBrowser(page, SAVED_QA_PHONE, SAVED_QA_PASSWORD);
     await openPaymentMethods(page);
     await page.waitForSelector('.payment-method-card--default', { timeout: 20000 });
+    await assertCurrentPaymentMethodsCss(page);
     await capturePhone(page, 'payment-methods-saved-airtel.png');
 
     await page.getByRole('button', { name: 'Add payment method' }).first().click();
     await page.waitForSelector('.payment-methods-sheet', { timeout: 10000 });
     await page.waitForTimeout(600);
+    const sheetTitle = await page.locator('.payment-methods-sheet__title').textContent();
+    if (!sheetTitle?.includes('Add payment method')) {
+      throw new Error(`Sheet title truncated or wrong: "${sheetTitle}"`);
+    }
+    const visaRow = page.locator('.payment-methods-sheet__option--cards');
+    const visaLayout = await visaRow.evaluate((el) => {
+      const badge = el.querySelector('.payment-methods-sheet__coming-soon');
+      const textCol = el.querySelector('.payment-methods-sheet__option-text');
+      if (!badge || !textCol) return { ok: false };
+      return { ok: textCol.contains(badge) };
+    });
+    if (!visaLayout.ok) {
+      throw new Error('Visa row: Coming soon must be inside the text column (below Card payment).');
+    }
     await capturePhone(page, 'payment-methods-add-sheet.png');
 
     await page.getByRole('button', { name: /Airtel Money/i }).click();
@@ -216,12 +285,15 @@ async function main() {
     await page.close();
   }
 
+  await context.close();
   await browser.close();
 
   // 5. Error — no cache
   {
     const browser2 = await chromium.launch({ headless: true });
-    const page = await browser2.newPage();
+    const context2 = await browser2.newContext();
+    await enableHardRefresh(context2);
+    const page = await context2.newPage();
     await page.route('**/api/mobile/payment-methods**', (route) => route.abort('failed'));
     await loginInBrowser(page, EMPTY_QA_PHONE, EMPTY_QA_PASSWORD);
     await clearPaymentMethodsCache(page);
@@ -232,13 +304,16 @@ async function main() {
       throw new Error('Error-no-cache capture failed: list should not appear');
     }
     await capturePhone(page, 'payment-methods-error-no-cache.png');
+    await context2.close();
     await browser2.close();
   }
 
   // 6. Sync warning — cached saved card, API refresh failed
   {
     const browser3 = await chromium.launch({ headless: true });
-    const page = await browser3.newPage();
+    const context3 = await browser3.newContext();
+    await enableHardRefresh(context3);
+    const page = await context3.newPage();
     await page.route('**/api/mobile/payment-methods**', (route) => route.abort('failed'));
     await loginInBrowser(page, SAVED_QA_PHONE, SAVED_QA_PASSWORD);
     await seedPaymentMethodsCache(page, cachedSeed);
@@ -249,7 +324,9 @@ async function main() {
     if (hasError > 0) {
       throw new Error('Sync-warning capture failed: full error card must not show');
     }
+    await assertCurrentPaymentMethodsCss(page);
     await capturePhone(page, 'payment-methods-sync-warning.png');
+    await context3.close();
     await browser3.close();
   }
 
