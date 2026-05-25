@@ -52,6 +52,7 @@ import ClaimFlowSubmittedStep from './screens/ClaimFlowSubmittedStep.jsx';
 import ProfileScreen from './screens/ProfileScreen.jsx';
 import CoverHistoryScreen, { CoverHistoryDetailScreen } from './screens/CoverHistoryScreen.jsx';
 import PaymentMethodsScreen from './screens/PaymentMethodsScreen.jsx';
+import PaymentBrandIcon from './components/PaymentBrandIcon.jsx';
 import { getPaymentMethods, resolveDefaultCheckoutId } from './services/paymentMethods.js';
 import {
   resolveActiveCover,
@@ -93,9 +94,9 @@ const coverPlans = [
 ];
 
 const paymentMethods = [
-  { id: 'airtel', name: 'Airtel Money', detail: 'Pay with Airtel Money', icon: Smartphone, accent: 'red' },
-  { id: 'mtn', name: 'MTN Mobile Money', detail: 'Pay with MTN MoMo', icon: WalletCards, accent: 'yellow' },
-  { id: 'card', name: 'Visa / Mastercard', detail: 'Card payment', icon: CreditCard, accent: 'blue' },
+  { id: 'airtel', name: 'Airtel Money', detail: 'Pay with Airtel Money', brandType: 'airtel' },
+  { id: 'mtn', name: 'MTN Mobile Money', detail: 'Pay with MTN MoMo', brandType: 'mtn' },
+  { id: 'card', name: 'Visa / Mastercard', detail: 'Card payment', brandType: 'visa_mastercard', dual: true },
 ];
 
 function App() {
@@ -939,11 +940,14 @@ function PaymentScreen({ activePlan, paymentMethod, selectedPlan, session, setPa
       <section className="payment-methods">
         <h2>Choose payment method</h2>
         {paymentMethods.map((method) => {
-          const Icon = method.icon;
           const selected = paymentMethod === method.id;
           return (
             <button className={`method-card ${selected ? 'selected' : ''}`} key={method.id} type="button" onClick={() => setPaymentMethod(method.id)}>
-              <span className={`brand-mark ${method.accent}`}><Icon size={23} /></span>
+              <PaymentBrandIcon
+                type={method.brandType}
+                dual={method.dual}
+                className="method-card__brand"
+              />
               <span>
                 <strong>{method.name}</strong>
                 <small>{method.detail}</small>

@@ -1,8 +1,8 @@
 /**
  * SAFE payment brand asset map — single source of truth for Payment Methods UI.
  *
- * Source pack: safe_payment_assets (Google Drive).
- * Uses *_icon_288px.png only — NOT tile PNGs (baked "Card payment" subtitle).
+ * Official marks: Airtel Money & MTN Mobile Money squircle app icons,
+ * Visa wordmark (transparent), Mastercard circles mark.
  */
 import airtelMoney from './payment/airtel-money.png';
 import mtnMoMo from './payment/mtn-mobile-money.png';

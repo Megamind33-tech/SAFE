@@ -1751,17 +1751,34 @@ button {
 
 .method-card {
   width: 100%;
-  min-height: 60px;
+  min-height: 72px;
   border: 1px solid transparent;
   background: var(--surface-card);
   border-radius: 8px;
   display: grid;
-  grid-template-columns: 58px 1fr 28px;
+  grid-template-columns: 72px 1fr 28px;
   align-items: center;
-  gap: 10px;
-  padding: 10px;
+  gap: 12px;
+  padding: 10px 12px;
   text-align: left;
   box-shadow: var(--soft-shadow);
+}
+
+.method-card .method-card__brand.payment-brand-icon {
+  width: 64px;
+  height: 64px;
+}
+
+.method-card .method-card__brand.payment-brand-icon--dual {
+  width: 72px;
+  height: 48px;
+  padding: 0 4px;
+}
+
+.method-card .method-card__brand.payment-brand-icon--dual .payment-brand-icon__image--visa,
+.method-card .method-card__brand.payment-brand-icon--dual .payment-brand-icon__image--mastercard {
+  width: 32px;
+  height: 22px;
 }
 
 .method-card.selected {

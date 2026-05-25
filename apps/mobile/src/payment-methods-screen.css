@@ -241,6 +241,34 @@
   overflow: hidden;
 }
 
+/* Official Airtel Money / MTN MoMo app-icon tiles (user-provided squircle marks) */
+.payment-brand-icon--airtel,
+.payment-brand-icon--mtn {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.payment-brand-icon--airtel .payment-brand-icon__image,
+.payment-brand-icon--mtn .payment-brand-icon__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 16px;
+}
+
+.payment-brand-icon--visa {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.payment-brand-icon--visa .payment-brand-icon__image {
+  width: 72px;
+  height: auto;
+  max-height: 48px;
+}
+
 .payment-brand-icon--dual {
   width: 104px;
   flex-direction: row;
