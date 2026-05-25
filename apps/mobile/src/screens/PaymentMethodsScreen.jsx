@@ -4,11 +4,12 @@ import BottomScrollSpacer from '../components/BottomScrollSpacer.jsx';
 import PaymentBrandIcon from '../components/PaymentBrandIcon.jsx';
 import {
   addMobileMoneyMethod,
+  findExistingMobileMoneyMethod,
   getPaymentMethods,
   providerSubtitle,
   setDefaultPaymentMethod,
   toCheckoutPaymentId,
-  validateZambianPhone,
+  validateProviderPhone,
 } from '../services/paymentMethods.js';
 
 const ADD_OPTIONS = [
@@ -24,7 +25,7 @@ const ADD_OPTIONS = [
   },
   {
     provider: 'visa_mastercard',
-    title: 'Visa / Mastercard',
+    titleLines: ['Visa /', 'Mastercard'],
     subtitle: 'Card payment',
     comingSoon: true,
   },
@@ -61,6 +62,8 @@ export default function PaymentMethodsScreen({
   const [phoneInput, setPhoneInput] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [saveError, setSaveError] = useState('');
+  const [saveNotice, setSaveNotice] = useState('');
+  const [duplicateMethodId, setDuplicateMethodId] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const token = session?.token || '';
@@ -96,6 +99,8 @@ export default function PaymentMethodsScreen({
     setPhoneInput('');
     setPhoneError('');
     setSaveError('');
+    setSaveNotice('');
+    setDuplicateMethodId(null);
     setSheetOpen(true);
   };
 
@@ -109,25 +114,81 @@ export default function PaymentMethodsScreen({
     setSelectedProvider(provider);
     setPhoneError('');
     setSaveError('');
+    setSaveNotice('');
+    setDuplicateMethodId(null);
     setSheetStep('mobile-money');
   };
 
   const handleSaveMobileMoney = async () => {
-    const validation = validateZambianPhone(phoneInput);
+    const validation = validateProviderPhone(selectedProvider, phoneInput);
     if (!validation.valid) {
       setPhoneError(validation.message);
+      setSaveError('');
+      setSaveNotice('');
+      setDuplicateMethodId(null);
       return;
     }
 
     setPhoneError('');
     setSaveError('');
+
+    const existingMethod =
+      duplicateMethodId != null
+        ? methods.find((method) => method.id === duplicateMethodId)
+        : findExistingMobileMoneyMethod(methods, selectedProvider, validation.normalized);
+
+    if (existingMethod) {
+      if (!duplicateMethodId) {
+        setDuplicateMethodId(existingMethod.id);
+        setSaveNotice(
+          'This number is already saved. You can set it as your default payment method.'
+        );
+        return;
+      }
+
+      setSaving(true);
+      try {
+        const updated = await setDefaultPaymentMethod(token, existingMethod.id);
+        setMethods(updated);
+        const defaultMethod = updated.find((method) => method.isDefault);
+        if (defaultMethod) {
+          setPaymentMethod?.(toCheckoutPaymentId(defaultMethod.provider));
+        }
+        setSheetOpen(false);
+      } catch {
+        setSaveError('Could not update default payment method.');
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
+    setSaveNotice('');
+    setDuplicateMethodId(null);
     setSaving(true);
     try {
       await addMobileMoneyMethod(token, selectedProvider, phoneInput);
       await loadMethods();
       setSheetOpen(false);
     } catch (err) {
-      setSaveError(err?.message || 'Could not save payment method.');
+      const message = err?.message || 'Could not save payment method.';
+      if (/already saved/i.test(message)) {
+        const refreshed = await getPaymentMethods(token);
+        setMethods(refreshed);
+        const duplicate = findExistingMobileMoneyMethod(
+          refreshed,
+          selectedProvider,
+          validation.normalized
+        );
+        if (duplicate) {
+          setDuplicateMethodId(duplicate.id);
+          setSaveNotice(
+            'This number is already saved. You can set it as your default payment method.'
+          );
+          return;
+        }
+      }
+      setSaveError(message);
     } finally {
       setSaving(false);
     }
@@ -296,12 +357,16 @@ export default function PaymentMethodsScreen({
                   option.comingSoon ? (
                     <div
                       key={option.provider}
-                      className="payment-methods-sheet__option payment-methods-sheet__option--disabled"
+                      className="payment-methods-sheet__option payment-methods-sheet__option--cards payment-methods-sheet__option--disabled"
                       aria-disabled="true"
                     >
-                      <PaymentBrandIcon type={option.provider} dual={option.comingSoon} disabled={option.comingSoon} />
+                      <PaymentBrandIcon type={option.provider} dual disabled />
                       <span className="payment-methods-sheet__option-text">
-                        <strong>{option.title}</strong>
+                        <strong className="payment-methods-sheet__option-title payment-methods-sheet__option-title--wrap">
+                          {option.titleLines.map((line) => (
+                            <span key={line}>{line}</span>
+                          ))}
+                        </strong>
                         <small>{option.subtitle}</small>
                       </span>
                       <span className="payment-methods-sheet__coming-soon">Coming soon</span>
@@ -341,9 +406,12 @@ export default function PaymentMethodsScreen({
                     setPhoneInput(event.target.value);
                     setPhoneError('');
                     setSaveError('');
+                    setSaveNotice('');
+                    setDuplicateMethodId(null);
                   }}
                 />
                 {phoneError ? <p className="payment-methods-sheet__field-error">{phoneError}</p> : null}
+                {saveNotice ? <p className="payment-methods-sheet__field-notice">{saveNotice}</p> : null}
                 {saveError ? <p className="payment-methods-sheet__field-error">{saveError}</p> : null}
                 <button
                   type="button"
@@ -351,7 +419,7 @@ export default function PaymentMethodsScreen({
                   disabled={saving}
                   onClick={handleSaveMobileMoney}
                 >
-                  {saving ? 'Saving…' : 'Save method'}
+                  {saving ? 'Saving…' : duplicateMethodId ? 'Use saved method' : 'Save method'}
                 </button>
                 <button
                   type="button"

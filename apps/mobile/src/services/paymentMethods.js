@@ -46,21 +46,66 @@ function normalizePhoneDigits(phone) {
   return String(phone || '').replace(/[\s-]/g, '').trim();
 }
 
-export function validateZambianPhone(phone) {
+export function normalizeZambianPhone(phone) {
   const value = normalizePhoneDigits(phone);
-  if (!value) {
-    return { valid: false, message: 'Enter a mobile money phone number.' };
+  if (/^\+260[0-9]{9}$/.test(value)) return value;
+  if (/^09[0-9]{8}$/.test(value)) return `+260${value.slice(1)}`;
+  if (/^260[0-9]{9}$/.test(value)) return `+${value}`;
+  return null;
+}
+
+export function validateZambianPhone(phone) {
+  const normalized = normalizeZambianPhone(phone);
+  if (!normalized) {
+    return { valid: false, message: 'Use +260XXXXXXXXX or 09XXXXXXXX.' };
   }
-  if (/^\+260[0-9]{9}$/.test(value)) {
-    return { valid: true, normalized: value };
+  return { valid: true, normalized };
+}
+
+function getLocalPrefix(normalized) {
+  return normalized.slice(4, 6);
+}
+
+export function validateProviderPhone(provider, phone) {
+  const base = validateZambianPhone(phone);
+  if (!base.valid) return base;
+
+  const prefix = getLocalPrefix(base.normalized);
+  const airtelPrefixes = ['97', '77'];
+  const mtnPrefixes = ['96', '76'];
+
+  if (provider === 'airtel' && mtnPrefixes.includes(prefix)) {
+    return {
+      valid: false,
+      message: 'This looks like an MTN number. Choose MTN Mobile Money or enter an Airtel number.',
+    };
   }
-  if (/^09[0-9]{8}$/.test(value)) {
-    return { valid: true, normalized: `+260${value.slice(1)}` };
+
+  if (provider === 'mtn' && airtelPrefixes.includes(prefix)) {
+    return {
+      valid: false,
+      message: 'This looks like an Airtel number. Choose Airtel Money or enter an MTN number.',
+    };
   }
-  return {
-    valid: false,
-    message: 'Use +260XXXXXXXXX or 09XXXXXXXX.',
-  };
+
+  return base;
+}
+
+/**
+ * @param {PaymentMethod[]} methods
+ * @param {'airtel' | 'mtn'} provider
+ * @param {string} normalizedPhone
+ */
+export function findExistingMobileMoneyMethod(methods, provider, normalizedPhone) {
+  const last4 = normalizedPhone.replace(/\D/g, '').slice(-4);
+  return (
+    methods.find(
+      (method) =>
+        method.provider === provider &&
+        method.maskedValue &&
+        method.maskedValue.replace(/\D/g, '').endsWith(last4)
+    ) || null
+  );
 }
 
 export function maskPhoneNumber(phone) {
@@ -138,7 +183,7 @@ export async function setDefaultPaymentMethod(token, methodId) {
  * @returns {Promise<PaymentMethod>}
  */
 export async function addMobileMoneyMethod(token, provider, phoneNumber) {
-  const validation = validateZambianPhone(phoneNumber);
+  const validation = validateProviderPhone(provider, phoneNumber);
   if (!validation.valid) {
     throw new Error(validation.message);
   }

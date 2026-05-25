@@ -2,11 +2,10 @@
  * Payment brand logos for Payment Methods — uses paymentAssets map only.
  */
 import {
-  getMissingPaymentBrandAssets,
   getPaymentAsset,
   paymentAssets,
   resolvePaymentAssetKey,
-} from '../utils/paymentAssets.js';
+} from '../assets/paymentAssets.js';
 
 /**
  * @param {{
@@ -16,7 +15,12 @@ import {
  *   dual?: boolean;
  * }} props
  */
-export default function PaymentBrandIcon({ type, className = '', disabled = false, dual = false }) {
+export default function PaymentBrandIcon({
+  type,
+  className = '',
+  disabled = false,
+  dual = false,
+}) {
   const resolved = resolvePaymentAssetKey(type);
   const showDual = dual || resolved === 'dual_cards';
 
@@ -72,4 +76,4 @@ export default function PaymentBrandIcon({ type, className = '', disabled = fals
   );
 }
 
-export { getMissingPaymentBrandAssets, resolvePaymentAssetKey as toPaymentBrandType };
+export { resolvePaymentAssetKey as toPaymentBrandType } from '../assets/paymentAssets.js';

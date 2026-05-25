@@ -1,8 +1,7 @@
-/** @deprecated Import from paymentAssets.js */
+/** @deprecated Import from ../assets/paymentAssets.js */
 export {
   paymentAssets as PAYMENT_BRAND_ASSETS,
-  getPaymentAsset as getPaymentBrandAsset,
   resolvePaymentAssetKey as toPaymentBrandType,
+  getPaymentAsset as getPaymentBrandAsset,
   getMissingPaymentBrandAssets,
-  PAYMENT_ASSET_PATHS as PAYMENT_BRAND_PATHS,
-} from './paymentAssets.js';
+} from '../assets/paymentAssets.js';
