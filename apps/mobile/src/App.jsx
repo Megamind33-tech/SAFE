@@ -52,6 +52,8 @@ import ClaimFlowSubmittedStep from './screens/ClaimFlowSubmittedStep.jsx';
 import ProfileScreen from './screens/ProfileScreen.jsx';
 import CoverHistoryScreen, { CoverHistoryDetailScreen } from './screens/CoverHistoryScreen.jsx';
 import PaymentMethodsScreen from './screens/PaymentMethodsScreen.jsx';
+import TrustedContactsScreen from './screens/TrustedContactsScreen.jsx';
+import SettingsScreen from './screens/SettingsScreen.jsx';
 import PaymentBrandIcon from './components/PaymentBrandIcon.jsx';
 import { getPaymentMethods, resolveDefaultCheckoutId } from './services/paymentMethods.js';
 import {
