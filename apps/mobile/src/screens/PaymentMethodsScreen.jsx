@@ -327,7 +327,7 @@ export default function PaymentMethodsScreen({
 
         {!loading && !error ? (
           <section className="payment-methods-security" aria-label="Security note">
-            <Lock size={16} strokeWidth={2.25} color="#007A3D" className="payment-methods-security__icon" />
+            <Lock size={16} strokeWidth={2.25} color="#008748" className="payment-methods-security__icon" />
             <p>
               <strong>SAFE never stores your full card details or mobile money PIN.</strong>
             </p>
