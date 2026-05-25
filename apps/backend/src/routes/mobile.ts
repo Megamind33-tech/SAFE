@@ -9,6 +9,13 @@ import {
   serializePaymentMethod,
   typeToLabel,
 } from '../lib/paymentMethods.js';
+import {
+  isValidRelationship,
+  maskPhoneNumber as maskTrustedPhone,
+  normalizeZambianPhone as normalizeTrustedPhone,
+  serializeTrustedContact,
+  TRUSTED_CONTACT_RELATIONSHIPS,
+} from '../lib/trustedContacts.js';
 import { requireAuth, type AuthedRequest } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
 
@@ -440,5 +447,209 @@ mobileRouter.delete('/payment-methods/:methodId', async (req, res) => {
     orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
   });
   res.json({ paymentMethods: methods.map(serializePaymentMethod) });
+});
+
+const trustedContactBodySchema = z.object({
+  name: z.string().trim().min(2),
+  relationship: z.enum(TRUSTED_CONTACT_RELATIONSHIPS as unknown as [string, ...string[]]),
+  phoneNumber: z.string().min(9),
+  isPrimary: z.boolean().optional(),
+});
+
+mobileRouter.get('/trusted-contacts', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const contacts = await prisma.trustedContact.findMany({
+    where: { userId: authed.user.id },
+    orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+  });
+  res.json({ trustedContacts: contacts.map(serializeTrustedContact) });
+});
+
+mobileRouter.post('/trusted-contacts', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const parsed = trustedContactBodySchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+    return;
+  }
+
+  if (!isValidRelationship(parsed.data.relationship)) {
+    res.status(400).json({ error: 'Invalid relationship.' });
+    return;
+  }
+
+  const normalizedPhone = normalizeTrustedPhone(parsed.data.phoneNumber);
+  if (!normalizedPhone) {
+    res.status(400).json({ error: 'Use +260XXXXXXXXX, 09XXXXXXXX, or 9XXXXXXXX.' });
+    return;
+  }
+
+  const duplicate = await prisma.trustedContact.findFirst({
+    where: { userId: authed.user.id, phoneNumber: normalizedPhone },
+  });
+  if (duplicate) {
+    res.status(409).json({ error: 'This phone number is already saved as a trusted contact.' });
+    return;
+  }
+
+  const existingCount = await prisma.trustedContact.count({
+    where: { userId: authed.user.id },
+  });
+  const shouldBePrimary = parsed.data.isPrimary === true || existingCount === 0;
+
+  const contact = await prisma.$transaction(async (tx) => {
+    if (shouldBePrimary) {
+      await tx.trustedContact.updateMany({
+        where: { userId: authed.user.id },
+        data: { isPrimary: false },
+      });
+    }
+
+    return tx.trustedContact.create({
+      data: {
+        userId: authed.user.id,
+        name: parsed.data.name.trim(),
+        relationship: parsed.data.relationship,
+        phoneNumber: normalizedPhone,
+        maskedPhone: maskTrustedPhone(normalizedPhone),
+        isPrimary: shouldBePrimary,
+        isVerified: false,
+      },
+    });
+  });
+
+  res.status(201).json({ trustedContact: serializeTrustedContact(contact) });
+});
+
+mobileRouter.patch('/trusted-contacts/:contactId', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const schema = z.object({
+    name: z.string().trim().min(2).optional(),
+    relationship: z.enum(TRUSTED_CONTACT_RELATIONSHIPS as unknown as [string, ...string[]]).optional(),
+    phoneNumber: z.string().min(9).optional(),
+    isPrimary: z.boolean().optional(),
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+    return;
+  }
+
+  const existing = await prisma.trustedContact.findFirst({
+    where: { id: req.params.contactId, userId: authed.user.id },
+  });
+  if (!existing) {
+    res.status(404).json({ error: 'Trusted contact not found' });
+    return;
+  }
+
+  let normalizedPhone = existing.phoneNumber;
+  if (parsed.data.phoneNumber) {
+    const nextPhone = normalizeTrustedPhone(parsed.data.phoneNumber);
+    if (!nextPhone) {
+      res.status(400).json({ error: 'Use +260XXXXXXXXX, 09XXXXXXXX, or 9XXXXXXXX.' });
+      return;
+    }
+    const duplicate = await prisma.trustedContact.findFirst({
+      where: {
+        userId: authed.user.id,
+        phoneNumber: nextPhone,
+        NOT: { id: existing.id },
+      },
+    });
+    if (duplicate) {
+      res.status(409).json({ error: 'This phone number is already saved as a trusted contact.' });
+      return;
+    }
+    normalizedPhone = nextPhone;
+  }
+
+  const wantsPrimary = parsed.data.isPrimary === true;
+
+  const updated = await prisma.$transaction(async (tx) => {
+    if (wantsPrimary) {
+      await tx.trustedContact.updateMany({
+        where: { userId: authed.user.id },
+        data: { isPrimary: false },
+      });
+    }
+
+    return tx.trustedContact.update({
+      where: { id: existing.id },
+      data: {
+        ...(parsed.data.name ? { name: parsed.data.name.trim() } : {}),
+        ...(parsed.data.relationship ? { relationship: parsed.data.relationship } : {}),
+        ...(parsed.data.phoneNumber
+          ? {
+              phoneNumber: normalizedPhone,
+              maskedPhone: maskTrustedPhone(normalizedPhone),
+            }
+          : {}),
+        ...(parsed.data.isPrimary !== undefined ? { isPrimary: parsed.data.isPrimary } : {}),
+      },
+    });
+  });
+
+  res.json({ trustedContact: serializeTrustedContact(updated) });
+});
+
+mobileRouter.put('/trusted-contacts/:contactId/primary', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const contact = await prisma.trustedContact.findFirst({
+    where: { id: req.params.contactId, userId: authed.user.id },
+  });
+  if (!contact) {
+    res.status(404).json({ error: 'Trusted contact not found' });
+    return;
+  }
+
+  await prisma.$transaction([
+    prisma.trustedContact.updateMany({
+      where: { userId: authed.user.id },
+      data: { isPrimary: false },
+    }),
+    prisma.trustedContact.update({
+      where: { id: contact.id },
+      data: { isPrimary: true },
+    }),
+  ]);
+
+  const contacts = await prisma.trustedContact.findMany({
+    where: { userId: authed.user.id },
+    orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+  });
+  res.json({ trustedContacts: contacts.map(serializeTrustedContact) });
+});
+
+mobileRouter.delete('/trusted-contacts/:contactId', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const contact = await prisma.trustedContact.findFirst({
+    where: { id: req.params.contactId, userId: authed.user.id },
+  });
+  if (!contact) {
+    res.status(404).json({ error: 'Trusted contact not found' });
+    return;
+  }
+
+  await prisma.trustedContact.delete({ where: { id: contact.id } });
+
+  if (contact.isPrimary) {
+    const next = await prisma.trustedContact.findFirst({
+      where: { userId: authed.user.id },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (next) {
+      await prisma.trustedContact.update({
+        where: { id: next.id },
+        data: { isPrimary: true },
+      });
+    }
+  }
+
+  const contacts = await prisma.trustedContact.findMany({
+    where: { userId: authed.user.id },
+    orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+  });
+  res.json({ trustedContacts: contacts.map(serializeTrustedContact) });
 });
 
