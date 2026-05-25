@@ -1,8 +1,8 @@
 /**
  * SAFE payment brand asset map — single source of truth for Payment Methods UI.
  *
- * Source pack: safe_payment_assets (Google Drive). PNG icons at 192px extracted;
- * Visa and Mastercard split from visa_mastercard_icon_192px.png via content bounds.
+ * Source pack: safe_payment_assets (Google Drive). PNG icons at 288px, trimmed to
+ * content bounds; Visa/Mastercard split from visa_mastercard_icon_288px.png.
  *
  * REJECTED (not used):
  * - svg/airtel_money.svg, svg/mtn_momo.svg, svg/visa_mastercard.svg (handmade text logos)
