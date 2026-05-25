@@ -235,7 +235,7 @@ async function main() {
     await browser2.close();
   }
 
-  // 6. Error — with cache (stale card + sync warning)
+  // 6. Sync warning — cached saved card, API refresh failed
   {
     const browser3 = await chromium.launch({ headless: true });
     const page = await browser3.newPage();
@@ -247,19 +247,19 @@ async function main() {
     await page.waitForSelector('.payment-methods-sync-warning', { timeout: 15000 });
     const hasError = await page.locator('.payment-methods-error').count();
     if (hasError > 0) {
-      throw new Error('Error-with-cache capture failed: full error card must not show');
+      throw new Error('Sync-warning capture failed: full error card must not show');
     }
-    await capturePhone(page, 'payment-methods-error-with-cache.png');
+    await capturePhone(page, 'payment-methods-sync-warning.png');
     await browser3.close();
   }
 
   console.log('Saved screenshots to', OUTPUT_DIR);
   console.log('  - payment-methods-empty.png');
   console.log('  - payment-methods-saved-airtel.png');
+  console.log('  - payment-methods-sync-warning.png');
+  console.log('  - payment-methods-error-no-cache.png');
   console.log('  - payment-methods-add-sheet.png');
   console.log('  - payment-methods-duplicate-number.png');
-  console.log('  - payment-methods-error-no-cache.png');
-  console.log('  - payment-methods-error-with-cache.png');
 }
 
 main().catch((error) => {
