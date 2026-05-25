@@ -1,0 +1,12 @@
+PaymentBrandIcon mapping:
+
+airtel_money       -> airtel_money.svg
+mtn_mobile_money   -> mtn_momo.svg
+card               -> visa_mastercard.svg
+
+Holder:
+width: 56
+height: 56
+borderRadius: 16
+resizeMode/objectFit: contain
+image max size: 44x36

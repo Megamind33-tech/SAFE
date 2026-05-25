@@ -71,10 +71,10 @@
 
 .payment-methods-skeleton__row {
   display: grid;
-  grid-template-columns: 56px 1fr;
+  grid-template-columns: 64px 1fr;
   gap: 14px;
   align-items: center;
-  min-height: 90px;
+  min-height: 96px;
   padding: 16px 18px;
   border-radius: 24px;
   background: #ffffff;
@@ -92,8 +92,8 @@
 }
 
 .payment-methods-skeleton__icon {
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
 }
 
 .payment-methods-skeleton__lines {
@@ -207,8 +207,8 @@
   align-items: center;
   gap: 14px;
   width: 100%;
-  min-height: 90px;
-  padding: 14px 18px;
+  min-height: 96px;
+  padding: 16px 18px;
   border-radius: 24px;
   background: #ffffff;
   border: 1px solid #e6ece8;
@@ -216,19 +216,19 @@
 }
 
 .payment-method-card--default {
-  border: 2px solid rgba(0, 122, 61, 0.55);
+  border: 2px solid rgba(0, 122, 61, 0.72);
   background: rgba(0, 122, 61, 0.06);
 }
 
 .payment-method-card--coming-soon {
-  opacity: 0.88;
+  opacity: 0.92;
 }
 
 .payment-brand-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: #f4f7f5;
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: #f8faf9;
   border: 1px solid rgba(0, 0, 0, 0.06);
   display: grid;
   place-items: center;
@@ -237,33 +237,26 @@
 }
 
 .payment-brand-icon--airtel_money {
-  background: rgba(237, 28, 36, 0.08);
+  background: #fff2f4;
 }
 
 .payment-brand-icon--mtn_mobile_money {
-  background: rgba(255, 203, 5, 0.14);
+  background: #fff8d6;
 }
 
-.payment-brand-icon--card {
-  background: rgba(26, 31, 113, 0.06);
+.payment-brand-icon--card,
+.payment-brand-icon--visa,
+.payment-brand-icon--mastercard {
+  background: #f1f6ff;
 }
 
 .payment-brand-icon__image {
   display: block;
-  max-width: 40px;
-  max-height: 32px;
+  max-width: 44px;
+  max-height: 36px;
   width: auto;
   height: auto;
   object-fit: contain;
-}
-
-.payment-brand-icon__missing {
-  padding: 0 4px;
-  text-align: center;
-  font-size: 8px;
-  line-height: 1.2;
-  font-weight: 700;
-  color: rgba(16, 24, 32, 0.52);
 }
 
 .payment-brand-icon--disabled {
