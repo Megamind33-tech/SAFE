@@ -172,7 +172,7 @@ export default function PaymentMethodsScreen({
       setSheetOpen(false);
     } catch (err) {
       const message = err?.message || 'Could not save payment method.';
-      if (/already saved/i.test(message)) {
+      if (/already saved|mobile money number is already/i.test(message)) {
         const refreshed = await getPaymentMethods(token);
         setMethods(refreshed);
         const duplicate = findExistingMobileMoneyMethod(

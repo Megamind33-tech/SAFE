@@ -1,10 +1,16 @@
-PaymentBrandIcon asset map (official brand marks):
+PaymentBrandIcon asset map (safe_payment_assets Google Drive pack):
 
-airtelMoney       -> payment/airtel-money.png     (Airtel Money squircle app icon)
-mtnMobileMoney    -> payment/mtn-mobile-money.png (MTN Mobile Money squircle app icon)
-visa              -> payment/visa.png             (Visa wordmark, transparent)
-mastercard        -> payment/mastercard.png       (Mastercard circles mark)
-dual_cards        -> visa + mastercard side by side in PaymentBrandIcon
+airtelMoney       -> payment/airtel-money.png     (from airtel_money_icon_288px.png)
+mtnMoMo           -> payment/mtn-mobile-money.png (from mtn_momo_icon_288px.png)
+visa              -> payment/visa.png             (split from visa_mastercard_icon_288px.png, left)
+mastercard        -> payment/mastercard.png       (split from visa_mastercard_icon_288px.png, right)
+dual_cards        -> visa + mastercard in PaymentBrandIcon
 
-Logo tile: 96x64 in Payment Methods (squircle marks fill slot; Visa/MC on white tile).
-Checkout method-card: 64x64 squircle / 72x48 dual.
+REJECTED (do not use):
+- png/*_tile_*.png (baked "Card payment" subtitle)
+- png/*_56px.png, *_112px.png (too low resolution)
+- svg/*.svg (handmade; pack icons preferred for PNG pipeline)
+
+Logo slot: 96x64, radius 18px, white bg, border rgba(15,23,42,0.08).
+Airtel/MTN image: 76x42, object-fit contain.
+Visa/Mastercard dual slot: 104x64; each mark 42x28.

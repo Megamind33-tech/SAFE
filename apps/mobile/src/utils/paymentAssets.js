@@ -1,4 +1,4 @@
-/** @deprecated Import from ../assets/paymentAssets.js */
+/** @deprecated Import from ../assets/paymentAssets.ts */
 export {
   paymentAssets,
   paymentAssets as PAYMENT_BRAND_ASSETS,
@@ -7,4 +7,4 @@ export {
   getMissingPaymentBrandAssets,
   resolvePaymentAssetKey as toPaymentBrandType,
   getPaymentAsset as getPaymentBrandAsset,
-} from '../assets/paymentAssets.js';
+} from '../assets/paymentAssets.ts';

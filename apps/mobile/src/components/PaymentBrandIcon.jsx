@@ -5,7 +5,7 @@ import {
   getPaymentAsset,
   paymentAssets,
   resolvePaymentAssetKey,
-} from '../assets/paymentAssets.js';
+} from '../assets/paymentAssets.ts';
 
 /**
  * @param {{
@@ -76,4 +76,4 @@ export default function PaymentBrandIcon({
   );
 }
 
-export { resolvePaymentAssetKey as toPaymentBrandType } from '../assets/paymentAssets.js';
+export { resolvePaymentAssetKey as toPaymentBrandType } from '../assets/paymentAssets.ts';
