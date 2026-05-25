@@ -31,3 +31,31 @@ SAFE is a minibus commuter micro-insurance monorepo (npm workspaces) with three 
 ### Default accounts
 
 See `README.md` for default dev credentials.
+
+### Payment Methods screen (LOCKED — QA accepted)
+
+**Do not redesign** the Payment Methods screen. Visual/layout direction is frozen unless the user explicitly requests changes.
+
+**Locked UI / behavior** (see `apps/mobile/src/payment-methods-screen.css`, `PaymentMethodsScreen.jsx`, `PaymentLogo.jsx`):
+
+- Payment Methods page layout, heading, bottom nav
+- Saved Airtel default card layout (CSS grid: logo | title+phone; Default badge on row 2)
+- Empty state, sync-warning (stale-while-revalidate), error-no-cache states
+- Add-payment-method bottom sheet layout (Visa row: Coming soon below subtitle)
+- Duplicate-number flow (green notice, not red error)
+- Payment logo assets from `paymentAssets.ts` only (72×56 wrappers, contained images)
+
+**QA capture** (`apps/mobile/scripts/capture-payment-methods.mjs`, commit `226e103`+):
+
+- Hard-refreshes Vite (`--force`, cache disabled, storage cleared)
+- Fails fast if stale CSS or layout regression (grid/badge/phone/sheet assertions)
+- Regenerate after CSS changes: stop Vite → clear `.vite` cache → delete `payment-methods-*.png` → restart dev → run script
+
+**Allowed future changes only:**
+
+1. Real API / integration fixes
+2. Payment provider bug fixes
+3. Small copy tweaks
+4. Accessibility or test improvements
+
+**Not allowed** without explicit user request: spacing, typography, card layout, bottom nav, logo sizing, colors, backgrounds, or other visual direction changes.
