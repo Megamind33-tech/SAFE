@@ -19,7 +19,7 @@ const API_PATH = '/api/mobile/payment-methods';
  * @property {'active' | 'pending' | 'disabled' | 'failed'} [status]
  */
 
-const PAYMENT_METHODS_CACHE_KEY = 'safe_payment_methods_cache';
+export const PAYMENT_METHODS_CACHE_KEY = 'safe_payment_methods_cache';
 
 export function readCachedPaymentMethods() {
   try {
