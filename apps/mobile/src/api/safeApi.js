@@ -1,6 +1,6 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8080';
 
-async function request(path, { method = 'GET', token, body } = {}) {
+export async function request(path, { method = 'GET', token, body } = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: {
@@ -58,6 +58,18 @@ export async function buyCover(token, payload) {
 
 export async function activeCover(token) {
   return request('/api/mobile/cover/active', { token });
+}
+
+export async function activeTrip(token) {
+  return request('/api/mobile/active-trip', { token });
+}
+
+export async function tripLocation(token, tripId) {
+  return request(`/api/mobile/trips/${tripId}/location`, { token });
+}
+
+export async function tripRoute(token, tripId) {
+  return request(`/api/mobile/trips/${tripId}/route`, { token });
 }
 
 export async function coverHistory(token) {

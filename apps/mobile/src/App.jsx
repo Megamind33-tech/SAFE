@@ -23,7 +23,6 @@ import {
   MessageCircle,
   Menu,
   Navigation2,
-  Plus,
   Radio,
   RefreshCcw,
   Search,
@@ -42,14 +41,27 @@ import safeLogo from './assets/SAFE_app_icon_master_3D_1024.png';
 import safeRoadBackground from './assets/safe-road-background.png';
 import shareTrackMap from './assets/share-track-map.png';
 import lusakaNightAerial from './assets/lusaka-night-aerial.png';
-import iconCamera from './assets/icons/camera-premium.png';
-import iconLink from './assets/icons/link-premium.png';
-import iconMobile from './assets/icons/mobile-premium.png';
-import iconPhoneRinging from './assets/icons/phone-ringing-premium.png';
-import iconShield from './assets/icons/sheild-premium.png';
-import iconTravel from './assets/icons/travel-premium.png';
-import iconWallet from './assets/icons/wallet-premium.png';
-import { buyCover, clearToken, createClaim, loadToken, login, me, registerPassenger, saveToken, activeCover, coverHistory, listClaims, verifyVehicle } from './api/safeApi.js';
+import HomeScreen from './screens/HomeScreen.jsx';
+import CoverScreen from './screens/CoverScreen.jsx';
+import ViewPolicyScreen from './screens/ViewPolicyScreen.jsx';
+import ClaimsScreen from './screens/ClaimsScreen.jsx';
+import ClaimFlowDescribeStep from './screens/ClaimFlowDescribeStep.jsx';
+import ClaimFlowUploadStep from './screens/ClaimFlowUploadStep.jsx';
+import ClaimFlowReviewStep from './screens/ClaimFlowReviewStep.jsx';
+import ClaimFlowSubmittedStep from './screens/ClaimFlowSubmittedStep.jsx';
+import ProfileScreen from './screens/ProfileScreen.jsx';
+import CoverHistoryScreen, { CoverHistoryDetailScreen } from './screens/CoverHistoryScreen.jsx';
+import PaymentMethodsScreen from './screens/PaymentMethodsScreen.jsx';
+import { getPaymentMethods, resolveDefaultCheckoutId } from './services/paymentMethods.js';
+import {
+  resolveActiveCover,
+} from './utils/activeCover.js';
+import { createEmptyClaimDraft, buildClaimSubmitPayload, hasUploadInProgress, normalizeClaimDraft, normalizeClaimDocuments, primaryClaimSlipUrl } from './claimDraftUtils.js';
+import navHomeIcon from './assets/pack/icons/nav-home.svg';
+import navCoverIcon from './assets/pack/icons/nav-cover-active.svg';
+import navClaimsIcon from './assets/pack/icons/nav-claims.svg';
+import navAccountIcon from './assets/pack/icons/nav-account.svg';
+import { buyCover, clearToken, createClaim, loadToken, login, me, registerPassenger, saveToken, activeCover as fetchActiveCover, coverHistory, listClaims, verifyVehicle } from './api/safeApi.js';
 
 const bgImage = zambiaScene;
 
@@ -80,49 +92,6 @@ const coverPlans = [
   },
 ];
 
-const historyItems = [
-  {
-    day: '18',
-    month: 'May',
-    year: '2026',
-    route: 'Matero to Town',
-    vehicle: 'LSK 2481',
-    cover: 'Plus Cover (K5)',
-    status: 'Active',
-    type: 'active',
-  },
-  {
-    day: '17',
-    month: 'May',
-    year: '2026',
-    route: 'Kwino to Town',
-    vehicle: 'BAE 5677',
-    cover: 'Plus Cover (K5)',
-    status: 'Active',
-    type: 'active',
-  },
-  {
-    day: '15',
-    month: 'May',
-    year: '2026',
-    route: 'Matero to Town',
-    vehicle: 'LSK 2481',
-    cover: 'Basic Cover (K3)',
-    status: 'Claim submitted',
-    type: 'claim',
-  },
-  {
-    day: '14',
-    month: 'May',
-    year: '2026',
-    route: 'Chawama to Town',
-    vehicle: 'BAE 5677',
-    cover: 'Basic Cover (K3)',
-    status: 'Expired',
-    type: 'expired',
-  },
-];
-
 const paymentMethods = [
   { id: 'airtel', name: 'Airtel Money', detail: 'Pay with Airtel Money', icon: Smartphone, accent: 'red' },
   { id: 'mtn', name: 'MTN Mobile Money', detail: 'Pay with MTN MoMo', icon: WalletCards, accent: 'yellow' },
@@ -132,12 +101,15 @@ const paymentMethods = [
 function App() {
   const [screen, setScreen] = useState('splash');
   const [selectedPlan, setSelectedPlan] = useState('plus');
-  const [paymentMethod, setPaymentMethod] = useState('airtel');
-  const [claimText, setClaimText] = useState('');
-  const [claimSent, setClaimSent] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [claimDraft, setClaimDraft] = useState(() => createEmptyClaimDraft());
+  const [submittedClaim, setSubmittedClaim] = useState(null);
   const [policeReference, setPoliceReference] = useState('');
   const [hospitalSlipUrl, setHospitalSlipUrl] = useState('');
   const [historyReturn, setHistoryReturn] = useState('active');
+  const [viewPolicyReturn, setViewPolicyReturn] = useState('active');
+  const [selectedHistoryCover, setSelectedHistoryCover] = useState(null);
+  const [claimFlowStep, setClaimFlowStep] = useState(1);
   const [session, setSession] = useState(() => ({ token: loadToken(), user: null, ready: false }));
 
   // New Dynamic States
@@ -160,7 +132,7 @@ function App() {
     if (!token) return;
     try {
       const [activeRes, historyRes, claimsRes] = await Promise.all([
-        activeCover(token),
+        fetchActiveCover(token),
         coverHistory(token),
         listClaims(token),
       ]);
@@ -189,6 +161,21 @@ function App() {
         setSession({ token: '', user: null, ready: true });
       });
   }, []);
+
+  useEffect(() => {
+    if (!session.ready) return;
+
+    getPaymentMethods(session.token)
+      .then((methods) => {
+        const defaultId = resolveDefaultCheckoutId(methods);
+        if (defaultId) {
+          setPaymentMethod(defaultId);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load saved payment methods:', err);
+      });
+  }, [session.ready, session.token]);
 
   useEffect(() => {
     if (session.token) {
@@ -234,6 +221,17 @@ function App() {
     [selectedPlan]
   );
 
+  const activeCover = useMemo(
+    () => resolveActiveCover(activeCoverState, coversHistory),
+    [activeCoverState, coversHistory]
+  );
+
+  useEffect(() => {
+    if ((screen === 'profile' || screen === 'history' || screen === 'coverHistoryDetail') && session.token) {
+      refreshPassengerData(session.token);
+    }
+  }, [screen, session.token]);
+
   const goHome = () => setScreen('home');
   const goCover = () => setScreen('active');
   const goClaims = () => setScreen('claim');
@@ -242,22 +240,45 @@ function App() {
     setHistoryReturn(returnTo);
     setScreen('history');
   };
+  const openCoverHistoryDetail = (cover) => {
+    setSelectedHistoryCover(cover ?? null);
+    setScreen('coverHistoryDetail');
+  };
+  const openViewPolicy = (returnTo = 'active') => {
+    setViewPolicyReturn(returnTo);
+    setScreen('viewPolicy');
+  };
+  const openClaimFlow = (step = 1) => {
+    if (step === 1) {
+      setClaimDraft(createEmptyClaimDraft());
+      setPoliceReference('');
+      setHospitalSlipUrl('');
+      setSubmittedClaim(null);
+    }
+    setClaimFlowStep(step);
+    setScreen('claimFlow');
+  };
   const showBottomNav = !['splash', 'onboarding1', 'onboarding2', 'onboarding3', 'login', 'signup', 'chat', 'offline'].includes(screen);
 
   const screenProps = {
     activePlan,
-    claimSent,
-    claimText,
+    submittedClaim,
+    claimDraft,
+    setClaimDraft,
     policeReference,
     setPoliceReference,
     hospitalSlipUrl,
     setHospitalSlipUrl,
     historyReturn,
     openHistory,
+    openCoverHistoryDetail,
+    viewPolicyReturn,
+    openViewPolicy,
+    openClaimFlow,
+    claimFlowStep,
     paymentMethod,
     selectedPlan,
-    setClaimSent,
-    setClaimText,
+    setSubmittedClaim,
     setPaymentMethod,
     setScreen,
     setSelectedPlan,
@@ -270,11 +291,13 @@ function App() {
     },
     // New Dynamic Props
     activeCoverState,
+    activeCover,
     countdown,
     scannedVehicle,
     setScannedVehicle,
     coversHistory,
     claimsList,
+    selectedHistoryCover,
     refreshPassengerData,
     setShowScannerModal,
     setScannerType,
@@ -300,14 +323,31 @@ function App() {
         {screen === 'onboarding3' && <OnboardingThree {...screenProps} />}
         {screen === 'login' && <LoginScreen {...screenProps} />}
         {screen === 'signup' && <SignupScreen {...screenProps} />}
-        {screen === 'home' && <HomeScreen {...screenProps} />}
+        {screen === 'home' && <HomeScreen {...screenProps} goCover={goCover} />}
         {screen === 'choose' && <ChooseCoverScreen {...screenProps} />}
         {screen === 'payment' && <PaymentScreen {...screenProps} />}
-        {screen === 'active' && <ActiveCoverScreen {...screenProps} />}
-        {screen === 'history' && <HistoryScreen {...screenProps} />}
-        {screen === 'claim' && <ClaimScreen {...screenProps} />}
+        {screen === 'active' && <CoverScreen {...screenProps} />}
+        {screen === 'viewPolicy' && <ViewPolicyScreen {...screenProps} />}
+        {screen === 'history' && (
+          <CoverHistoryScreen
+            {...screenProps}
+            onSelectCover={openCoverHistoryDetail}
+            onStartCover={() => setScreen('choose')}
+          />
+        )}
+        {screen === 'coverHistoryDetail' && (
+          <CoverHistoryDetailScreen
+            {...screenProps}
+            selectedCover={selectedHistoryCover}
+            historyReturn="history"
+          />
+        )}
+        {screen === 'claim' && <ClaimsScreen {...screenProps} />}
+        {screen === 'claimFlow' && <ClaimScreen {...screenProps} />}
         {screen === 'profile' && <ProfileScreen {...screenProps} />}
-        {screen === 'profilePayments' && <ProfilePaymentMethodsScreen {...screenProps} />}
+        {screen === 'profilePayments' && <PaymentMethodsScreen {...screenProps} />}
+        {screen === 'trustedContacts' && <TrustedContactsScreen {...screenProps} />}
+        {screen === 'settings' && <SettingsScreen {...screenProps} />}
         {screen === 'notifications' && <NotificationsScreen {...screenProps} />}
         {screen === 'helpSafety' && <HelpSafetyScreen {...screenProps} />}
         {screen === 'chat' && <ChatScreen {...screenProps} />}
@@ -469,8 +509,11 @@ function App() {
 
 function navState(screen) {
   if (screen === 'home') return 'home';
-  if (['choose', 'payment', 'active', 'history'].includes(screen)) return 'cover';
-  if (screen === 'claim') return 'claims';
+  if (['choose', 'payment', 'active', 'viewPolicy'].includes(screen)) return 'cover';
+  if (['claim', 'claimFlow'].includes(screen)) return 'claims';
+  if (['history', 'coverHistoryDetail', 'profile', 'profilePayments', 'trustedContacts', 'settings', 'notifications', 'helpSafety'].includes(screen)) {
+    return 'profile';
+  }
   return 'profile';
 }
 
@@ -496,20 +539,45 @@ function TopBar({ onBack, title, action }) {
 
 function BottomNav({ current, onHome, onCover, onClaims, onProfile }) {
   const items = [
-    { id: 'home', label: 'Home', icon: Home, onClick: onHome },
-    { id: 'cover', label: 'Cover', icon: Shield, onClick: onCover },
-    { id: 'claims', label: 'Claims', icon: FileText, onClick: onClaims },
-    { id: 'profile', label: 'Profile', icon: User, onClick: onProfile },
+    { id: 'home', label: 'Home', icon: navHomeIcon, onClick: onHome },
+    { id: 'cover', label: 'Cover', icon: navCoverIcon, onClick: onCover },
+    { id: 'claims', label: 'Claims', icon: navClaimsIcon, onClick: onClaims },
+    { id: 'profile', label: 'Profile', icon: navAccountIcon, onClick: onProfile },
   ];
 
+  const navClassName = [
+    'bottom-nav',
+    current === 'claims' ? 'bottom-nav--claims-current' : '',
+    current === 'profile' ? 'bottom-nav--profile-current' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <nav className="bottom-nav" aria-label="Primary">
+    <nav className={navClassName} aria-label="Primary">
       {items.map((item) => {
-        const Icon = item.icon;
         const active = current === item.id;
         return (
           <button className={`nav-item ${active ? 'active' : ''}`} key={item.id} type="button" onClick={item.onClick}>
-            <Icon size={22} strokeWidth={active ? 2.6 : 2} fill={active ? 'currentColor' : 'none'} />
+            {item.id === 'claims' && active ? (
+              <FileText
+                className="nav-item-icon nav-item-icon--claims-active"
+                size={22}
+                strokeWidth={2}
+                color="#FFC612"
+                aria-hidden="true"
+              />
+            ) : item.id === 'profile' && active ? (
+              <CircleUserRound
+                className="nav-item-icon nav-item-icon--profile-active"
+                size={22}
+                strokeWidth={2}
+                color="#FFC612"
+                aria-hidden="true"
+              />
+            ) : (
+              <img className="nav-item-icon" src={item.icon} alt="" aria-hidden="true" />
+            )}
             <span>{item.label}</span>
           </button>
         );
@@ -637,7 +705,7 @@ function OnboardingThree({ setScreen }) {
   );
 }
 
-function LoginScreen({ setScreen, setSession, auth }) {
+function LoginScreen({ setScreen, setSession, auth, refreshPassengerData }) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -661,7 +729,17 @@ function LoginScreen({ setScreen, setSession, auth }) {
             try {
               const data = await auth.login({ identifier, password });
               auth.saveToken(data.token);
-              setSession({ token: data.token, user: data.user ?? null, ready: true });
+              let user = data.user ?? null;
+              try {
+                const meData = await me(data.token);
+                user = meData?.user ?? user;
+              } catch {
+                /* keep login payload user if profile fetch fails */
+              }
+              if (refreshPassengerData) {
+                await refreshPassengerData(data.token);
+              }
+              setSession({ token: data.token, user, ready: true });
               setScreen('home');
             } catch (e) {
               setError(e?.message || 'Login failed');
@@ -759,151 +837,6 @@ function SignupScreen({ setScreen, setSession, auth }) {
         </form>
 
         <p className="auth-switch">Already have an account? <button type="button" onClick={() => setScreen('login')}>Log in</button></p>
-      </section>
-    </main>
-  );
-}
-
-function HomeScreen({ setScreen, activeCoverState, countdown, setShowScannerModal, setScannerType }) {
-  const quickActions = [
-    { label: 'Scan QR', detail: 'Board faster', asset: iconCamera, action: () => { setScannerType('qr'); setShowScannerModal(true); }, tone: 'yellow' },
-    { label: 'Enter Vehicle', detail: 'Use plate number', asset: iconMobile, action: () => { setScannerType('plate'); setShowScannerModal(true); }, tone: 'blue' },
-    { label: 'Monthly Cover', detail: 'Commuter pass', asset: iconWallet, action: () => { setScannerType('plate'); setShowScannerModal(true); }, tone: 'navy' },
-    { label: 'SOS Emergency', detail: 'Fast claim help', asset: iconPhoneRinging, action: () => setScreen('claim'), tone: 'danger' },
-    { label: 'Share Trip', detail: 'Live route link', asset: iconLink, action: () => setScreen('chat'), tone: 'glass' },
-    { label: 'Verified Buses', detail: 'Nearby routes', asset: iconTravel, action: () => { setScannerType('qr'); setShowScannerModal(true); }, tone: 'glass' },
-  ];
-
-  return (
-    <main className="screen home-screen premium-home">
-      <section className="mobility-hero">
-        <div className="hero-environment" style={{ backgroundImage: `url(${lusakaNightAerial})` }} />
-        <header className="home-top-row">
-          <div className="home-identity">
-            <p>Good morning, Moses</p>
-            <strong>SAFE active in motion</strong>
-          </div>
-          <div className="home-top-actions">
-            <button className="location-pill" type="button" aria-label="Current city">
-              <MapPin size={15} />
-              <span>Lusaka</span>
-            </button>
-            <button className="notify-btn" type="button" aria-label="Notifications" onClick={() => setScreen('notifications')}>
-              <Bell size={19} />
-              <i />
-            </button>
-          </div>
-        </header>
-
-        {activeCoverState ? (
-          <section className="active-cover-card" aria-label="Active cover">
-            <div className="cover-card-glow" />
-            <div className="cover-card-head">
-              <span className="protection-status"><i />Protected</span>
-              <span className="cover-countdown">{countdown}</span>
-            </div>
-            <img className="cover-orb-icon" src={iconShield} alt="" />
-            <h1>{activeCoverState.route ? `${activeCoverState.route.origin} to ${activeCoverState.route.destination}` : 'Lusaka Commute'}</h1>
-            <p className="route-subtitle">Live commuter protection for this minibus trip</p>
-
-            <div className="cover-intel-grid">
-              <div><span>Vehicle</span><strong>{activeCoverState.vehicle?.plateNumber || 'LSK 2481'}</strong></div>
-              <div><span>Driver</span><strong>Verified</strong></div>
-              <div><span>Started</span><strong>{new Date(activeCoverState.startedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong></div>
-              <div><span>Cover</span><strong>{activeCoverState.plan === 'basic' ? 'Basic' : 'Plus'}</strong></div>
-            </div>
-
-            <button className="share-trip-btn" type="button" onClick={() => setScreen('chat')}>
-              <Share2 size={18} />
-              <span>Share protected trip</span>
-              <ArrowRight size={17} />
-            </button>
-          </section>
-        ) : (
-          <section className="active-cover-card select-none" aria-label="Get covered">
-            <div className="cover-card-glow" />
-            <div className="cover-card-head">
-              <span className="protection-status bg-slate-800/80 border border-slate-700 text-slate-300"><i className="bg-slate-400" />Unprotected</span>
-            </div>
-            <img className="cover-orb-icon opacity-40 grayscale" src={iconShield} alt="" />
-            <h1 className="text-xl font-black text-white">Secure Your Ride</h1>
-            <p className="route-subtitle text-slate-400 text-xs">Protect your current commute with instant accident medical coverage</p>
-            
-            <div className="flex gap-3 mt-5">
-              <button 
-                type="button"
-                onClick={() => { setScannerType('qr'); setShowScannerModal(true); }}
-                className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-lg active:scale-95 cursor-pointer"
-              >
-                <span className="p-0.5 bg-slate-950/10 rounded"><ShieldCheck size={14} /></span>
-                Scan QR Code
-              </button>
-              <button 
-                type="button"
-                onClick={() => { setScannerType('plate'); setShowScannerModal(true); }}
-                className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-xl transition-all border border-slate-700 hover:border-slate-600 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
-              >
-                <Bus size={14} />
-                Enter Plate
-              </button>
-            </div>
-          </section>
-        )}
-      </section>
-
-      <section className="home-content-flow">
-        <section className="live-route-panel">
-          <div className="section-title-row">
-            <div>
-              <p className="eyebrow">Live route intelligence</p>
-              <h2>Protected route map</h2>
-            </div>
-            <span className="route-live-pill"><i />Live</span>
-          </div>
-          <div className="route-map-surface" style={{ backgroundImage: `url(${shareTrackMap})` }}>
-            <div className="map-vignette" />
-            <span className="map-status-card">
-              <ShieldCheck size={17} />
-              <strong>Route secured</strong>
-            </span>
-            <span className="route-pulse-dot" />
-          </div>
-        </section>
-
-        <section className="quick-action-section">
-          <div className="section-title-row">
-            <div>
-              <p className="eyebrow">Move faster</p>
-              <h2>Quick actions</h2>
-            </div>
-          </div>
-          <div className="premium-action-grid">
-            {quickActions.map((action) => {
-              return (
-                <button className={`premium-action-card ${action.tone}`} key={action.label} type="button" onClick={action.action}>
-                  <span><img src={action.asset} alt="" /></span>
-                  <strong>{action.label}</strong>
-                  <small>{action.detail}</small>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="trust-activity-panel">
-          <div className="section-title-row">
-            <div>
-              <p className="eyebrow">SAFE network</p>
-              <h2>Live trust activity</h2>
-            </div>
-          </div>
-          <div className="activity-grid">
-            <div><strong>18,420</strong><span>protected commuters today</span></div>
-            <div><strong>94%</strong><span>claims reviewed under 24h</span></div>
-            <div><strong>126</strong><span>verified minibuses nearby</span></div>
-            <div><strong>31</strong><span>active Lusaka routes</span></div>
-          </div>
-        </section>
       </section>
     </main>
   );
@@ -1026,7 +959,7 @@ function PaymentScreen({ activePlan, paymentMethod, selectedPlan, session, setPa
         <button
           className="primary-btn"
           type="button"
-          disabled={busy}
+          disabled={busy || !paymentMethod}
           onClick={async () => {
             setError('');
             if (!session?.token) {
@@ -1059,566 +992,160 @@ function PaymentScreen({ activePlan, paymentMethod, selectedPlan, session, setPa
   );
 }
 
-function ActiveCoverScreen({ openHistory, setScreen, activeCoverState, countdown }) {
-  return (
-    <main className="screen active-screen">
-      <section className="cover-hero" style={{ backgroundImage: `linear-gradient(180deg, rgba(248,249,250,.88), rgba(248,249,250,.55), rgba(248,249,250,1)), url(${bgImage})` }}>
-        <header className="cover-top">
-          <IconButton label="Menu" quiet><Menu size={22} /></IconButton>
-          <strong>SAFE</strong>
-          <IconButton label="Notifications" quiet onClick={() => setScreen('notifications')}><Bell size={22} /></IconButton>
-        </header>
-        <div className="protected-lockup">
-          <div>
-            <h1>You're protected</h1>
-          </div>
-          <span className="big-shield"><ShieldCheck size={116} /></span>
-        </div>
-      </section>
-
-      <section className="active-content">
-        <div className="timer-block">
-          <span>Cover active</span>
-          <strong>{countdown}</strong>
-          <small>remaining</small>
-        </div>
-
-        <section className="policy-card">
-          <div><span>Policy ID</span><strong>{activeCoverState?.id ? `SAFE-${activeCoverState.id.slice(-8).toUpperCase()}` : 'SAFE-ACTIVE-PLAN'}</strong></div>
-          <div><span>Vehicle</span><strong>{activeCoverState?.vehicle?.plateNumber || 'LSK 2481'}</strong></div>
-          <div><span>Route</span><strong>{activeCoverState?.route ? `${activeCoverState.route.origin} to ${activeCoverState.route.destination}` : 'Matero to Town'}</strong></div>
-          <div><span>Valid until</span><strong>{activeCoverState?.endsAt ? new Date(activeCoverState.endsAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '13:42'}</strong></div>
-        </section>
-
-        <section className="stacked-actions">
-          <button className="secondary-btn" type="button" onClick={() => openHistory('active')}>
-            <FileText size={19} />
-            <span>View Policy</span>
-          </button>
-          <button className="danger-btn" type="button" onClick={() => setScreen('claim')}>
-            <Siren size={19} />
-            <span>Report Accident</span>
-          </button>
-        </section>
-      </section>
-    </main>
-  );
-}
-
-function HistoryScreen({ historyReturn, setScreen, coversHistory, claimsList }) {
-  const [filter, setFilter] = useState('All');
-
-  const visibleItems = useMemo(() => {
-    const items = coversHistory.map((cover) => {
-      const date = new Date(cover.createdAt);
-      const day = String(date.getDate());
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const month = months[date.getMonth()];
-      const year = String(date.getFullYear());
-      
-      const route = cover.route ? `${cover.route.origin} to ${cover.route.destination}` : 'Lusaka Commute';
-      const vehicle = cover.vehicle?.plateNumber || 'LSK 2481';
-      const coverPlanName = `${cover.plan === 'basic' ? 'Basic' : 'Plus'} Cover (K${cover.amount})`;
-      
-      // Find matching claim
-      const claim = claimsList.find((c) => c.tripCoverId === cover.id);
-      let status = 'Expired';
-      let type = 'expired';
-      
-      if (claim) {
-        type = 'claim';
-        if (claim.status === 'submitted') status = 'Claim submitted';
-        else if (claim.status === 'processing') status = 'Processing';
-        else if (claim.status === 'approved') status = 'Approved';
-        else if (claim.status === 'rejected') status = 'Rejected';
-        else if (claim.status === 'paid') status = 'Paid';
-      } else {
-        const isCurrentlyActive = cover.status === 'active' && new Date(cover.endsAt).getTime() > Date.now();
-        if (isCurrentlyActive) {
-          status = 'Active';
-          type = 'active';
-        }
-      }
-      
-      return {
-        id: cover.id,
-        day,
-        month,
-        year,
-        route,
-        vehicle,
-        cover: coverPlanName,
-        status,
-        type,
-      };
-    });
-    
-    if (filter === 'All') return items;
-    if (filter === 'Active') return items.filter((item) => item.type === 'active');
-    if (filter === 'Expired') return items.filter((item) => item.type === 'expired');
-    if (filter === 'Claim') return items.filter((item) => item.type === 'claim');
-    return items;
-  }, [coversHistory, claimsList, filter]);
-
-  return (
-    <main className="screen padded">
-      <header className="history-top">
-        <IconButton label="Back" quiet onClick={() => setScreen(historyReturn)}><ArrowLeft size={22} /></IconButton>
-        <div>
-          <IconButton label="Search" quiet><Search size={22} /></IconButton>
-          <span className="avatar">M</span>
-        </div>
-      </header>
-
-      <section className="page-heading">
-        <h1>My cover history</h1>
-      </section>
-
-      <section className="filter-row" aria-label="Cover filters">
-        {['All', 'Active', 'Expired', 'Claim'].map((item) => (
-          <button className={filter === item ? 'active' : ''} type="button" key={item} onClick={() => setFilter(item)}>
-            {item === 'Claim' ? 'Claims' : item}
-          </button>
-        ))}
-      </section>
-
-      <section className="history-list">
-        {visibleItems.map((item) => (
-          <article className={`history-card ${item.type}`} key={`${item.day}-${item.vehicle}-${item.status}`}>
-            <div className="date-tile">
-              <strong>{item.day}</strong>
-              <span>{item.month}</span>
-              <small>{item.year}</small>
-            </div>
-            <div className="history-main">
-              <strong>{item.route}</strong>
-              <span>{item.vehicle}</span>
-              <span>{item.cover}</span>
-            </div>
-            <span className={`status-pill ${item.type}`}>
-              {item.type === 'active' && <CheckCircle2 size={14} />}
-              {item.type === 'claim' && <FileText size={14} />}
-              {item.type === 'expired' && <Lock size={14} />}
-              {item.status}
-            </span>
-          </article>
-        ))}
-      </section>
-    </main>
-  );
-}
 
 function ClaimScreen({
-  claimText,
+  claimDraft,
+  setClaimDraft,
   session,
-  setClaimText,
-  claimSent,
-  setClaimSent,
+  submittedClaim,
+  setSubmittedClaim,
   policeReference,
   setPoliceReference,
   hospitalSlipUrl,
   setHospitalSlipUrl,
+  refreshPassengerData,
   setScreen,
-  openHistory,
   activeCoverState,
+  activeCover,
   coversHistory = [],
+  claimFlowStep = 1,
 }) {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(claimFlowStep);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const chars = claimText.length;
 
-  const activeCover = activeCoverState || coversHistory[0];
-  const activePolicyId = activeCover?.id ? `SAFE-${activeCover.id.slice(-8).toUpperCase()}` : trip.policy;
-  const activeVehicle = activeCover?.vehicle?.plateNumber || trip.vehicle;
+  const draft = normalizeClaimDraft(claimDraft);
+  const draftDocuments = draft.documents;
 
-  const handleFileChange = (event) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setHospitalSlipUrl(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const triggerCameraMock = () => {
-    const mockSvgBase64 = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400"><rect width="300" height="400" fill="%23e6f4ea" rx="8"/><rect x="15" y="15" width="270" height="370" fill="none" stroke="%2334a853" stroke-width="2" stroke-dasharray="6 4"/><text x="150" y="50" font-family="sans-serif" font-size="20" font-weight="bold" fill="%230f5132" text-anchor="middle">LUSAKA GENERAL HOSPITAL</text><text x="150" y="80" font-family="sans-serif" font-size="12" fill="%23198754" text-anchor="middle">EMERGENCY WARD - ACCIDENT REPORT</text><line x1="30" y1="110" x2="270" y2="110" stroke="%2334a853" stroke-width="1.5"/><text x="40" y="140" font-family="sans-serif" font-size="11" font-weight="bold" fill="%23333">PATIENT: MOSES BANDA</text><text x="40" y="165" font-family="sans-serif" font-size="11" fill="%23555">ADMISSION DATE: 21 MAY 2026</text><text x="40" y="190" font-family="sans-serif" font-size="11" fill="%23555">DIAGNOSIS: MINOR BRUISES & CONTUSIONS</text><text x="40" y="215" font-family="sans-serif" font-size="11" fill="%23555">COVER LEVEL: SAFE ACTIVE COVER</text><line x1="30" y1="240" x2="270" y2="240" stroke="%2334a853" stroke-dasharray="3 3"/><text x="150" y="275" font-family="sans-serif" font-size="14" font-weight="bold" fill="%230f5132" text-anchor="middle">TOTAL CHARGES: ZMW 1,200</text><text x="150" y="300" font-family="sans-serif" font-size="10" fill="%23555" text-anchor="middle">STATUS: PAID IN FULL</text><rect x="60" y="330" width="180" height="40" fill="%23198754" rx="4"/><text x="150" y="355" font-family="sans-serif" font-size="11" font-weight="bold" fill="%23fff" text-anchor="middle">VERIFIED COMMUTER CLAIM</text></svg>';
-    setHospitalSlipUrl(mockSvgBase64);
-  };
-
-  const handleReset = () => {
-    setClaimText('');
+  const finishClaimFlow = () => {
+    setClaimDraft(createEmptyClaimDraft());
     setPoliceReference('');
     setHospitalSlipUrl('');
-    setClaimSent(false);
+    setSubmittedClaim(null);
     setStep(1);
   };
 
-  if (claimSent) {
+  const syncHospitalSlipFromDraft = (documents) => {
+    setHospitalSlipUrl(primaryClaimSlipUrl(documents) || '');
+  };
+
+  const handleNarrativeChange = (value) => {
+    setClaimDraft((prev) => ({
+      ...normalizeClaimDraft(prev),
+      incidentNarrative: value,
+    }));
+    setError('');
+  };
+
+  const handleDocumentsChange = (nextOrUpdater) => {
+    setClaimDraft((prev) => {
+      const current = normalizeClaimDraft(prev);
+      const nextDocuments =
+        typeof nextOrUpdater === 'function'
+          ? nextOrUpdater(current.documents)
+          : normalizeClaimDocuments(nextOrUpdater);
+      const nextDraft = {
+        ...current,
+        documents: normalizeClaimDocuments(nextDocuments),
+      };
+      syncHospitalSlipFromDraft(nextDraft.documents);
+      return nextDraft;
+    });
+  };
+
+  if (submittedClaim) {
     return (
-      <main className="screen padded claim-screen success-view overflow-y-auto pb-24">
-        <MiniStatusBar />
-        <section className="success-hero text-center my-6">
-          <div className="success-icon-wrap flex justify-center mb-4 relative">
-            <div className="h-16 w-16 bg-emerald-500 text-white rounded-full grid place-items-center shadow-lg relative z-10 animate-bounce">
-              <ShieldCheck size={36} />
-            </div>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-20 w-20 bg-emerald-500/20 rounded-full blur-md" />
-          </div>
-          <h1 className="text-xl font-black text-safe-ink">Claim Submitted!</h1>
-          <p className="text-xs font-semibold text-slate-500 mt-1">Claim submitted for trip {activeVehicle}.</p>
-        </section>
-
-        <section className="claim-receipt-card bg-white border border-slate-200 rounded-2xl p-4 shadow-[0_8px_20px_rgba(0,0,0,0.03)] mb-5">
-          <div className="receipt-header border-b border-dashed border-slate-200 pb-3 flex justify-between items-center mb-3">
-            <strong className="text-xs font-black tracking-wider text-safe-ink">CLAIM RECEIPT</strong>
-            <span className="text-[10px] font-bold text-slate-400">Policy: {activePolicyId}</span>
-          </div>
-          <div className="receipt-body space-y-2 text-xs">
-            <div className="receipt-row flex justify-between">
-              <span className="text-slate-400 font-semibold">Incident Details</span>
-              <strong className="text-safe-ink font-bold max-w-[150px] truncate">{claimText.length > 40 ? claimText.slice(0, 37) + '...' : claimText}</strong>
-            </div>
-            {policeReference && (
-              <div className="receipt-row flex justify-between">
-                <span className="text-slate-400 font-semibold">RTSA / Police Ref</span>
-                <strong className="text-safe-ink font-bold">{policeReference}</strong>
-              </div>
-            )}
-            <div className="receipt-row flex justify-between">
-              <span className="text-slate-400 font-semibold">Hospital Slip</span>
-              <strong className="text-emerald-700 font-bold">{hospitalSlipUrl ? 'Attached (Verified)' : 'Not attached'}</strong>
-            </div>
-            <div className="receipt-row flex justify-between items-center pt-2 border-t border-slate-100">
-              <span className="text-slate-400 font-semibold">Status</span>
-              <span className="rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-700">Submitted</span>
-            </div>
-          </div>
-        </section>
-
-        <section className="timeline-tracker bg-white border border-slate-200 rounded-2xl p-4 shadow-[0_8px_20px_rgba(0,0,0,0.03)] mb-5">
-          <h3 className="text-xs font-black tracking-wider text-safe-ink mb-3 uppercase">Review Timeline</h3>
-          <div className="timeline-steps space-y-4">
-            <div className="timeline-step flex items-start gap-3">
-              <span className="bullet h-5 w-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">✓</span>
-              <div className="step-desc text-xs">
-                <strong className="block font-bold text-safe-ink">Claim Submitted</strong>
-                <small className="block text-[10px] font-semibold text-slate-400">Today, 12:42 PM</small>
-              </div>
-            </div>
-            <div className="timeline-step flex items-start gap-3">
-              <span className="bullet h-5 w-5 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0 text-[12px] font-bold animate-pulse">!</span>
-              <div className="step-desc text-xs">
-                <strong className="block font-bold text-safe-ink">Operations Audit</strong>
-                <small className="block text-[10px] font-semibold text-slate-400">Review in progress (Under 24h)</small>
-              </div>
-            </div>
-            <div className="timeline-step flex items-start gap-3">
-              <span className="bullet h-5 w-5 rounded-full bg-slate-200 text-slate-400 flex items-center justify-center shrink-0 text-[10px] font-bold">3</span>
-              <div className="step-desc text-xs">
-                <strong className="block font-semibold text-slate-400">Insurance Payout</strong>
-                <small className="block text-[10px] font-semibold text-slate-400">ZMW 1,200 payout standard</small>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <div className="sticky-double-cta grid grid-cols-2 gap-3 mt-6">
-          <button className="primary-btn flex items-center justify-center gap-2" type="button" onClick={() => openHistory('active')}>
-            <FileText size={18} />
-            <span>Track in History</span>
-          </button>
-          <button className="secondary-btn flex items-center justify-center gap-2 border border-slate-300 hover:bg-slate-50" type="button" onClick={handleReset}>
-            <RefreshCcw size={18} />
-            <span>New Claim</span>
-          </button>
-        </div>
-      </main>
+      <ClaimFlowSubmittedStep
+        claim={submittedClaim}
+        activeCover={activeCover}
+        fallbackPolicyId={trip.policy}
+        fallbackVehicle={trip.vehicle}
+        onBackToClaims={() => {
+          finishClaimFlow();
+          setScreen('claim');
+        }}
+        onBackToHome={() => {
+          finishClaimFlow();
+          setScreen('home');
+        }}
+      />
     );
   }
 
-  return (
-    <main className="screen padded claim-screen overflow-y-auto pb-24">
-      <TopBar 
-        onBack={() => {
-          if (step > 1) {
-            setStep(step - 1);
-          } else {
-            setScreen('active');
-          }
-        }} 
-        title={
-          step === 1 ? 'Describe Incident' :
-          step === 2 ? 'Attach Documents' : 'Police Reference'
-        }
+  if (step === 1) {
+    return (
+      <ClaimFlowDescribeStep
+        incidentNarrative={draft.incidentNarrative}
+        onNarrativeChange={handleNarrativeChange}
+        onBack={() => setScreen('claim')}
+        onNext={() => setStep(2)}
       />
-      
-      <section className="steps" aria-label="Claim progress">
-        <span className={step >= 1 ? 'active' : ''}>1</span>
-        <span className={step >= 2 ? 'active' : ''}>2</span>
-        <span className={step >= 3 ? 'active' : ''}>3</span>
-      </section>
+    );
+  }
 
-      {error && <p className="payment-error mb-4">{error}</p>}
+  if (step === 2) {
+    return (
+      <ClaimFlowUploadStep
+        documents={draftDocuments}
+        onDocumentsChange={handleDocumentsChange}
+        onBack={() => setStep(1)}
+        onNext={() => setStep(3)}
+        onUploadLater={() => setStep(3)}
+      />
+    );
+  }
 
-      {step === 1 && (
-        <div className="step-container">
-          <section className="page-heading mb-4">
-            <h1>What happened?</h1>
-          </section>
+  if (step === 3) {
+    const narrativeValid = draft.incidentNarrative.trim().length >= 10;
+    const canSubmit = narrativeValid && !hasUploadInProgress(draftDocuments);
 
-          <section className="claim-card vertical bg-white border border-slate-200 rounded-2xl p-4 shadow-[0_8px_20px_rgba(0,0,0,0.03)] mb-4">
-            <div className="claim-title-row flex items-center gap-3 mb-3 pb-2 border-b border-slate-100">
-              <span className="claim-icon note h-10 w-10 bg-amber-50 text-amber-500 rounded-xl grid place-items-center"><FileText size={20} /></span>
-              <div>
-                <strong className="block text-xs font-black text-safe-ink">Accident Narrative</strong>
-                <small className="block text-[10px] font-semibold text-slate-400">Min 10 characters required</small>
-              </div>
-            </div>
-            <label className="textarea-wrap block relative">
-              <textarea
-                maxLength={500}
-                value={claimText}
-                onChange={(event) => {
-                  setClaimText(event.target.value);
-                  setError('');
-                }}
-                className="w-full min-h-[140px] text-xs border border-slate-200 rounded-xl p-3 focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 resize-none"
-                placeholder="Describe the minibus journey, what time the accident happened, and any injuries sustained..."
-              />
-              <span className="absolute bottom-2 right-3 text-[9px] font-bold text-slate-400">{chars}/500</span>
-            </label>
-          </section>
+    return (
+      <ClaimFlowReviewStep
+        incidentNarrative={draft.incidentNarrative}
+        documents={draftDocuments}
+        activeCover={activeCover}
+        fallbackPolicyId={trip.policy}
+        fallbackVehicle={trip.vehicle}
+        fallbackRoute={trip.route.replace(' to ', ' → ')}
+        busy={busy}
+        error={error}
+        canSubmit={canSubmit}
+        onBack={() => setStep(2)}
+        onEditNarrative={() => setStep(1)}
+        onEditEvidence={() => setStep(2)}
+        onSubmit={async () => {
+          setError('');
+          if (!session?.token) {
+            setScreen('login');
+            return;
+          }
+          if (!narrativeValid) {
+            setError('Please add an accident narrative of at least 10 characters.');
+            return;
+          }
+          setBusy(true);
+          try {
+            const payload = buildClaimSubmitPayload(draft, {
+              tripCoverId: activeCover?.id || undefined,
+              policeReference,
+            });
+            const result = await createClaim(session.token, payload);
+            syncHospitalSlipFromDraft(draftDocuments);
+            if (refreshPassengerData) {
+              await refreshPassengerData(session.token);
+            }
+            setSubmittedClaim(result.claim);
+          } catch (e) {
+            setError('Claim could not be submitted. Please try again.');
+          } finally {
+            setBusy(false);
+          }
+        }}
+      />
+    );
+  }
 
-          <button 
-            className="primary-btn w-full flex items-center justify-center gap-2 mt-4" 
-            type="button"
-            disabled={chars < 10}
-            onClick={() => setStep(2)}
-          >
-            <span>Next: Upload Documents</span>
-            <ArrowRight size={18} />
-          </button>
-        </div>
-      )}
-
-      {step === 2 && (
-        <div className="step-container">
-          <section className="page-heading mb-4">
-            <h1>Medical Documents</h1>
-          </section>
-
-          <div className="claim-list mb-4">
-            <div className="document-uploader bg-white border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center">
-              {hospitalSlipUrl ? (
-                <div className="image-preview-card relative">
-                  <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm max-h-[220px] bg-slate-50 flex justify-center items-center">
-                    <img src={hospitalSlipUrl} alt="Hospital Slip Preview" className="uploaded-slip object-contain max-h-[200px]" />
-                  </div>
-                  <div className="mt-3 flex justify-between items-center px-1">
-                    <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Hospital Slip Attached ✓</span>
-                    <button 
-                      type="button" 
-                      className="text-[10px] font-black text-red-600 hover:underline" 
-                      onClick={() => setHospitalSlipUrl('')}
-                    >
-                      Remove File
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="upload-dropzone">
-                  <div className="upload-icons flex justify-center mb-3">
-                    <span className="claim-icon medical h-12 w-12 bg-emerald-50 text-emerald-500 rounded-full grid place-items-center"><HeartPulse size={24} /></span>
-                  </div>
-                  <h3 className="text-xs font-black text-safe-ink">Hospital Admission Slip</h3>
-                  
-                  <input 
-                    type="file" 
-                    id="hospital-file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={handleFileChange}
-                  />
-                  
-                  <div className="upload-btn-row flex justify-center gap-3 mt-4">
-                    <label htmlFor="hospital-file" className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-black text-safe-ink cursor-pointer hover:bg-slate-50 inline-flex items-center gap-2">
-                      <Upload size={14} />
-                      <span>Choose File</span>
-                    </label>
-                    <button 
-                      type="button" 
-                      className="px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-black text-emerald-700 cursor-pointer hover:bg-emerald-100 inline-flex items-center gap-2"
-                      onClick={triggerCameraMock}
-                    >
-                      <Siren size={14} />
-                      <span>Simulate Camera</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <button 
-            className="primary-btn w-full flex items-center justify-center gap-2 mt-4" 
-            type="button"
-            onClick={() => setStep(3)}
-          >
-            <span>{hospitalSlipUrl ? 'Continue to Reference' : 'Skip & Continue'}</span>
-            <ArrowRight size={18} />
-          </button>
-        </div>
-      )}
-
-      {step === 3 && (
-        <div className="step-container">
-          <section className="page-heading mb-4">
-            <h1>Police Reference</h1>
-          </section>
-
-          <section className="claim-card vertical bg-white border border-slate-200 rounded-2xl p-4 shadow-[0_8px_20px_rgba(0,0,0,0.03)] mb-4">
-            <div className="claim-title-row flex items-center gap-3 mb-3 pb-2 border-b border-slate-100">
-              <span className="claim-icon police h-10 w-10 bg-red-50 text-red-500 rounded-xl grid place-items-center"><Shield size={20} /></span>
-              <div>
-                <strong className="block text-xs font-black text-safe-ink">Police / RTSA Reference</strong>
-                <small className="block text-[10px] font-semibold text-slate-400">Optional but speeds up approval</small>
-              </div>
-            </div>
-            
-            <div className="input-wrap">
-              <input 
-                type="text" 
-                value={policeReference}
-                onChange={(event) => setPoliceReference(event.target.value)}
-                placeholder="e.g. POL-18492-LSK or RTSA-093"
-                className="w-full text-xs border border-slate-200 rounded-xl p-3 focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10"
-              />
-            </div>
-          </section>
-
-          <section className="summary-confirm-card bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-4">
-            <h4 className="text-[10px] font-black tracking-wider text-slate-500 uppercase mb-3 border-b border-slate-200 pb-1.5">Claim Preview Summary</h4>
-            <div className="space-y-2 text-xs">
-              <div className="summary-confirm-row flex justify-between">
-                <span className="text-slate-400 font-semibold">Active Policy ID</span>
-                <strong className="text-safe-ink font-bold">{activePolicyId}</strong>
-              </div>
-              <div className="summary-confirm-row flex justify-between">
-                <span className="text-slate-400 font-semibold">Narrative</span>
-                <strong className="text-safe-ink font-bold max-w-[150px] truncate">{claimText}</strong>
-              </div>
-              <div className="summary-confirm-row flex justify-between">
-                <span className="text-slate-400 font-semibold">Hospital Slip</span>
-                <strong className={hospitalSlipUrl ? 'text-emerald-700 font-bold' : 'text-slate-500 font-semibold'}>
-                  {hospitalSlipUrl ? 'Attached ✓' : 'Not Attached'}
-                </strong>
-              </div>
-              <div className="summary-confirm-row flex justify-between">
-                <span className="text-slate-400 font-semibold">Police Reference</span>
-                <strong className="text-safe-ink font-bold">{policeReference || 'None Provided'}</strong>
-              </div>
-            </div>
-          </section>
-
-          <button
-            className="primary-btn w-full flex items-center justify-center gap-2 mt-4"
-            type="button"
-            disabled={busy}
-            onClick={async () => {
-              setError('');
-              if (!session?.token) {
-                setScreen('login');
-                return;
-              }
-              setBusy(true);
-              try {
-                await createClaim(session.token, { 
-                  tripCoverId: activeCover?.id || undefined,
-                  description: claimText.trim(),
-                  policeReference: policeReference.trim() || undefined,
-                  hospitalSlipUrl: hospitalSlipUrl || undefined
-                });
-                setClaimSent(true);
-              } catch (e) {
-                setError(e?.message || 'Failed to submit claim');
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            <Send size={18} />
-            <span>{busy ? 'Submitting…' : 'Submit Claim'}</span>
-          </button>
-        </div>
-      )}
-    </main>
-  );
-}
-
-function ProfileScreen({ openHistory, setScreen, coversHistory = [], claimsList = [], activeCoverState, session }) {
-  const fullName = session?.user?.passengerProfile?.fullName || 'Moses Banda';
-  const phone = session?.user?.phone || '+260 97 000 0000';
-  const planLabel = activeCoverState ? (activeCoverState.plan === 'basic' ? 'K3' : 'K5') : 'None';
-
-  return (
-    <main className="screen padded profile-screen">
-      <header className="profile-head">
-        <span className="profile-avatar"><CircleUserRound size={58} /></span>
-        <div>
-          <p className="eyebrow">SAFE member</p>
-          <h1>{fullName}</h1>
-          <span>{phone}</span>
-        </div>
-      </header>
-
-      <section className="profile-stats">
-        <div><strong>{coversHistory.length}</strong><span>Trips covered</span></div>
-        <div><strong>{claimsList.length}</strong><span>Claim{claimsList.length !== 1 ? 's' : ''}</span></div>
-        <div><strong>{planLabel}</strong><span>Current plan</span></div>
-      </section>
-
-      <section className="settings-list">
-        <button type="button" onClick={() => openHistory('profile')}><FileText size={19} /><span>Cover history</span><ChevronRight size={18} /></button>
-        <button type="button" onClick={() => setScreen('profilePayments')}><WalletCards size={19} /><span>Payment methods</span><ChevronRight size={18} /></button>
-        <button type="button" onClick={() => setScreen('notifications')}><Bell size={19} /><span>Notifications</span><ChevronRight size={18} /></button>
-        <button type="button" onClick={() => setScreen('helpSafety')}><ShieldCheck size={19} /><span>Help and safety</span><ChevronRight size={18} /></button>
-      </section>
-    </main>
-  );
-}
-
-function ProfilePaymentMethodsScreen({ paymentMethod, setPaymentMethod, setScreen }) {
-  return (
-    <main className="screen padded detail-screen">
-      <TopBar onBack={() => setScreen('profile')} title="Payment methods" action={<Plus size={21} />} />
-      <section className="page-heading compact">
-        <h1>How you pay</h1>
-      </section>
-      <section className="wallet-list">
-        {paymentMethods.map((method) => {
-          const Icon = method.icon;
-          const selected = paymentMethod === method.id;
-          return (
-            <button className={`wallet-card ${selected ? 'selected' : ''}`} key={method.id} type="button" onClick={() => setPaymentMethod(method.id)}>
-              <span className={`brand-mark ${method.accent}`}><Icon size={23} /></span>
-              <span>
-                <strong>{method.name}</strong>
-                <small>{method.detail}</small>
-              </span>
-              <span className="default-pill">{selected ? 'Default' : 'Use'}</span>
-            </button>
-          );
-        })}
-      </section>
-      <section className="secure-note">
-        <Lock size={20} />
-        <p>SAFE never stores your full card or mobile money PIN.</p>
-      </section>
-    </main>
-  );
+  return null;
 }
 
 function NotificationsScreen({ setScreen }) {

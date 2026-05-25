@@ -1,6 +1,14 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
+import { serializeActiveTrip } from '../lib/activeTrip.js';
+import {
+  maskPhoneNumber,
+  normalizeZambianPhone,
+  providerToType,
+  serializePaymentMethod,
+  typeToLabel,
+} from '../lib/paymentMethods.js';
 import { requireAuth, type AuthedRequest } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
 
@@ -8,6 +16,19 @@ export const mobileRouter = Router();
 
 mobileRouter.use(requireAuth);
 mobileRouter.use(requireRole(['passenger']));
+
+async function loadActiveCover(userId: string) {
+  const now = new Date();
+  return prisma.tripCover.findFirst({
+    where: { passengerUserId: userId, status: 'active', endsAt: { gt: now } },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      vehicle: { include: { route: true, driver: true } },
+      route: true,
+      payment: true,
+    },
+  });
+}
 
 mobileRouter.get('/profile', async (req, res) => {
   const authed = req as AuthedRequest;
@@ -174,13 +195,56 @@ mobileRouter.post('/cover/buy', async (req, res) => {
 
 mobileRouter.get('/cover/active', async (req, res) => {
   const authed = req as AuthedRequest;
-  const now = new Date();
+  const cover = await loadActiveCover(authed.user.id);
+  res.json({ cover, trip: serializeActiveTrip(cover) });
+});
+
+mobileRouter.get('/active-trip', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const cover = await loadActiveCover(authed.user.id);
+  if (!cover) {
+    res.json({ trip: null });
+    return;
+  }
+  res.json({ trip: serializeActiveTrip(cover) });
+});
+
+mobileRouter.get('/trips/:tripId/route', async (req, res) => {
+  const authed = req as AuthedRequest;
   const cover = await prisma.tripCover.findFirst({
-    where: { passengerUserId: authed.user.id, status: 'active', endsAt: { gt: now } },
-    orderBy: { createdAt: 'desc' },
-    include: { vehicle: { include: { route: true } }, route: true, payment: true },
+    where: { id: req.params.tripId, passengerUserId: authed.user.id },
+    include: { vehicle: { include: { route: true, driver: true } }, route: true },
   });
-  res.json({ cover });
+  if (!cover) {
+    res.status(404).json({ error: 'Trip not found' });
+    return;
+  }
+  res.json({ trip: serializeActiveTrip(cover) });
+});
+
+mobileRouter.get('/trips/:tripId/location', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const cover = await prisma.tripCover.findFirst({
+    where: { id: req.params.tripId, passengerUserId: authed.user.id },
+    include: { vehicle: true },
+  });
+  if (!cover?.vehicle) {
+    res.status(404).json({ error: 'Vehicle not found for trip' });
+    return;
+  }
+  const vehicle = cover.vehicle;
+  if (vehicle.lastLat == null || vehicle.lastLng == null) {
+    res.json({ location: null });
+    return;
+  }
+  res.json({
+    location: {
+      lat: vehicle.lastLat,
+      lng: vehicle.lastLng,
+      heading: vehicle.lastHeading,
+      updatedAt: vehicle.locationAt?.toISOString() ?? null,
+    },
+  });
 });
 
 mobileRouter.get('/cover/history', async (req, res) => {
@@ -244,5 +308,137 @@ mobileRouter.get('/claims', async (req, res) => {
     take: 50,
   });
   res.json({ claims });
+});
+
+mobileRouter.get('/payment-methods', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const methods = await prisma.savedPaymentMethod.findMany({
+    where: { userId: authed.user.id },
+    orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+  });
+  res.json({ paymentMethods: methods.map(serializePaymentMethod) });
+});
+
+mobileRouter.post('/payment-methods', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const schema = z.object({
+    provider: z.enum(['airtel', 'mtn']),
+    phoneNumber: z.string().min(9),
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+    return;
+  }
+
+  const normalizedPhone = normalizeZambianPhone(parsed.data.phoneNumber);
+  if (!normalizedPhone) {
+    res.status(400).json({ error: 'Use +260XXXXXXXXX or 09XXXXXXXX.' });
+    return;
+  }
+
+  const type = providerToType(parsed.data.provider);
+  const { label, subtitle } = typeToLabel(type);
+  const maskedValue = maskPhoneNumber(normalizedPhone);
+
+  const duplicate = await prisma.savedPaymentMethod.findFirst({
+    where: {
+      userId: authed.user.id,
+      type,
+      phoneNumber: normalizedPhone,
+    },
+  });
+  if (duplicate) {
+    res.status(409).json({ error: 'This mobile money number is already saved.' });
+    return;
+  }
+
+  const existingCount = await prisma.savedPaymentMethod.count({
+    where: { userId: authed.user.id },
+  });
+
+  const method = await prisma.$transaction(async (tx) => {
+    if (existingCount === 0) {
+      await tx.savedPaymentMethod.updateMany({
+        where: { userId: authed.user.id },
+        data: { isDefault: false },
+      });
+    }
+
+    return tx.savedPaymentMethod.create({
+      data: {
+        userId: authed.user.id,
+        type,
+        label,
+        subtitle,
+        maskedValue,
+        phoneNumber: normalizedPhone,
+        isDefault: existingCount === 0,
+        status: 'active',
+      },
+    });
+  });
+
+  res.status(201).json({ paymentMethod: serializePaymentMethod(method) });
+});
+
+mobileRouter.put('/payment-methods/:methodId/default', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const method = await prisma.savedPaymentMethod.findFirst({
+    where: { id: req.params.methodId, userId: authed.user.id },
+  });
+  if (!method) {
+    res.status(404).json({ error: 'Payment method not found' });
+    return;
+  }
+
+  await prisma.$transaction([
+    prisma.savedPaymentMethod.updateMany({
+      where: { userId: authed.user.id },
+      data: { isDefault: false },
+    }),
+    prisma.savedPaymentMethod.update({
+      where: { id: method.id },
+      data: { isDefault: true },
+    }),
+  ]);
+
+  const methods = await prisma.savedPaymentMethod.findMany({
+    where: { userId: authed.user.id },
+    orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+  });
+  res.json({ paymentMethods: methods.map(serializePaymentMethod) });
+});
+
+mobileRouter.delete('/payment-methods/:methodId', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const method = await prisma.savedPaymentMethod.findFirst({
+    where: { id: req.params.methodId, userId: authed.user.id },
+  });
+  if (!method) {
+    res.status(404).json({ error: 'Payment method not found' });
+    return;
+  }
+
+  await prisma.savedPaymentMethod.delete({ where: { id: method.id } });
+
+  if (method.isDefault) {
+    const next = await prisma.savedPaymentMethod.findFirst({
+      where: { userId: authed.user.id },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (next) {
+      await prisma.savedPaymentMethod.update({
+        where: { id: next.id },
+        data: { isDefault: true },
+      });
+    }
+  }
+
+  const methods = await prisma.savedPaymentMethod.findMany({
+    where: { userId: authed.user.id },
+    orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+  });
+  res.json({ paymentMethods: methods.map(serializePaymentMethod) });
 });
 
