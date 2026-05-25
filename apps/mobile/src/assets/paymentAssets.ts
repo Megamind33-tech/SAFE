@@ -1,25 +1,31 @@
 /**
  * SAFE payment brand asset map — single source of truth for Payment Methods UI.
  *
- * Source pack: safe_payment_assets (Google Drive).
- * Uses *_icon_288px.png only — NOT tile PNGs (baked "Card payment" subtitle).
+ * Trimmed from safe_payment_assets *_icon_288px.png (no tile PNGs).
  */
-import airtelMoney from './payment/airtel-money.png';
-import mtnMoMo from './payment/mtn-mobile-money.png';
-import visa from './payment/visa.png';
-import mastercard from './payment/mastercard.png';
+import airtelMoney from './payment/airtel-money-trimmed.png';
+import mtnMoMo from './payment/mtn-momo-trimmed.png';
+import visa from './payment/visa-trimmed.png';
+import mastercard from './payment/mastercard-trimmed.png';
 
 export const paymentAssets = {
   airtelMoney,
   mtnMoMo,
   visa,
   mastercard,
-};
+} as const;
 
-/** @param {string} value */
-export function resolvePaymentAssetKey(value) {
+export type PaymentAssetKey = keyof typeof paymentAssets;
+
+export function resolvePaymentAssetKey(value: string): 'airtel' | 'mtn' | 'visa' | 'mastercard' | 'dual_cards' {
   if (value === 'airtel' || value === 'airtel_money' || value === 'airtelMoney') return 'airtel';
-  if (value === 'mtn' || value === 'mtn_mobile_money' || value === 'mtn_momo' || value === 'mtnMoMo' || value === 'mtnMobileMoney') {
+  if (
+    value === 'mtn' ||
+    value === 'mtn_mobile_money' ||
+    value === 'mtn_momo' ||
+    value === 'mtnMoMo' ||
+    value === 'mtnMobileMoney'
+  ) {
     return 'mtn';
   }
   if (value === 'visa') return 'visa';
@@ -28,8 +34,7 @@ export function resolvePaymentAssetKey(value) {
   return 'airtel';
 }
 
-/** @param {string} key */
-export function getPaymentAsset(key) {
+export function getPaymentAsset(key: string): string | null {
   const resolved = resolvePaymentAssetKey(key);
   if (resolved === 'dual_cards') return null;
   if (resolved === 'airtel') return paymentAssets.airtelMoney;
@@ -37,8 +42,8 @@ export function getPaymentAsset(key) {
   return paymentAssets[resolved] ?? null;
 }
 
-export function getMissingPaymentBrandAssets() {
-  const missing = [];
+export function getMissingPaymentBrandAssets(): string[] {
+  const missing: string[] = [];
   if (!paymentAssets.airtelMoney) missing.push('Airtel Money');
   if (!paymentAssets.mtnMoMo) missing.push('MTN Mobile Money');
   if (!paymentAssets.visa) missing.push('Visa');
