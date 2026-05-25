@@ -1,14 +1,14 @@
 PaymentBrandIcon asset map (288px PNG from safe_payment_assets Google Drive pack):
 
-airtel            -> png/airtel.png          (trimmed from airtel_money_icon_288px.png)
-mtn               -> png/mtn.png             (trimmed from mtn_momo_icon_288px.png)
-visa              -> png/visa.png            (from visa_mastercard_icon_288px.png)
-mastercard        -> png/mastercard.png      (from visa_mastercard_icon_288px.png)
+airtelMoney       -> payment/airtel-money.png     (trimmed from airtel_money_icon_288px.png)
+mtnMobileMoney    -> payment/mtn-mobile-money.png (trimmed from mtn_momo_icon_288px.png)
+visa              -> payment/visa.png             (split from visa_mastercard_icon_288px.png)
+mastercard        -> payment/mastercard.png       (split from visa_mastercard_icon_288px.png)
 dual_cards        -> visa + mastercard side by side in PaymentBrandIcon
 
 REJECTED:
 - svg/*.svg (handmade text logos)
-- png/*_112px.png, *_56px.png (too low resolution for display)
-- Combined visa_mastercard for single-brand slots
+- png/*_tile_*.png (baked-in "Card payment" subtitle)
+- png/*_56px.png, *_112px.png (too low resolution)
 
-Holder: 64x64, radius 18px, image max 46x36 min 40 wide, object-fit contain.
+Logo tile: 74x58 (88x58 dual), radius 16px, white bg, image max 58x34 (34px each dual).
