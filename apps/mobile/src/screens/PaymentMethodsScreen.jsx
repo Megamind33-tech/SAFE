@@ -297,12 +297,8 @@ export default function PaymentMethodsScreen({
                       />
                     )}
                     <div className="payment-method-card__body">
-                      <strong className="payment-method-card__title" title={method.displayName}>
-                        {method.displayName}
-                      </strong>
-                      <span className="payment-method-card__subtitle" title={subtitle}>
-                        {subtitle}
-                      </span>
+                      <strong className="payment-method-card__title">{method.displayName}</strong>
+                      <span className="payment-method-card__subtitle">{subtitle}</span>
                     </div>
                   </div>
                   {method.provider === 'visa_mastercard' ? (
@@ -310,7 +306,9 @@ export default function PaymentMethodsScreen({
                       Coming soon
                     </span>
                   ) : isDefault ? (
-                    <span className="payment-method-card__pill payment-method-card__pill--default">Default</span>
+                    <div className="payment-method-card__default-row">
+                      <span className="payment-method-card__pill payment-method-card__pill--default">Default</span>
+                    </div>
                   ) : (
                     <button
                       type="button"
@@ -329,7 +327,7 @@ export default function PaymentMethodsScreen({
 
         {!loading && !error ? (
           <section className="payment-methods-security" aria-label="Security note">
-            <Lock size={18} strokeWidth={2.25} color="#007A3D" />
+            <Lock size={16} strokeWidth={2.25} color="#007A3D" className="payment-methods-security__icon" />
             <p>
               <strong>SAFE never stores your full card details or mobile money PIN.</strong>
             </p>
@@ -372,20 +370,24 @@ export default function PaymentMethodsScreen({
                       className="payment-methods-sheet__option payment-methods-sheet__option--cards payment-methods-sheet__option--disabled"
                       aria-disabled="true"
                     >
-                      <PaymentBrandIcon
-                        type={option.provider}
-                        dual
-                        disabled
-                        className="payment-brand-icon--in-sheet-dual"
-                      />
-                      <span className="payment-methods-sheet__option-text">
-                        <strong className="payment-methods-sheet__option-title payment-methods-sheet__option-title--cards">
-                          <span>Visa /</span>
-                          <span>Mastercard</span>
-                        </strong>
-                        <small>{option.subtitle}</small>
-                      </span>
-                      <span className="payment-methods-sheet__coming-soon">Coming soon</span>
+                      <div className="payment-methods-sheet__option-row">
+                        <PaymentBrandIcon
+                          type={option.provider}
+                          dual
+                          disabled
+                          className="payment-brand-icon--in-sheet-dual"
+                        />
+                        <span className="payment-methods-sheet__option-text">
+                          <strong className="payment-methods-sheet__option-title payment-methods-sheet__option-title--cards">
+                            <span>Visa /</span>
+                            <span>Mastercard</span>
+                          </strong>
+                          <small>{option.subtitle}</small>
+                        </span>
+                      </div>
+                      <div className="payment-methods-sheet__option-footer">
+                        <span className="payment-methods-sheet__coming-soon">Coming soon</span>
+                      </div>
                     </div>
                   ) : (
                     <button
