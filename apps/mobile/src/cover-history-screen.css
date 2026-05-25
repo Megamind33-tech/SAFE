@@ -1,3 +1,8 @@
+/* COVER HISTORY — ACCEPTED (do not redesign)
+ * Locked: layout, filters, empty state, policy ID display, card styling,
+ * scroll clearance (--ch-scroll-clearance 360px + 240px spacer), nav via profile-screen.css.
+ * Allowed: API data fixes, bug fixes, small copy only. See CoverHistoryScreen.jsx header. */
+
 /* SAFE Cover History — receipts and trip protection records (390px master) */
 
 .cover-history-screen.cover-history-screen-board {

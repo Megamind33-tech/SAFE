@@ -1,3 +1,7 @@
+/**
+ * Cover History data helpers — ACCEPTED screen (do not redesign UI).
+ * Allowed: API mapping fixes, effective status / filter logic bug fixes.
+ */
 import { buildClaimPolicyId } from '../claimDraftUtils.js';
 import { formatPlanLabel } from '../hooks/useActiveTrip.js';
 

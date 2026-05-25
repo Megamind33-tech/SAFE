@@ -1,3 +1,13 @@
+/**
+ * COVER HISTORY — ACCEPTED (do not redesign)
+ *
+ * Locked: layout, filters, empty state, policy ID display, card styling,
+ * scroll clearance (360px pad + 240px spacer), bottom nav (Profile active).
+ * CoverHistoryDetailScreen is also accepted — do not redesign.
+ *
+ * Allowed changes only: real API data fixes, bug fixes, small copy corrections.
+ * Do not change spacing, typography, card design, or navigation unless requested.
+ */
 import { useMemo, useState } from 'react';
 import { ArrowLeft, FileText, ShieldCheck } from 'lucide-react';
 import BottomScrollSpacer from '../components/BottomScrollSpacer.jsx';
