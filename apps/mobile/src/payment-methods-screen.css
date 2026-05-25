@@ -194,28 +194,59 @@
   background: rgba(0, 122, 61, 0.06);
 }
 
-.payment-method-card__icon {
-  width: 48px;
-  height: 48px;
+.payment-method-card--coming-soon {
+  opacity: 0.88;
+}
+
+.payment-brand-icon {
+  width: 56px;
+  height: 56px;
   border-radius: 16px;
+  background: #f4f7f5;
+  border: 1px solid #e6ece8;
   display: grid;
   place-items: center;
   flex-shrink: 0;
 }
 
-.payment-method-card__icon--airtel {
-  background: rgba(230, 0, 18, 0.1);
-  color: #e60012;
+.payment-brand-icon__image {
+  display: block;
+  max-width: 36px;
+  max-height: 28px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
 }
 
-.payment-method-card__icon--mtn {
-  background: rgba(255, 198, 18, 0.18);
-  color: #b88600;
+.payment-brand-icon--dev-fallback {
+  background: #eef1ef;
+  border: 1px dashed rgba(16, 24, 32, 0.18);
 }
 
-.payment-method-card__icon--card {
-  background: rgba(20, 88, 176, 0.1);
-  color: #1458b0;
+.payment-brand-icon__fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.payment-brand-icon__fallback-mark {
+  width: 18px;
+  height: 12px;
+  border-radius: 3px;
+  border: 2px solid rgba(16, 24, 32, 0.28);
+  position: relative;
+}
+
+.payment-brand-icon__fallback-mark::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  top: 50%;
+  height: 1px;
+  background: rgba(16, 24, 32, 0.28);
+  transform: translateY(-50%);
 }
 
 .payment-method-card__body {
@@ -259,6 +290,14 @@
   border-color: transparent;
   color: #007a3d;
   cursor: default;
+}
+
+.payment-method-card__pill--coming-soon {
+  background: rgba(16, 24, 32, 0.06);
+  border-color: transparent;
+  color: rgba(16, 24, 32, 0.52);
+  cursor: default;
+  min-width: 96px;
 }
 
 .payment-methods-security {
@@ -350,7 +389,7 @@
 
 .payment-methods-sheet__option {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 14px;
   width: 100%;
@@ -362,6 +401,27 @@
   cursor: pointer;
   font-family: inherit;
   box-shadow: 0 8px 20px rgba(0, 45, 28, 0.06);
+}
+
+.payment-methods-sheet__option--disabled {
+  cursor: not-allowed;
+  opacity: 0.82;
+  box-shadow: none;
+}
+
+.payment-methods-sheet__coming-soon {
+  flex-shrink: 0;
+  min-width: 96px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 16px;
+  background: rgba(16, 24, 32, 0.06);
+  color: rgba(16, 24, 32, 0.52);
+  font-size: 13px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .payment-methods-sheet__option-text strong {

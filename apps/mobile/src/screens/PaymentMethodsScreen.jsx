@@ -1,16 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  ArrowLeft,
-  CreditCard,
-  Loader2,
-  Lock,
-  Plus,
-  RefreshCcw,
-  Smartphone,
-  WalletCards,
-  X,
-} from 'lucide-react';
+import { ArrowLeft, Loader2, Lock, Plus, RefreshCcw, X } from 'lucide-react';
 import BottomScrollSpacer from '../components/BottomScrollSpacer.jsx';
+import PaymentBrandIcon, { getMissingPaymentBrandAssets } from '../components/PaymentBrandIcon.jsx';
 import {
   addMobileMoneyMethod,
   getPaymentMethods,
@@ -25,39 +16,19 @@ const ADD_OPTIONS = [
     provider: 'airtel',
     title: 'Airtel Money',
     subtitle: 'Pay with Airtel Money',
-    accent: 'airtel',
-    icon: Smartphone,
   },
   {
     provider: 'mtn',
     title: 'MTN Mobile Money',
     subtitle: 'Pay with MTN MoMo',
-    accent: 'mtn',
-    icon: WalletCards,
   },
   {
     provider: 'visa_mastercard',
     title: 'Visa / Mastercard',
     subtitle: 'Card payment',
-    accent: 'card',
-    icon: CreditCard,
+    comingSoon: true,
   },
 ];
-
-function MethodIcon({ provider, Icon }) {
-  const accentClass =
-    provider === 'airtel'
-      ? 'payment-method-card__icon--airtel'
-      : provider === 'mtn'
-        ? 'payment-method-card__icon--mtn'
-        : 'payment-method-card__icon--card';
-
-  return (
-    <span className={`payment-method-card__icon ${accentClass}`} aria-hidden="true">
-      <Icon size={22} strokeWidth={2} />
-    </span>
-  );
-}
 
 export default function PaymentMethodsScreen({
   session,
@@ -78,6 +49,14 @@ export default function PaymentMethodsScreen({
 
   const userId = session?.user?.id || session?.user?.phone || 'anonymous';
   const token = session?.token || '';
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const missing = getMissingPaymentBrandAssets();
+    if (missing.length > 0) {
+      console.warn('[Payment Methods] Official brand assets missing:', missing.join('; '));
+    }
+  }, []);
 
   const loadMethods = useCallback(async () => {
     setLoading(true);
@@ -119,13 +98,10 @@ export default function PaymentMethodsScreen({
   };
 
   const handleSelectProvider = (provider) => {
+    if (provider === 'visa_mastercard') return;
     setSelectedProvider(provider);
     setPhoneError('');
     setSaveError('');
-    if (provider === 'visa_mastercard') {
-      setSheetStep('card-unavailable');
-      return;
-    }
     setSheetStep('mobile-money');
   };
 
@@ -236,31 +212,36 @@ export default function PaymentMethodsScreen({
         {!loading && !error && methods.length > 0 ? (
           <section className="payment-methods-list" aria-label="Saved payment methods">
             {methods.map((method) => {
-              const option = ADD_OPTIONS.find((item) => item.provider === method.provider) || ADD_OPTIONS[0];
-              const Icon = option.icon;
               const isDefault = method.isDefault;
               const isBusy = busyId === method.id;
+              const isCard = method.provider === 'visa_mastercard';
 
               return (
                 <article
                   key={method.id}
-                  className={`payment-method-card${isDefault ? ' payment-method-card--default' : ''}`}
+                  className={`payment-method-card${isDefault ? ' payment-method-card--default' : ''}${isCard ? ' payment-method-card--coming-soon' : ''}`}
                 >
-                  <MethodIcon provider={method.provider} Icon={Icon} />
+                  <PaymentBrandIcon provider={method.provider} />
                   <div className="payment-method-card__body">
                     <strong className="payment-method-card__title">{method.displayName}</strong>
                     <span className="payment-method-card__subtitle">
                       {method.maskedValue || providerSubtitle(method.provider)}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    className={`payment-method-card__pill${isDefault ? ' payment-method-card__pill--default' : ''}`}
-                    disabled={isDefault || isBusy}
-                    onClick={() => handleSetDefault(method.id)}
-                  >
-                    {isBusy ? 'Saving…' : isDefault ? 'Default' : 'Use'}
-                  </button>
+                  {isCard ? (
+                    <span className="payment-method-card__pill payment-method-card__pill--coming-soon">
+                      Coming soon
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      className={`payment-method-card__pill${isDefault ? ' payment-method-card__pill--default' : ''}`}
+                      disabled={isDefault || isBusy}
+                      onClick={() => handleSetDefault(method.id)}
+                    >
+                      {isBusy ? 'Saving…' : isDefault ? 'Default' : 'Use'}
+                    </button>
+                  )}
                 </article>
               );
             })}
@@ -305,23 +286,35 @@ export default function PaymentMethodsScreen({
 
             {sheetStep === 'choose' ? (
               <div className="payment-methods-sheet__options">
-                {ADD_OPTIONS.map((option) => {
-                  const Icon = option.icon;
-                  return (
+                {ADD_OPTIONS.map((option) =>
+                  option.comingSoon ? (
+                    <div
+                      key={option.provider}
+                      className="payment-methods-sheet__option payment-methods-sheet__option--disabled"
+                      aria-disabled="true"
+                    >
+                      <PaymentBrandIcon provider={option.provider} />
+                      <span className="payment-methods-sheet__option-text">
+                        <strong>{option.title}</strong>
+                        <small>{option.subtitle}</small>
+                      </span>
+                      <span className="payment-methods-sheet__coming-soon">Coming soon</span>
+                    </div>
+                  ) : (
                     <button
                       key={option.provider}
                       type="button"
                       className="payment-methods-sheet__option"
                       onClick={() => handleSelectProvider(option.provider)}
                     >
-                      <MethodIcon provider={option.provider} Icon={Icon} />
+                      <PaymentBrandIcon provider={option.provider} />
                       <span className="payment-methods-sheet__option-text">
                         <strong>{option.title}</strong>
                         <small>{option.subtitle}</small>
                       </span>
                     </button>
-                  );
-                })}
+                  )
+                )}
               </div>
             ) : null}
 
@@ -354,22 +347,6 @@ export default function PaymentMethodsScreen({
                 >
                   {saving ? 'Saving…' : 'Save method'}
                 </button>
-                <button
-                  type="button"
-                  className="payment-methods-sheet__back-link"
-                  onClick={() => setSheetStep('choose')}
-                >
-                  Choose another method
-                </button>
-              </div>
-            ) : null}
-
-            {sheetStep === 'card-unavailable' ? (
-              <div className="payment-methods-sheet__notice">
-                <MethodIcon provider="visa_mastercard" Icon={CreditCard} />
-                <p className="payment-methods-sheet__notice-text">
-                  Card payments will be available after payment gateway setup.
-                </p>
                 <button
                   type="button"
                   className="payment-methods-sheet__back-link"
