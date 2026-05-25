@@ -1,8 +1,9 @@
 /**
  * SAFE payment brand asset map — single source of truth for Payment Methods UI.
  *
- * Source pack: safe_payment_assets (Google Drive). PNG icons at 288px, trimmed to
- * content bounds; Visa/Mastercard split from visa_mastercard_icon_288px.png.
+ * Source: user-provided official brand marks + safe_payment_assets tile PNGs.
+ * - airtel-money.png / mtn-mobile-money.png from *_tile_640x480.png (full brand squircle)
+ * - visa.png / mastercard.png split from visa_mastercard_icon_288px.png
  *
  * REJECTED (not used):
  * - svg/airtel_money.svg, svg/mtn_momo.svg, svg/visa_mastercard.svg (handmade text logos)
