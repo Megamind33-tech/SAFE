@@ -1,12 +1,14 @@
-PaymentBrandIcon mapping:
+PaymentBrandIcon asset map (192px PNG from safe_payment_assets pack):
 
-airtel_money       -> airtel_money.svg
-mtn_mobile_money   -> mtn_momo.svg
-card               -> visa_mastercard.svg
+airtel            -> png/airtel.png          (from airtel_money_icon_192px.png)
+mtn               -> png/mtn.png             (from mtn_momo_icon_192px.png)
+visa              -> png/visa.png            (extracted from visa_mastercard_icon_192px.png)
+mastercard        -> png/mastercard.png      (extracted from visa_mastercard_icon_192px.png)
+dual_cards        -> visa + mastercard side by side in PaymentBrandIcon
 
-Holder:
-width: 56
-height: 56
-borderRadius: 16
-resizeMode/objectFit: contain
-image max size: 44x36
+REJECTED:
+- svg/*.svg (handmade text logos, too small when scaled)
+- png/*_112px.png (lower resolution)
+- png/visa_mastercard_* for single-brand slots
+
+Holder: 64x64, radius 18px, image max 46x36, object-fit contain.

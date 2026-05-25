@@ -1,44 +1,75 @@
 /**
- * Renders official SAFE payment brand artwork from assets/payment-methods/.
+ * Payment brand logos for Payment Methods — uses paymentAssets map only.
  */
 import {
   getMissingPaymentBrandAssets,
-  getPaymentBrandAsset,
-  toPaymentBrandType,
-} from '../utils/paymentBrandAssets.js';
+  getPaymentAsset,
+  paymentAssets,
+  resolvePaymentAssetKey,
+} from '../utils/paymentAssets.js';
 
 /**
  * @param {{
  *   type: string;
  *   className?: string;
  *   disabled?: boolean;
+ *   dual?: boolean;
  * }} props
  */
-export default function PaymentBrandIcon({ type, className = '', disabled = false }) {
-  const brandType = toPaymentBrandType(type);
-  const src = getPaymentBrandAsset(brandType);
+export default function PaymentBrandIcon({ type, className = '', disabled = false, dual = false }) {
+  const resolved = resolvePaymentAssetKey(type);
+  const showDual = dual || resolved === 'dual_cards';
+
+  if (showDual) {
+    return (
+      <span
+        className={`payment-brand-icon payment-brand-icon--dual${disabled ? ' payment-brand-icon--disabled' : ''} ${className}`.trim()}
+        aria-label="Visa and Mastercard"
+      >
+        <img
+          src={paymentAssets.visa}
+          alt="Visa"
+          className="payment-brand-icon__image payment-brand-icon__image--visa"
+          draggable={false}
+        />
+        <img
+          src={paymentAssets.mastercard}
+          alt="Mastercard"
+          className="payment-brand-icon__image payment-brand-icon__image--mastercard"
+          draggable={false}
+        />
+      </span>
+    );
+  }
+
+  const assetKey = resolved;
+  const src = getPaymentAsset(assetKey);
 
   const label =
-    brandType === 'airtel_money'
+    assetKey === 'airtel'
       ? 'Airtel Money'
-      : brandType === 'mtn_mobile_money'
+      : assetKey === 'mtn'
         ? 'MTN Mobile Money'
-        : 'Visa Mastercard';
+        : assetKey === 'visa'
+          ? 'Visa'
+          : assetKey === 'mastercard'
+            ? 'Mastercard'
+            : 'Payment method';
 
   if (!src) {
     if (import.meta.env.DEV) {
-      console.error(`Missing payment brand asset: ${label}. Expected paths in paymentBrandAssets.js`);
+      console.error(`Missing payment brand asset: ${label}`);
     }
     return null;
   }
 
   return (
     <span
-      className={`payment-brand-icon payment-brand-icon--${brandType}${disabled ? ' payment-brand-icon--disabled' : ''} ${className}`.trim()}
+      className={`payment-brand-icon payment-brand-icon--${assetKey}${disabled ? ' payment-brand-icon--disabled' : ''} ${className}`.trim()}
     >
       <img src={src} alt={label} className="payment-brand-icon__image" draggable={false} />
     </span>
   );
 }
 
-export { getMissingPaymentBrandAssets, toPaymentBrandType };
+export { getMissingPaymentBrandAssets, resolvePaymentAssetKey as toPaymentBrandType };

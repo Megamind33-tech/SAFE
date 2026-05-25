@@ -228,7 +228,7 @@
   width: 64px;
   height: 64px;
   border-radius: 18px;
-  background: #f8faf9;
+  background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.06);
   display: grid;
   place-items: center;
@@ -236,27 +236,38 @@
   overflow: hidden;
 }
 
-.payment-brand-icon--airtel_money {
-  background: #fff2f4;
-}
-
-.payment-brand-icon--mtn_mobile_money {
-  background: #fff8d6;
-}
-
-.payment-brand-icon--card,
-.payment-brand-icon--visa,
-.payment-brand-icon--mastercard {
-  background: #f1f6ff;
+.payment-brand-icon--dual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 6px;
+  background: #ffffff;
 }
 
 .payment-brand-icon__image {
   display: block;
-  max-width: 44px;
+  max-width: 46px;
   max-height: 36px;
   width: auto;
   height: auto;
   object-fit: contain;
+}
+
+.payment-brand-icon--dual .payment-brand-icon__image--visa,
+.payment-brand-icon--dual .payment-brand-icon__image--mastercard {
+  max-width: 22px;
+  max-height: 32px;
+}
+
+.payment-brand-icon--airtel .payment-brand-icon__image {
+  max-width: 46px;
+  max-height: 34px;
+}
+
+.payment-brand-icon--mtn .payment-brand-icon__image {
+  max-width: 44px;
+  max-height: 36px;
 }
 
 .payment-brand-icon--disabled {

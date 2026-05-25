@@ -3,7 +3,7 @@ import { request } from '../api/safeApi.js';
 const API_PATH = '/api/mobile/payment-methods';
 
 /** @typedef {'mobile_money' | 'card'} PaymentMethodType */
-/** @typedef {'airtel' | 'mtn' | 'visa_mastercard'} PaymentProvider */
+/** @typedef {'airtel' | 'mtn' | 'visa' | 'mastercard' | 'visa_mastercard'} PaymentProvider */
 
 /**
  * @typedef {Object} PaymentMethod
@@ -19,6 +19,8 @@ const API_PATH = '/api/mobile/payment-methods';
 function apiTypeToProvider(type) {
   if (type === 'airtel_money') return 'airtel';
   if (type === 'mtn_mobile_money') return 'mtn';
+  if (type === 'visa') return 'visa';
+  if (type === 'mastercard') return 'mastercard';
   return 'visa_mastercard';
 }
 
@@ -76,6 +78,8 @@ export function maskPhoneNumber(phone) {
 export function providerDisplayName(provider) {
   if (provider === 'airtel') return 'Airtel Money';
   if (provider === 'mtn') return 'MTN Mobile Money';
+  if (provider === 'visa') return 'Visa';
+  if (provider === 'mastercard') return 'Mastercard';
   return 'Visa / Mastercard';
 }
 
@@ -86,7 +90,7 @@ export function providerSubtitle(provider) {
 }
 
 export function toCheckoutPaymentId(provider) {
-  if (provider === 'visa_mastercard') return 'card';
+  if (provider === 'visa_mastercard' || provider === 'visa' || provider === 'mastercard') return 'card';
   return provider;
 }
 

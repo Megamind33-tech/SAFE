@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, Lock, Plus, RefreshCcw, X } from 'lucide-react';
 import BottomScrollSpacer from '../components/BottomScrollSpacer.jsx';
-import PaymentBrandIcon, { toPaymentBrandType } from '../components/PaymentBrandIcon.jsx';
+import PaymentBrandIcon from '../components/PaymentBrandIcon.jsx';
 import {
   addMobileMoneyMethod,
   getPaymentMethods,
@@ -216,21 +216,25 @@ export default function PaymentMethodsScreen({
             {methods.map((method) => {
               const isDefault = method.isDefault;
               const isBusy = busyId === method.id;
-              const isCard = method.provider === 'visa_mastercard';
+              const iconType = method.provider === 'visa' ? 'visa' : method.provider === 'mastercard' ? 'mastercard' : method.provider;
 
               return (
                 <article
                   key={method.id}
-                  className={`payment-method-card${isDefault ? ' payment-method-card--default' : ''}${isCard ? ' payment-method-card--coming-soon' : ''}`}
+                  className={`payment-method-card${isDefault ? ' payment-method-card--default' : ''}${method.provider === 'visa_mastercard' ? ' payment-method-card--coming-soon' : ''}`}
                 >
-                  <PaymentBrandIcon type={toPaymentBrandType(method.provider)} disabled={isCard} />
+                  {method.provider === 'visa_mastercard' ? (
+                    <PaymentBrandIcon type="visa_mastercard" dual disabled />
+                  ) : (
+                    <PaymentBrandIcon type={iconType} disabled={method.provider === 'visa_mastercard'} />
+                  )}
                   <div className="payment-method-card__body">
                     <strong className="payment-method-card__title">{method.displayName}</strong>
                     <span className="payment-method-card__subtitle">
                       {method.maskedValue || providerSubtitle(method.provider)}
                     </span>
                   </div>
-                  {isCard ? (
+                  {method.provider === 'visa_mastercard' ? (
                     <span className="payment-method-card__pill payment-method-card__pill--coming-soon">
                       Coming soon
                     </span>
@@ -295,7 +299,7 @@ export default function PaymentMethodsScreen({
                       className="payment-methods-sheet__option payment-methods-sheet__option--disabled"
                       aria-disabled="true"
                     >
-                      <PaymentBrandIcon type={toPaymentBrandType(option.provider)} disabled />
+                      <PaymentBrandIcon type={option.provider} dual={option.comingSoon} disabled={option.comingSoon} />
                       <span className="payment-methods-sheet__option-text">
                         <strong>{option.title}</strong>
                         <small>{option.subtitle}</small>
@@ -309,7 +313,7 @@ export default function PaymentMethodsScreen({
                       className="payment-methods-sheet__option"
                       onClick={() => handleSelectProvider(option.provider)}
                     >
-                      <PaymentBrandIcon type={toPaymentBrandType(option.provider)} />
+                      <PaymentBrandIcon type={option.provider} />
                       <span className="payment-methods-sheet__option-text">
                         <strong>{option.title}</strong>
                         <small>{option.subtitle}</small>
