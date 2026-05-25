@@ -11,10 +11,38 @@ const API_PATH = '/api/mobile/payment-methods';
  * @property {PaymentMethodType} type
  * @property {PaymentProvider} provider
  * @property {string} displayName
+ * @property {string} [label]
  * @property {string} [maskedValue]
+ * @property {string} [maskedPhone]
+ * @property {string} [phoneNumber]
  * @property {boolean} isDefault
- * @property {'active' | 'pending' | 'failed'} [status]
+ * @property {'active' | 'pending' | 'disabled' | 'failed'} [status]
  */
+
+const PAYMENT_METHODS_CACHE_KEY = 'safe_payment_methods_cache';
+
+export function readCachedPaymentMethods() {
+  try {
+    const raw = sessionStorage.getItem(PAYMENT_METHODS_CACHE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.map((item) => ({ ...item, status: item.status || 'active' })) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeCachedPaymentMethods(methods) {
+  try {
+    if (!methods?.length) {
+      sessionStorage.removeItem(PAYMENT_METHODS_CACHE_KEY);
+      return;
+    }
+    sessionStorage.setItem(PAYMENT_METHODS_CACHE_KEY, JSON.stringify(methods));
+  } catch {
+    /* ignore quota errors */
+  }
+}
 
 function apiTypeToProvider(type) {
   if (type === 'airtel_money') return 'airtel';
@@ -31,12 +59,17 @@ function apiTypeToMethodType(type) {
 
 function mapApiMethod(method) {
   const provider = apiTypeToProvider(method.type);
+  const label = method.label || method.displayName || providerDisplayName(provider);
+  const maskedPhone = method.maskedValue ?? method.maskedPhone ?? null;
   return {
     id: method.id,
     type: apiTypeToMethodType(method.type),
     provider,
-    displayName: method.label || method.displayName || providerDisplayName(provider),
-    maskedValue: method.maskedValue,
+    label,
+    displayName: label,
+    maskedValue: maskedPhone,
+    maskedPhone,
+    phoneNumber: method.phoneNumber ?? null,
     isDefault: Boolean(method.isDefault),
     status: method.status || 'active',
   };

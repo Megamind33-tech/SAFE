@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Lock, Plus, RefreshCcw, X } from 'lucide-react';
 import BottomScrollSpacer from '../components/BottomScrollSpacer.jsx';
 import PaymentBrandIcon from '../components/PaymentBrandIcon.jsx';
@@ -7,9 +7,11 @@ import {
   findExistingMobileMoneyMethod,
   getPaymentMethods,
   providerSubtitle,
+  readCachedPaymentMethods,
   setDefaultPaymentMethod,
   toCheckoutPaymentId,
   validateProviderPhone,
+  writeCachedPaymentMethods,
 } from '../services/paymentMethods.js';
 
 const ADD_OPTIONS = [
@@ -47,14 +49,22 @@ function LoadingSkeleton() {
   );
 }
 
+function applyDefaultCheckout(methods, setPaymentMethod) {
+  const defaultMethod = methods.find((method) => method.isDefault);
+  if (defaultMethod) {
+    setPaymentMethod?.(toCheckoutPaymentId(defaultMethod.provider));
+  }
+}
+
 export default function PaymentMethodsScreen({
   session,
   setScreen,
   setPaymentMethod,
 }) {
-  const [methods, setMethods] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [methods, setMethods] = useState(() => readCachedPaymentMethods());
+  const [loading, setLoading] = useState(() => readCachedPaymentMethods().length === 0);
+  const [loadError, setLoadError] = useState('');
+  const [syncWarning, setSyncWarning] = useState('');
   const [busyId, setBusyId] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetStep, setSheetStep] = useState('choose');
@@ -66,28 +76,57 @@ export default function PaymentMethodsScreen({
   const [duplicateMethodId, setDuplicateMethodId] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  const methodsRef = useRef(methods);
+  methodsRef.current = methods;
+
   const token = session?.token || '';
 
   const loadMethods = useCallback(async () => {
-    setLoading(true);
-    setError('');
+    if (!token) {
+      setMethods([]);
+      setLoading(false);
+      setLoadError('');
+      setSyncWarning('');
+      writeCachedPaymentMethods([]);
+      return;
+    }
+
+    const hadMethods = methodsRef.current.length > 0;
+    if (!hadMethods) {
+      setLoading(true);
+      setLoadError('');
+    }
+    setSyncWarning('');
+
     try {
       const next = await getPaymentMethods(token);
       setMethods(next);
-      const defaultMethod = next.find((method) => method.isDefault);
-      if (defaultMethod) {
-        setPaymentMethod?.(toCheckoutPaymentId(defaultMethod.provider));
-      }
+      writeCachedPaymentMethods(next);
+      setLoadError('');
+      setSyncWarning('');
+      applyDefaultCheckout(next, setPaymentMethod);
     } catch {
-      setError('Could not load payment methods.');
+      if (methodsRef.current.length > 0) {
+        setSyncWarning('Could not refresh payment methods. Showing your last saved method.');
+        setLoadError('');
+      } else {
+        setLoadError('Could not load payment methods.');
+        setSyncWarning('');
+      }
     } finally {
       setLoading(false);
     }
   }, [token, setPaymentMethod]);
 
   useEffect(() => {
+    const cached = readCachedPaymentMethods();
+    if (cached.length > 0) {
+      setMethods(cached);
+      setLoading(false);
+      applyDefaultCheckout(cached, setPaymentMethod);
+    }
     loadMethods();
-  }, [loadMethods]);
+  }, [loadMethods, setPaymentMethod]);
 
   const handleBack = () => {
     setScreen?.('profile');
@@ -107,6 +146,7 @@ export default function PaymentMethodsScreen({
   const closeAddSheet = () => {
     if (saving) return;
     setSheetOpen(false);
+    setSheetStep('choose');
   };
 
   const handleSelectProvider = (provider) => {
@@ -117,6 +157,14 @@ export default function PaymentMethodsScreen({
     setSaveNotice('');
     setDuplicateMethodId(null);
     setSheetStep('mobile-money');
+  };
+
+  const handleBackToChoose = () => {
+    setSheetStep('choose');
+    setPhoneError('');
+    setSaveError('');
+    setSaveNotice('');
+    setDuplicateMethodId(null);
   };
 
   const handleSaveMobileMoney = async () => {
@@ -150,11 +198,11 @@ export default function PaymentMethodsScreen({
       try {
         const updated = await setDefaultPaymentMethod(token, existingMethod.id);
         setMethods(updated);
-        const defaultMethod = updated.find((method) => method.isDefault);
-        if (defaultMethod) {
-          setPaymentMethod?.(toCheckoutPaymentId(defaultMethod.provider));
-        }
-        setSheetOpen(false);
+        writeCachedPaymentMethods(updated);
+        applyDefaultCheckout(updated, setPaymentMethod);
+        setLoadError('');
+        setSyncWarning('');
+        closeAddSheet();
       } catch {
         setSaveError('Could not update default payment method.');
       } finally {
@@ -169,23 +217,39 @@ export default function PaymentMethodsScreen({
     try {
       await addMobileMoneyMethod(token, selectedProvider, phoneInput);
       await loadMethods();
-      setSheetOpen(false);
+      closeAddSheet();
     } catch (err) {
       const message = err?.message || 'Could not save payment method.';
       if (/already saved|mobile money number is already/i.test(message)) {
-        const refreshed = await getPaymentMethods(token);
-        setMethods(refreshed);
-        const duplicate = findExistingMobileMoneyMethod(
-          refreshed,
-          selectedProvider,
-          validation.normalized
-        );
-        if (duplicate) {
-          setDuplicateMethodId(duplicate.id);
-          setSaveNotice(
-            'This number is already saved. You can set it as your default payment method.'
+        try {
+          const refreshed = await getPaymentMethods(token);
+          setMethods(refreshed);
+          writeCachedPaymentMethods(refreshed);
+          const duplicate = findExistingMobileMoneyMethod(
+            refreshed,
+            selectedProvider,
+            validation.normalized
           );
-          return;
+          if (duplicate) {
+            setDuplicateMethodId(duplicate.id);
+            setSaveNotice(
+              'This number is already saved. You can set it as your default payment method.'
+            );
+            return;
+          }
+        } catch {
+          const duplicate = findExistingMobileMoneyMethod(
+            methodsRef.current,
+            selectedProvider,
+            validation.normalized
+          );
+          if (duplicate) {
+            setDuplicateMethodId(duplicate.id);
+            setSaveNotice(
+              'This number is already saved. You can set it as your default payment method.'
+            );
+            return;
+          }
         }
       }
       setSaveError(message);
@@ -200,18 +264,24 @@ export default function PaymentMethodsScreen({
     try {
       const updated = await setDefaultPaymentMethod(token, methodId);
       setMethods(updated);
-      const defaultMethod = updated.find((method) => method.isDefault);
-      if (defaultMethod) {
-        setPaymentMethod?.(toCheckoutPaymentId(defaultMethod.provider));
-      }
+      writeCachedPaymentMethods(updated);
+      applyDefaultCheckout(updated, setPaymentMethod);
+      setLoadError('');
+      setSyncWarning('');
     } catch {
-      setError('Could not update default payment method.');
+      setSyncWarning('Could not update your default payment method. Try again.');
     } finally {
       setBusyId('');
     }
   };
 
-  const showHeaderActions = !loading && !error;
+  const hasMethods = methods.length > 0;
+  const showSkeleton = loading && !hasMethods;
+  const showFullError = !loading && Boolean(loadError) && !hasMethods;
+  const showEmpty = !loading && !loadError && !hasMethods;
+  const showMethodList = hasMethods;
+  const showSecurity = showMethodList || showEmpty;
+  const showHeaderActions = !showSkeleton && !showFullError;
 
   return (
     <main className="screen payment-methods-screen payment-methods-screen-board">
@@ -247,9 +317,15 @@ export default function PaymentMethodsScreen({
           </p>
         </section>
 
-        {loading ? <LoadingSkeleton /> : null}
+        {showSkeleton ? <LoadingSkeleton /> : null}
 
-        {!loading && error ? (
+        {syncWarning ? (
+          <p className="payment-methods-sync-warning" role="status">
+            {syncWarning}
+          </p>
+        ) : null}
+
+        {showFullError ? (
           <section className="payment-methods-error" aria-live="polite">
             <h3 className="payment-methods-error__title">Couldn&apos;t load payment methods</h3>
             <p className="payment-methods-error__subtitle">Check your connection and try again.</p>
@@ -260,7 +336,7 @@ export default function PaymentMethodsScreen({
           </section>
         ) : null}
 
-        {!loading && !error && methods.length === 0 ? (
+        {showEmpty ? (
           <section className="payment-methods-empty" aria-label="No payment methods">
             <h3 className="payment-methods-empty__title">No payment method added</h3>
             <p className="payment-methods-empty__subtitle">
@@ -272,14 +348,15 @@ export default function PaymentMethodsScreen({
           </section>
         ) : null}
 
-        {!loading && !error && methods.length > 0 ? (
+        {showMethodList ? (
           <section className="payment-methods-list" aria-label="Saved payment methods">
             {methods.map((method) => {
               const isDefault = method.isDefault;
               const isBusy = busyId === method.id;
               const iconType = method.provider === 'visa' ? 'visa' : method.provider === 'mastercard' ? 'mastercard' : method.provider;
 
-              const subtitle = method.maskedValue || providerSubtitle(method.provider);
+              const subtitle =
+                method.maskedPhone || method.maskedValue || providerSubtitle(method.provider);
 
               return (
                 <article
@@ -325,7 +402,7 @@ export default function PaymentMethodsScreen({
           </section>
         ) : null}
 
-        {!loading && !error ? (
+        {showSecurity ? (
           <section className="payment-methods-security" aria-label="Security note">
             <Lock size={16} strokeWidth={2.25} color="#008748" className="payment-methods-security__icon" />
             <p>
@@ -398,7 +475,7 @@ export default function PaymentMethodsScreen({
                     >
                       <PaymentBrandIcon type={option.provider} className="payment-brand-icon--in-sheet" />
                       <span className="payment-methods-sheet__option-text">
-                        <strong>{option.title}</strong>
+                        <strong className="payment-methods-sheet__option-label">{option.title}</strong>
                         <small>{option.subtitle}</small>
                       </span>
                     </button>
@@ -442,7 +519,7 @@ export default function PaymentMethodsScreen({
                 <button
                   type="button"
                   className="payment-methods-sheet__back-link"
-                  onClick={() => setSheetStep('choose')}
+                  onClick={handleBackToChoose}
                 >
                   Choose another method
                 </button>

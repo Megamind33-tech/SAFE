@@ -194,6 +194,20 @@
   box-shadow: 0 10px 24px rgba(0, 122, 61, 0.22);
 }
 
+.payment-methods-sync-warning {
+  width: var(--pm-content-width);
+  max-width: 100%;
+  margin: 12px auto 0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(0, 122, 61, 0.08);
+  border: 1px solid rgba(0, 122, 61, 0.16);
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: #0b1620;
+}
+
 .payment-methods-list {
   display: flex;
   flex-direction: column;
@@ -655,7 +669,8 @@
 }
 
 .payment-methods-sheet__option-text strong,
-.payment-methods-sheet__option-title {
+.payment-methods-sheet__option-title,
+.payment-methods-sheet__option-label {
   display: block;
   white-space: nowrap;
   overflow: visible;
@@ -798,4 +813,9 @@
     line-height: 44px;
   }
 
+  .payment-methods-sheet__title {
+    font-size: 24px;
+    line-height: 30px;
+  }
 }
+
