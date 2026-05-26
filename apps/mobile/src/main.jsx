@@ -14,6 +14,7 @@ import './cover-history-screen.css';
 import './payment-methods-screen.css';
 import './trusted-contacts-screen.css';
 import './settings-screen.css';
+import './live-trip-screen.css';
 
 // react-leaflet expects React on window in dev bundles
 if (typeof window !== 'undefined') {

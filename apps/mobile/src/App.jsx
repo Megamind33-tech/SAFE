@@ -44,6 +44,7 @@ import lusakaNightAerial from './assets/lusaka-night-aerial.png';
 import HomeScreen from './screens/HomeScreen.jsx';
 import CoverScreen from './screens/CoverScreen.jsx';
 import ViewPolicyScreen from './screens/ViewPolicyScreen.jsx';
+import LiveTripScreen from './screens/LiveTripScreen.jsx';
 import ClaimsScreen from './screens/ClaimsScreen.jsx';
 import ClaimFlowDescribeStep from './screens/ClaimFlowDescribeStep.jsx';
 import ClaimFlowUploadStep from './screens/ClaimFlowUploadStep.jsx';
@@ -181,6 +182,13 @@ function App() {
   }, [session.ready, session.token]);
 
   useEffect(() => {
+    if (!session.ready || !session.token) return;
+    const hash = typeof window !== 'undefined' ? window.location.hash.replace(/^#/, '') : '';
+    if (hash === 'liveTrip') setScreen('liveTrip');
+    else if (hash === 'viewPolicy') setScreen('viewPolicy');
+  }, [session.ready, session.token]);
+
+  useEffect(() => {
     if (session.token) {
       refreshPassengerData(session.token);
     } else {
@@ -251,6 +259,7 @@ function App() {
     setViewPolicyReturn(returnTo);
     setScreen('viewPolicy');
   };
+  const openLiveTrip = () => setScreen('liveTrip');
   const openClaimFlow = (step = 1) => {
     if (step === 1) {
       setClaimDraft(createEmptyClaimDraft());
@@ -277,6 +286,8 @@ function App() {
     openCoverHistoryDetail,
     viewPolicyReturn,
     openViewPolicy,
+    openLiveTrip,
+    goCover,
     openClaimFlow,
     claimFlowStep,
     paymentMethod,
@@ -331,6 +342,7 @@ function App() {
         {screen === 'payment' && <PaymentScreen {...screenProps} />}
         {screen === 'active' && <CoverScreen {...screenProps} />}
         {screen === 'viewPolicy' && <ViewPolicyScreen {...screenProps} />}
+        {screen === 'liveTrip' && <LiveTripScreen {...screenProps} />}
         {screen === 'history' && (
           <CoverHistoryScreen
             {...screenProps}
