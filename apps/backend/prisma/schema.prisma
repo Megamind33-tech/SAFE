@@ -29,11 +29,29 @@ enum PaymentStatus {
 }
 
 enum ClaimStatus {
+  draft
   submitted
-  processing
+  under_review
+  needs_action
   approved
   rejected
   paid
+  cancelled
+}
+
+enum ClaimDocumentType {
+  police_report
+  medical_note
+  photo
+  other
+}
+
+enum ClaimDocumentStatus {
+  pending
+  uploaded
+  failed
+  verified
+  rejected
 }
 
 enum PayoutStatus {
@@ -245,19 +263,62 @@ model Claim {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  reference String @unique
+
   tripCoverId String
   tripCover   TripCover @relation(fields: [tripCoverId], references: [id], onDelete: Cascade)
 
   passengerUserId String
   passengerUser   User @relation("PassengerClaims", fields: [passengerUserId], references: [id], onDelete: Cascade)
 
-  status     ClaimStatus @default(submitted)
-  description String
+  status     ClaimStatus @default(draft)
+  description String @default("")
 
-  policeReference String?
-  hospitalSlipUrl String?
+  incidentAt       DateTime?
+  location         String?
+  injured          Boolean?
+  vehicleInvolved  Boolean?
+  driverDetails    String?
+  policeReference  String?
+  medicalReference String?
+  vehiclePlate     String?
+  driverPhone      String?
+  trustedContactNote String?
+
+  documents ClaimDocument[]
+  timeline  ClaimTimelineEvent[]
 
   payout Payout?
+}
+
+model ClaimDocument {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  claimId String
+  claim   Claim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  type     ClaimDocumentType
+  filename String
+  status   ClaimDocumentStatus @default(pending)
+  storageKey String?
+
+  @@index([claimId])
+}
+
+model ClaimTimelineEvent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  claimId String
+  claim   Claim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  status  ClaimStatus
+  title   String
+  detail  String?
+
+  @@index([claimId])
 }
 
 model Payout {

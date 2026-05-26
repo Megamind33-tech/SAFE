@@ -9,6 +9,7 @@ import './view-policy-screen.css';
 import './claims-screen.css';
 import './claim-flow-screen.css';
 import './claim-submitted-screen.css';
+import './claim-detail-screen.css';
 import './profile-screen.css';
 import './cover-history-screen.css';
 import './payment-methods-screen.css';

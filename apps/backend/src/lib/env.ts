@@ -33,5 +33,7 @@ export const env = {
   appVersion: process.env.SAFE_APP_VERSION ?? '1.0.0',
   dataExportEnabled: process.env.SAFE_DATA_EXPORT_ENABLED === 'true',
   accountDeletionEnabled: process.env.SAFE_ACCOUNT_DELETION_ENABLED === 'true',
+  claimsUploadEnabled: process.env.SAFE_CLAIMS_UPLOAD_ENABLED === 'true',
+  claimWindowHours: Number.parseInt(process.env.SAFE_CLAIM_WINDOW_HOURS ?? '168', 10),
 };
 

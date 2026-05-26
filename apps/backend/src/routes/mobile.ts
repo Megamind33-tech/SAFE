@@ -23,6 +23,18 @@ import {
 import { requireAuth, type AuthedRequest } from '../middleware/requireAuth.js';
 import { env } from '../lib/env.js';
 import { requireRole } from '../middleware/requireRole.js';
+import {
+  appendTimeline,
+  assertCoverEligibleForUser,
+  checkDuplicateClaim,
+  CLAIMS_UPLOAD_ENABLED,
+  ensureUniqueReference,
+  generateClaimReference,
+  loadEligibleCovers,
+  serializeClaimDetail,
+  serializeClaimListItem,
+  validateIncidentWithinCover,
+} from '../lib/claims.js';
 
 export const mobileRouter = Router();
 
@@ -270,13 +282,268 @@ mobileRouter.get('/cover/history', async (req, res) => {
   res.json({ covers });
 });
 
-mobileRouter.post('/claims/create', async (req, res) => {
+const claimDraftBodySchema = z.object({
+  tripCoverId: z.string().min(1).optional(),
+  accidentDate: z.string().min(8).optional(),
+  accidentTime: z.string().min(4).optional(),
+  location: z.string().min(2).max(200).optional(),
+  description: z.string().min(20).max(2000).optional(),
+  injured: z.boolean().optional(),
+  vehicleInvolved: z.boolean().optional(),
+  driverDetails: z.string().max(500).optional(),
+  policeReference: z.string().max(120).optional(),
+  medicalReference: z.string().max(120).optional(),
+  vehiclePlate: z.string().max(40).optional(),
+  driverPhone: z.string().max(40).optional(),
+  trustedContactNote: z.string().max(500).optional(),
+});
+
+function parseIncidentDateTime(accidentDate?: string, accidentTime?: string) {
+  if (!accidentDate || !accidentTime) return null;
+  const iso = `${accidentDate}T${accidentTime}:00`;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+async function loadUserClaim(claimId: string, userId: string) {
+  return prisma.claim.findFirst({
+    where: { id: claimId, passengerUserId: userId },
+    include: {
+      tripCover: { include: { payment: true, route: true } },
+      documents: { orderBy: { createdAt: 'asc' } },
+      timeline: { orderBy: { createdAt: 'asc' } },
+    },
+  });
+}
+
+mobileRouter.get('/claims/eligibility', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const covers = await loadEligibleCovers(authed.user.id);
+  res.json({
+    covers,
+    uploadEnabled: CLAIMS_UPLOAD_ENABLED,
+    claimWindowHours: env.claimWindowHours,
+  });
+});
+
+mobileRouter.post('/claims/duplicate-check', async (req, res) => {
   const authed = req as AuthedRequest;
   const schema = z.object({
     tripCoverId: z.string().min(1).optional(),
-    description: z.string().min(10).max(1000),
-    policeReference: z.string().min(3).optional(),
-    hospitalSlipUrl: z.string().min(3).optional(),
+    incidentDateTime: z.string().optional(),
+    location: z.string().optional(),
+    policeReference: z.string().optional(),
+    excludeClaimId: z.string().optional(),
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+    return;
+  }
+  const result = await checkDuplicateClaim(authed.user.id, parsed.data);
+  res.json(result);
+});
+
+mobileRouter.get('/claims', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const claims = await prisma.claim.findMany({
+    where: { passengerUserId: authed.user.id },
+    orderBy: { updatedAt: 'desc' },
+    take: 50,
+    include: { tripCover: { include: { payment: true, route: true } } },
+  });
+  res.json({ claims: claims.map(serializeClaimListItem) });
+});
+
+mobileRouter.get('/claims/:claimId', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const claim = await loadUserClaim(req.params.claimId, authed.user.id);
+  if (!claim) {
+    res.status(404).json({ error: 'Claim not found' });
+    return;
+  }
+  res.json({ claim: serializeClaimDetail(claim) });
+});
+
+mobileRouter.post('/claims', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const schema = z.object({ tripCoverId: z.string().min(1) });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+    return;
+  }
+
+  const eligible = await assertCoverEligibleForUser(authed.user.id, parsed.data.tripCoverId);
+  if (!eligible.ok) {
+    res.status(400).json({ error: eligible.error });
+    return;
+  }
+
+  const reference = await ensureUniqueReference(generateClaimReference());
+  const claim = await prisma.claim.create({
+    data: {
+      reference,
+      tripCoverId: parsed.data.tripCoverId,
+      passengerUserId: authed.user.id,
+      status: 'draft',
+      description: '',
+    },
+    include: { tripCover: { include: { payment: true, route: true } } },
+  });
+
+  await appendTimeline(claim.id, 'draft', 'Claim created', 'Draft saved on your device.');
+
+  res.status(201).json({ claim: serializeClaimDetail({ ...claim, documents: [], timeline: [] }) });
+});
+
+mobileRouter.patch('/claims/:claimId', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const parsed = claimDraftBodySchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+    return;
+  }
+
+  const existing = await loadUserClaim(req.params.claimId, authed.user.id);
+  if (!existing) {
+    res.status(404).json({ error: 'Claim not found' });
+    return;
+  }
+  if (existing.status !== 'draft' && existing.status !== 'needs_action') {
+    res.status(400).json({ error: 'Claim cannot be edited in its current status' });
+    return;
+  }
+
+  const tripCoverId = parsed.data.tripCoverId ?? existing.tripCoverId;
+  const eligible = await assertCoverEligibleForUser(authed.user.id, tripCoverId);
+  if (!eligible.ok) {
+    res.status(400).json({ error: eligible.error });
+    return;
+  }
+
+  const incidentAt =
+    parseIncidentDateTime(parsed.data.accidentDate, parsed.data.accidentTime) ??
+    existing.incidentAt;
+
+  if (incidentAt && incidentAt > new Date()) {
+    res.status(400).json({ error: 'Incident date and time cannot be in the future' });
+    return;
+  }
+
+  if (incidentAt && existing.tripCover) {
+    const windowCheck = validateIncidentWithinCover(existing.tripCover, incidentAt);
+    if (!windowCheck.ok) {
+      res.status(400).json({ error: windowCheck.error });
+      return;
+    }
+  }
+
+  const claim = await prisma.claim.update({
+    where: { id: existing.id },
+    data: {
+      tripCoverId,
+      description: parsed.data.description ?? existing.description,
+      location: parsed.data.location ?? existing.location,
+      injured: parsed.data.injured ?? existing.injured,
+      vehicleInvolved: parsed.data.vehicleInvolved ?? existing.vehicleInvolved,
+      driverDetails: parsed.data.driverDetails ?? existing.driverDetails,
+      policeReference: parsed.data.policeReference ?? existing.policeReference,
+      medicalReference: parsed.data.medicalReference ?? existing.medicalReference,
+      vehiclePlate: parsed.data.vehiclePlate ?? existing.vehiclePlate,
+      driverPhone: parsed.data.driverPhone ?? existing.driverPhone,
+      trustedContactNote: parsed.data.trustedContactNote ?? existing.trustedContactNote,
+      incidentAt: incidentAt ?? existing.incidentAt,
+    },
+    include: {
+      tripCover: { include: { payment: true, route: true } },
+      documents: { orderBy: { createdAt: 'asc' } },
+      timeline: { orderBy: { createdAt: 'asc' } },
+    },
+  });
+
+  res.json({ claim: serializeClaimDetail(claim) });
+});
+
+mobileRouter.post('/claims/:claimId/submit', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const existing = await loadUserClaim(req.params.claimId, authed.user.id);
+  if (!existing) {
+    res.status(404).json({ error: 'Claim not found' });
+    return;
+  }
+  if (existing.status !== 'draft' && existing.status !== 'needs_action') {
+    res.status(400).json({ error: 'Claim has already been submitted' });
+    return;
+  }
+
+  if (!existing.description || existing.description.trim().length < 20) {
+    res.status(400).json({ error: 'Description must be at least 20 characters' });
+    return;
+  }
+  if (!existing.location?.trim()) {
+    res.status(400).json({ error: 'Location is required' });
+    return;
+  }
+  if (!existing.incidentAt) {
+    res.status(400).json({ error: 'Incident date and time are required' });
+    return;
+  }
+  if (existing.incidentAt > new Date()) {
+    res.status(400).json({ error: 'Incident date and time cannot be in the future' });
+    return;
+  }
+  if (existing.injured == null || existing.vehicleInvolved == null) {
+    res.status(400).json({ error: 'Injury and vehicle questions must be answered' });
+    return;
+  }
+
+  const dup = await checkDuplicateClaim(authed.user.id, {
+    tripCoverId: existing.tripCoverId,
+    incidentDateTime: existing.incidentAt.toISOString(),
+    location: existing.location,
+    policeReference: existing.policeReference ?? undefined,
+    excludeClaimId: existing.id,
+  });
+  if (dup.duplicateDecision === 'block') {
+    res.status(409).json({
+      error: 'Possible duplicate claim',
+      duplicate: dup,
+    });
+    return;
+  }
+
+  const claim = await prisma.claim.update({
+    where: { id: existing.id },
+    data: { status: 'submitted' },
+    include: {
+      tripCover: { include: { payment: true, route: true } },
+      documents: { orderBy: { createdAt: 'asc' } },
+      timeline: { orderBy: { createdAt: 'asc' } },
+    },
+  });
+
+  await appendTimeline(claim.id, 'submitted', 'Claim submitted', 'SAFE has received your claim.');
+
+  res.json({
+    claim: serializeClaimDetail(claim),
+    duplicate: dup.duplicate ? dup : undefined,
+  });
+});
+
+mobileRouter.post('/claims/:claimId/documents', async (req, res) => {
+  const authed = req as AuthedRequest;
+  if (!CLAIMS_UPLOAD_ENABLED) {
+    res.status(501).json({
+      error: 'Document upload is not connected yet',
+      code: 'not_connected',
+    });
+    return;
+  }
+
+  const schema = z.object({
+    type: z.enum(['police_report', 'medical_note', 'photo', 'other']),
+    filename: z.string().min(1).max(200),
   });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
@@ -284,43 +551,72 @@ mobileRouter.post('/claims/create', async (req, res) => {
     return;
   }
 
-  const coverId = parsed.data.tripCoverId
-    ? parsed.data.tripCoverId
-    : (
-        await prisma.tripCover.findFirst({
-          where: { passengerUserId: authed.user.id },
-          orderBy: { createdAt: 'desc' },
-          select: { id: true },
-        })
-      )?.id;
-
-  if (!coverId) {
-    res.status(400).json({ error: 'No trip cover found to attach claim' });
+  const existing = await loadUserClaim(req.params.claimId, authed.user.id);
+  if (!existing) {
+    res.status(404).json({ error: 'Claim not found' });
     return;
   }
 
-  const claim = await prisma.claim.create({
+  const doc = await prisma.claimDocument.create({
     data: {
-      tripCoverId: coverId,
-      passengerUserId: authed.user.id,
-      description: parsed.data.description,
-      policeReference: parsed.data.policeReference ?? null,
-      hospitalSlipUrl: parsed.data.hospitalSlipUrl ?? null,
+      claimId: existing.id,
+      type: parsed.data.type,
+      filename: parsed.data.filename,
+      status: 'uploaded',
     },
   });
 
-  res.json({ claim });
+  res.status(201).json({ document: doc });
 });
 
-mobileRouter.get('/claims', async (req, res) => {
+/** @deprecated Use POST /claims then PATCH + POST /claims/:id/submit */
+mobileRouter.post('/claims/create', async (req, res) => {
   const authed = req as AuthedRequest;
-  const claims = await prisma.claim.findMany({
-    where: { passengerUserId: authed.user.id },
-    orderBy: { createdAt: 'desc' },
-    take: 50,
+  const schema = z.object({
+    tripCoverId: z.string().min(1).optional(),
+    description: z.string().min(20).max(2000),
+    policeReference: z.string().min(3).optional(),
+    hospitalSlipUrl: z.string().min(3).optional(),
+    medicalReference: z.string().min(3).optional(),
   });
-  res.json({ claims });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+    return;
+  }
+
+  const coverId = parsed.data.tripCoverId;
+  if (!coverId) {
+    res.status(400).json({ error: 'tripCoverId is required' });
+    return;
+  }
+
+  const eligible = await assertCoverEligibleForUser(authed.user.id, coverId);
+  if (!eligible.ok) {
+    res.status(400).json({ error: eligible.error });
+    return;
+  }
+
+  const reference = await ensureUniqueReference(generateClaimReference());
+  const claim = await prisma.claim.create({
+    data: {
+      reference,
+      tripCoverId: coverId,
+      passengerUserId: authed.user.id,
+      status: 'submitted',
+      description: parsed.data.description,
+      policeReference: parsed.data.policeReference ?? null,
+      medicalReference:
+        parsed.data.medicalReference ?? parsed.data.hospitalSlipUrl ?? null,
+    },
+    include: { tripCover: { include: { payment: true, route: true } } },
+  });
+
+  await appendTimeline(claim.id, 'submitted', 'Claim submitted', 'Submitted via legacy endpoint.');
+
+  res.json({ claim: serializeClaimListItem(claim) });
 });
+
 
 mobileRouter.get('/payment-methods', async (req, res) => {
   const authed = req as AuthedRequest;
