@@ -32,6 +32,14 @@ SAFE is a minibus commuter micro-insurance monorepo (npm workspaces) with three 
 
 See `README.md` for default dev credentials.
 
+
+### Superseded pull requests (do not merge or rebase)
+
+**#2**, **#6**, **#7**, and **#25** are obsolete. Their replacements are already on `main` (**#23** Cover, **#24** Claims, plus later profile screens).  
+**Do not merge, rebase, or “Update branch” on those PRs** — conflicts are expected and resolving them can restore prototype UIs over locked screens.
+
+See **[docs/SUPERSEDED_PRS.md](docs/SUPERSEDED_PRS.md)** for the full table and safe close steps.
+
 ### Locked mobile screens
 
 Do not change layout, typography, card design, nav design, icon style, screen structure, or visual direction on locked screens unless explicitly requested.

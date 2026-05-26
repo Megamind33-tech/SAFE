@@ -28,6 +28,11 @@ The backend lives in `apps/backend` and exposes strict namespaces:
   - Email: `admin@safe.local`
   - Password: `admin1234`
 
+## Superseded PRs
+
+Open PRs **#2**, **#6**, **#7**, and **#25** must **not** be merged or rebased onto current `main`. Close them as superseded only.  
+Details: [docs/SUPERSEDED_PRS.md](docs/SUPERSEDED_PRS.md)
+
 ## Repo scripts
 
 - `npm run dev:backend`
