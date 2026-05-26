@@ -371,6 +371,7 @@ async function main() {
     await page.getByRole('button', { name: /next: documents/i }).click();
     await page.waitForSelector('.claim-flow-panel__title', { hasText: 'Documents' });
     if (!uploadEnabled) {
+      await page.getByText(/Document upload is not connected yet/i).waitFor({ timeout: 15000 });
       await capturePhone(page, 'claims-upload-not-connected.png');
     }
     await capturePhone(page, 'claims-documents.png');

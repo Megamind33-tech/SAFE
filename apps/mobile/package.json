@@ -8,7 +8,14 @@
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
     "live-trip:capture": "node scripts/capture-live-trip.mjs",
-    "claims:capture": "VITE_CLAIMS_QA_CAPTURE=true node scripts/capture-claims.mjs"
+    "claims:capture": "VITE_CLAIMS_QA_CAPTURE=true node scripts/capture-claims.mjs",
+    "home:capture": "node scripts/capture-home.mjs",
+    "cover:capture": "node scripts/capture-cover-flow.mjs",
+    "help:capture": "node scripts/capture-help-safety.mjs",
+    "notifications:capture": "node scripts/capture-notifications.mjs",
+    "settings:capture": "node scripts/capture-settings.mjs",
+    "payment-methods:capture": "node scripts/capture-payment-methods.mjs",
+    "trusted-contacts:capture": "node scripts/capture-trusted-contacts.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

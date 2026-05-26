@@ -86,6 +86,34 @@ function qaDb(command, phone) {
   });
 }
 
+
+async function addPaymentMethod(token) {
+  try {
+    await apiRequest('/api/mobile/payment-methods', {
+      method: 'POST',
+      token,
+      body: { provider: 'airtel', phoneNumber: '+260977111111' },
+    });
+  } catch (err) {
+    if (!/already exists|already saved|409/i.test(String(err.message))) throw err;
+  }
+  const list = await apiRequest('/api/mobile/payment-methods', { token });
+  const methods = list.paymentMethods ?? [];
+  return methods.find((m) => m.isDefault) ?? methods[0];
+}
+
+async function purchaseCover(token, { planId = 'plus', vehicleId } = {}) {
+  const method = await addPaymentMethod(token);
+  if (!method?.id) throw new Error('No saved payment method for QA purchase');
+  const body = {
+    planId,
+    paymentMethodId: method.id,
+    startMode: 'after_payment_confirmation',
+  };
+  if (vehicleId) body.vehicleId = vehicleId;
+  return apiRequest('/api/mobile/cover/purchase', { method: 'POST', token, body });
+}
+
 async function setPaymentSucceededForUser(phone) {
   qaDb('succeed-payment', phone);
 }
@@ -96,34 +124,40 @@ async function expireLatestCoverForUser(phone) {
 
 async function seedActiveCoverWithTrip(phone) {
   const token = await apiLogin(phone, 'testpass123');
+  try {
+    qaDb('clear-covers', phone);
+  } catch {
+    /* first run */
+  }
   const vehicle = await apiRequest('/api/mobile/vehicle/verify', {
     method: 'POST',
     token,
     body: { qrCode: 'SAFE-LSK-2481' },
   });
-  await apiRequest('/api/mobile/cover/buy', {
-    method: 'POST',
-    token,
-    body: { plan: 'plus', vehicleId: vehicle.vehicle.id, durationMinutes: 240 },
-  });
+  await purchaseCover(token, { planId: 'plus', vehicleId: vehicle.vehicle.id });
   await setPaymentSucceededForUser(phone);
 }
 
 async function seedPendingCover(phone) {
   const token = await apiLogin(phone, 'testpass123');
-  await apiRequest('/api/mobile/cover/buy', {
-    method: 'POST',
-    token,
-    body: { plan: 'basic', durationMinutes: 120 },
-  });
+  try {
+    qaDb('clear-covers', phone);
+  } catch {
+    /* first run */
+  }
+  await purchaseCover(token, { planId: 'basic' });
 }
 
 async function seedClaim(phone) {
   const token = await apiLogin(phone, 'testpass123');
+  const active = await apiRequest('/api/mobile/cover/active', { token });
+  const coverId = active.cover?.id;
+  if (!coverId) throw new Error('No active cover for claim seed');
   await apiRequest('/api/mobile/claims/create', {
     method: 'POST',
     token,
     body: {
+      tripCoverId: coverId,
       description: 'QA claim for home screenshot — minor incident on commute route.',
     },
   });
@@ -216,6 +250,7 @@ async function main() {
 
   await seedActiveCoverWithTrip(PHONE_ACTIVE);
   await seedActiveCoverWithTrip(PHONE_TRIP);
+  qaDb('trip-active', PHONE_TRIP);
   await seedPendingCover(PHONE_PENDING);
   await seedActiveCoverWithTrip(PHONE_EXPIRED);
   await expireLatestCoverForUser(PHONE_EXPIRED);

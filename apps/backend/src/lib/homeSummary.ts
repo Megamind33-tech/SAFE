@@ -49,7 +49,7 @@ function serializeCover(cover: {
 
 function serializeTripFromCover(cover: Awaited<ReturnType<typeof loadCoverWithRelations>>) {
   if (!cover) return null;
-  const trip = serializeActiveTrip(cover);
+  const trip = serializeActiveTrip({ ...cover, tripTracking: cover.tripTracking ?? null });
   if (!trip) return null;
 
   const route = trip.route;
@@ -80,6 +80,7 @@ async function loadCoverWithRelations(coverId: string, userId: string) {
       vehicle: { include: { route: true, driver: true } },
       route: true,
       payment: true,
+      tripTracking: true,
     },
   });
 }
@@ -110,6 +111,7 @@ export async function buildHomeSummary(userId: string) {
         vehicle: { include: { route: true, driver: true } },
         route: true,
         payment: true,
+        tripTracking: true,
       },
     }),
     prisma.tripCover.findFirst({
@@ -141,6 +143,7 @@ export async function buildHomeSummary(userId: string) {
             vehicle: { include: { route: true, driver: true } },
             route: true,
             payment: true,
+            tripTracking: true,
           },
         })
       : null;
