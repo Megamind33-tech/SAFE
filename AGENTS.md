@@ -36,6 +36,69 @@ See `README.md` for default dev credentials.
 
 Do not change layout, spacing, typography, card design, nav design, icon style, screen structure, or visual direction on locked screens unless explicitly requested.
 
+#### Home (`cursor/home-command-center-9936` / PR #22)
+
+**Home is locked.**
+
+**Locked (do not modify):**
+- Home command center layout
+- Header / greeting behavior
+- Cover hero active / no-cover / expired / payment-pending states
+- Real cover timer behavior
+- Quick action grid
+- Live trip / map preview behavior
+- Claim summary section
+- Recent activity section
+- Safety note
+- Error-no-cache state
+- Sync-warning state
+- Home bottom nav behavior
+
+**Key files:**
+- `apps/mobile/src/screens/HomeScreen.jsx`
+- `apps/mobile/src/home-screen.css`
+- `apps/mobile/src/services/home.js`
+- `apps/mobile/src/components/HomeCoverHero.jsx`
+- `apps/mobile/src/components/HomeMapPreview.jsx`
+
+**Allowed future changes only:**
+1. API / integration fixes
+2. Backend data bugs
+3. Small copy tweaks
+4. Accessibility improvements
+5. Test / QA improvements
+6. Real notification unread-count integration when backend exists
+
+Do not change layout, spacing, typography, card design, nav design, icon style, map visual direction, or screen structure unless explicitly requested.
+
+**Behavior and copy to preserve:**
+- No fake maps.
+- No fake demo stats.
+- No hardcoded user name.
+- No cartoon hero assets.
+- Active cover must only show when backend cover exists and `endsAt` is in the future.
+- Expired cover must never show as active.
+- Timer must derive from `endsAt` and must not go negative.
+- Cached home summary remains visible if refresh fails (sync warning, not full error).
+- Full error only when there is no cached home data.
+- Live map only renders when real trip / map data exists.
+- Recent activity must come from real covers, claims, or trusted-contact updates.
+- Quick actions must route to real existing screens / flows.
+
+**QA (preserve):**
+- Script: `apps/mobile/scripts/capture-home.mjs`
+- Ten screenshot states (fail fast if regressions):
+  - `home-active-cover.png`
+  - `home-no-cover.png`
+  - `home-expired-cover.png`
+  - `home-payment-pending.png`
+  - `home-live-trip-map.png`
+  - `home-no-active-trip.png`
+  - `home-latest-claim.png`
+  - `home-no-claim.png`
+  - `home-error-no-cache.png`
+  - `home-sync-warning.png`
+
 #### Settings (`cursor/settings-a7cb` / PR #21)
 
 **Settings is locked.**
