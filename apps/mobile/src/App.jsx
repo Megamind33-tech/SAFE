@@ -51,10 +51,8 @@ import { writeCachedCoverScreen } from './services/cover.js';
 import ViewPolicyScreen from './screens/ViewPolicyScreen.jsx';
 import LiveTripScreen from './screens/LiveTripScreen.jsx';
 import ClaimsScreen from './screens/ClaimsScreen.jsx';
-import ClaimFlowDescribeStep from './screens/ClaimFlowDescribeStep.jsx';
-import ClaimFlowUploadStep from './screens/ClaimFlowUploadStep.jsx';
-import ClaimFlowReviewStep from './screens/ClaimFlowReviewStep.jsx';
-import ClaimFlowSubmittedStep from './screens/ClaimFlowSubmittedStep.jsx';
+import ClaimFlowScreen from './screens/ClaimFlowScreen.jsx';
+import ClaimDetailScreen from './screens/ClaimDetailScreen.jsx';
 import ProfileScreen from './screens/ProfileScreen.jsx';
 import CoverHistoryScreen, { CoverHistoryDetailScreen } from './screens/CoverHistoryScreen.jsx';
 import PaymentMethodsScreen from './screens/PaymentMethodsScreen.jsx';
@@ -65,12 +63,19 @@ import { getPaymentMethods, resolveDefaultCheckoutId } from './services/paymentM
 import {
   resolveActiveCover,
 } from './utils/activeCover.js';
-import { createEmptyClaimDraft, buildClaimSubmitPayload, hasUploadInProgress, normalizeClaimDraft, normalizeClaimDocuments, primaryClaimSlipUrl } from './claimDraftUtils.js';
 import navHomeIcon from './assets/pack/icons/nav-home.svg';
 import navCoverIcon from './assets/pack/icons/nav-cover-active.svg';
 import navClaimsIcon from './assets/pack/icons/nav-claims.svg';
 import navAccountIcon from './assets/pack/icons/nav-account.svg';
-import { clearToken, createClaim, loadToken, login, me, registerPassenger, saveToken, activeCover as fetchActiveCover, coverHistory, listClaims, verifyVehicle } from './api/safeApi.js';
+import { writeCachedClaims } from './services/claims.js';
+import {
+  clearQaOpenClaimFlowFlag,
+  clearQaSubmittedClaimId,
+  isClaimsQaCapture,
+  readQaOpenClaimFlowFlag,
+  readQaSubmittedClaimId,
+} from './utils/claimsQa.js';
+import { clearToken, loadToken, login, me, registerPassenger, saveToken, activeCover as fetchActiveCover, coverHistory, verifyVehicle } from './api/safeApi.js';
 
 const bgImage = zambiaScene;
 
@@ -111,21 +116,17 @@ function App() {
   const [screen, setScreen] = useState('splash');
   const [selectedPlan, setSelectedPlan] = useState('plus');
   const [paymentMethod, setPaymentMethod] = useState('');
-  const [claimDraft, setClaimDraft] = useState(() => createEmptyClaimDraft());
-  const [submittedClaim, setSubmittedClaim] = useState(null);
-  const [policeReference, setPoliceReference] = useState('');
-  const [hospitalSlipUrl, setHospitalSlipUrl] = useState('');
   const [historyReturn, setHistoryReturn] = useState('active');
   const [viewPolicyReturn, setViewPolicyReturn] = useState('active');
   const [selectedHistoryCover, setSelectedHistoryCover] = useState(null);
-  const [claimFlowStep, setClaimFlowStep] = useState(1);
+  const [selectedClaimId, setSelectedClaimId] = useState(null);
+  const [claimFlowOpts, setClaimFlowOpts] = useState({});
   const [session, setSession] = useState(() => ({ token: loadToken(), user: null, ready: false }));
 
   // New Dynamic States
   const [activeCoverState, setActiveCoverState] = useState(null);
   const [scannedVehicle, setScannedVehicle] = useState(null);
   const [coversHistory, setCoversHistory] = useState([]);
-  const [claimsList, setClaimsList] = useState([]);
   const [coverFlow, setCoverFlow] = useState({
     selectedPlan: null,
     selectedPaymentMethod: null,
@@ -145,22 +146,12 @@ function App() {
   const refreshPassengerData = async (token) => {
     if (!token) return;
     try {
-      const [activeRes, historyRes, claimsRes] = await Promise.all([
+      const [activeRes, historyRes] = await Promise.all([
         fetchActiveCover(token),
         coverHistory(token),
-        listClaims(token),
       ]);
-      const cover = activeRes?.cover || null;
-      setActiveCoverState(cover ? { ...cover, plan: cover.planId || cover.plan } : null);
-      if (cover) {
-        writeCachedCoverScreen({
-          activeCover: cover,
-          pendingCover: activeRes?.pendingCover ?? null,
-          capabilities: activeRes?.capabilities ?? {},
-        });
-      }
+      setActiveCoverState(activeRes?.cover || null);
       setCoversHistory(historyRes?.covers || []);
-      setClaimsList(claimsRes?.claims || []);
     } catch (err) {
       console.error('Failed to load passenger data:', err);
     }
@@ -183,6 +174,33 @@ function App() {
         setSession({ token: '', user: null, ready: true });
       });
   }, []);
+
+  useEffect(() => {
+    if (!session.ready || !isClaimsQaCapture) return;
+    if (readQaOpenClaimFlowFlag()) {
+      clearQaOpenClaimFlowFlag();
+      setClaimFlowOpts({});
+      setScreen('claimFlow');
+    }
+  }, [session.ready]);
+
+  useEffect(() => {
+    if (!session.ready || !session.token || !isClaimsQaCapture) return;
+    const qaClaimId = readQaSubmittedClaimId();
+    if (!qaClaimId) return;
+    import('./services/claims.js').then(({ getClaimDetail }) =>
+      getClaimDetail(session.token, qaClaimId).then((claim) => {
+        if (
+          claim?.reference &&
+          ['submitted', 'under_review'].includes(String(claim.status))
+        ) {
+          clearQaSubmittedClaimId();
+          setClaimFlowOpts({ qaSubmittedClaimId: claim.id });
+          setScreen('claimFlow');
+        }
+      })
+    );
+  }, [session.ready, session.token]);
 
   useEffect(() => {
     if (!session.ready) return;
@@ -212,7 +230,7 @@ function App() {
     } else {
       setActiveCoverState(null);
       setCoversHistory([]);
-      setClaimsList([]);
+      writeCachedClaims(null);
     }
   }, [session.token]);
 
@@ -284,27 +302,21 @@ function App() {
     setScreen('viewPolicy');
   };
   const openLiveTrip = () => setScreen('liveTrip');
-  const openClaimFlow = (step = 1) => {
-    if (step === 1) {
-      setClaimDraft(createEmptyClaimDraft());
-      setPoliceReference('');
-      setHospitalSlipUrl('');
-      setSubmittedClaim(null);
-    }
-    setClaimFlowStep(step);
+  const openClaimFlow = (opts = {}) => {
+    setClaimFlowOpts(typeof opts === 'object' ? opts : {});
     setScreen('claimFlow');
+  };
+  const openClaimDetail = (claimId) => {
+    setSelectedClaimId(claimId);
+    setScreen('claimDetail');
+  };
+  const invalidateClaimsCache = () => {
+    writeCachedClaims(null);
   };
   const showBottomNav = !['splash', 'onboarding1', 'onboarding2', 'onboarding3', 'login', 'signup', 'chat', 'offline'].includes(screen);
 
   const screenProps = {
     activePlan,
-    submittedClaim,
-    claimDraft,
-    setClaimDraft,
-    policeReference,
-    setPoliceReference,
-    hospitalSlipUrl,
-    setHospitalSlipUrl,
     historyReturn,
     openHistory,
     openCoverHistoryDetail,
@@ -313,10 +325,12 @@ function App() {
     openLiveTrip,
     goCover,
     openClaimFlow,
-    claimFlowStep,
+    openClaimDetail,
+    invalidateClaimsCache,
+    claimFlowOpts,
+    selectedClaimId,
     paymentMethod,
     selectedPlan,
-    setSubmittedClaim,
     setPaymentMethod,
     setScreen,
     setSelectedPlan,
@@ -334,7 +348,6 @@ function App() {
     scannedVehicle,
     setScannedVehicle,
     coversHistory,
-    claimsList,
     selectedHistoryCover,
     refreshPassengerData,
     setShowScannerModal,
@@ -453,7 +466,26 @@ function App() {
           />
         )}
         {screen === 'claim' && <ClaimsScreen {...screenProps} />}
-        {screen === 'claimFlow' && <ClaimScreen {...screenProps} />}
+        {screen === 'claimFlow' && (
+          <ClaimFlowScreen
+            {...screenProps}
+            initialStep={claimFlowOpts.step ?? 1}
+            resumeClaimId={claimFlowOpts.claimId ?? null}
+            qaSubmittedClaimId={claimFlowOpts.qaSubmittedClaimId ?? null}
+            claimFlowOpts={claimFlowOpts}
+            openClaimDetail={openClaimDetail}
+            invalidateClaimsCache={invalidateClaimsCache}
+            onExit={() => setScreen('claim')}
+          />
+        )}
+        {screen === 'claimDetail' && (
+          <ClaimDetailScreen
+            {...screenProps}
+            claimId={selectedClaimId}
+            onBack={() => setScreen('claim')}
+            openClaimFlow={openClaimFlow}
+          />
+        )}
         {screen === 'profile' && <ProfileScreen {...screenProps} />}
         {screen === 'profilePayments' && <PaymentMethodsScreen {...screenProps} />}
         {screen === 'trustedContacts' && <TrustedContactsScreen {...screenProps} />}
@@ -620,7 +652,7 @@ function App() {
 function navState(screen) {
   if (screen === 'home') return 'home';
   if (['choose', 'payment', 'active', 'viewPolicy', 'coverPlans', 'coverReview', 'coverPay', 'coverStatus'].includes(screen)) return 'cover';
-  if (['claim', 'claimFlow'].includes(screen)) return 'claims';
+  if (['claim', 'claimFlow', 'claimDetail'].includes(screen)) return 'claims';
   if (['history', 'coverHistoryDetail', 'profile', 'profilePayments', 'trustedContacts', 'settings', 'notifications', 'helpSafety'].includes(screen)) {
     return 'profile';
   }
@@ -1108,160 +1140,6 @@ function PaymentScreen_LEGACY({ activePlan, paymentMethod, selectedPlan, session
 }
 
 
-function ClaimScreen({
-  claimDraft,
-  setClaimDraft,
-  session,
-  submittedClaim,
-  setSubmittedClaim,
-  policeReference,
-  setPoliceReference,
-  hospitalSlipUrl,
-  setHospitalSlipUrl,
-  refreshPassengerData,
-  setScreen,
-  activeCoverState,
-  activeCover,
-  coversHistory = [],
-  claimFlowStep = 1,
-}) {
-  const [step, setStep] = useState(claimFlowStep);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-
-  const draft = normalizeClaimDraft(claimDraft);
-  const draftDocuments = draft.documents;
-
-  const finishClaimFlow = () => {
-    setClaimDraft(createEmptyClaimDraft());
-    setPoliceReference('');
-    setHospitalSlipUrl('');
-    setSubmittedClaim(null);
-    setStep(1);
-  };
-
-  const syncHospitalSlipFromDraft = (documents) => {
-    setHospitalSlipUrl(primaryClaimSlipUrl(documents) || '');
-  };
-
-  const handleNarrativeChange = (value) => {
-    setClaimDraft((prev) => ({
-      ...normalizeClaimDraft(prev),
-      incidentNarrative: value,
-    }));
-    setError('');
-  };
-
-  const handleDocumentsChange = (nextOrUpdater) => {
-    setClaimDraft((prev) => {
-      const current = normalizeClaimDraft(prev);
-      const nextDocuments =
-        typeof nextOrUpdater === 'function'
-          ? nextOrUpdater(current.documents)
-          : normalizeClaimDocuments(nextOrUpdater);
-      const nextDraft = {
-        ...current,
-        documents: normalizeClaimDocuments(nextDocuments),
-      };
-      syncHospitalSlipFromDraft(nextDraft.documents);
-      return nextDraft;
-    });
-  };
-
-  if (submittedClaim) {
-    return (
-      <ClaimFlowSubmittedStep
-        claim={submittedClaim}
-        activeCover={activeCover}
-        fallbackPolicyId={trip.policy}
-        fallbackVehicle={trip.vehicle}
-        onBackToClaims={() => {
-          finishClaimFlow();
-          setScreen('claim');
-        }}
-        onBackToHome={() => {
-          finishClaimFlow();
-          setScreen('home');
-        }}
-      />
-    );
-  }
-
-  if (step === 1) {
-    return (
-      <ClaimFlowDescribeStep
-        incidentNarrative={draft.incidentNarrative}
-        onNarrativeChange={handleNarrativeChange}
-        onBack={() => setScreen('claim')}
-        onNext={() => setStep(2)}
-      />
-    );
-  }
-
-  if (step === 2) {
-    return (
-      <ClaimFlowUploadStep
-        documents={draftDocuments}
-        onDocumentsChange={handleDocumentsChange}
-        onBack={() => setStep(1)}
-        onNext={() => setStep(3)}
-        onUploadLater={() => setStep(3)}
-      />
-    );
-  }
-
-  if (step === 3) {
-    const narrativeValid = draft.incidentNarrative.trim().length >= 10;
-    const canSubmit = narrativeValid && !hasUploadInProgress(draftDocuments);
-
-    return (
-      <ClaimFlowReviewStep
-        incidentNarrative={draft.incidentNarrative}
-        documents={draftDocuments}
-        activeCover={activeCover}
-        fallbackPolicyId={trip.policy}
-        fallbackVehicle={trip.vehicle}
-        fallbackRoute={trip.route.replace(' to ', ' → ')}
-        busy={busy}
-        error={error}
-        canSubmit={canSubmit}
-        onBack={() => setStep(2)}
-        onEditNarrative={() => setStep(1)}
-        onEditEvidence={() => setStep(2)}
-        onSubmit={async () => {
-          setError('');
-          if (!session?.token) {
-            setScreen('login');
-            return;
-          }
-          if (!narrativeValid) {
-            setError('Please add an accident narrative of at least 10 characters.');
-            return;
-          }
-          setBusy(true);
-          try {
-            const payload = buildClaimSubmitPayload(draft, {
-              tripCoverId: activeCover?.id || undefined,
-              policeReference,
-            });
-            const result = await createClaim(session.token, payload);
-            syncHospitalSlipFromDraft(draftDocuments);
-            if (refreshPassengerData) {
-              await refreshPassengerData(session.token);
-            }
-            setSubmittedClaim(result.claim);
-          } catch (e) {
-            setError('Claim could not be submitted. Please try again.');
-          } finally {
-            setBusy(false);
-          }
-        }}
-      />
-    );
-  }
-
-  return null;
-}
 
 function NotificationsScreen({ setScreen }) {
   const [settings, setSettings] = useState({
