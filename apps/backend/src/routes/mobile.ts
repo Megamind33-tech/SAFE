@@ -20,6 +20,7 @@ import {
   getSettingsConfigPayload,
   serializeAccountDetails,
 } from '../lib/settings.js';
+import { getHelpSafetyConfig, SUPPORT_PROBLEM_TYPES } from '../lib/helpSafety.js';
 import { listAvailableCoverPlans } from '../lib/coverPlans.js';
 import {
   coverCapabilities,
@@ -1060,5 +1061,52 @@ mobileRouter.delete('/settings/account', async (req, res) => {
   });
 
   res.json({ deleted: true });
+});
+
+mobileRouter.get('/trusted-contacts/:contactId/dial', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const contact = await prisma.trustedContact.findFirst({
+    where: { id: req.params.contactId, userId: authed.user.id },
+  });
+  if (!contact) {
+    res.status(404).json({ error: 'Trusted contact not found' });
+    return;
+  }
+  const digits = contact.phoneNumber.replace(/\D/g, '');
+  res.json({ dialUrl: `tel:+${digits}` });
+});
+
+mobileRouter.get('/help-safety/config', async (_req, res) => {
+  res.json({ config: getHelpSafetyConfig() });
+});
+
+mobileRouter.post('/support-reports', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const schema = z.object({
+    problemType: z.enum(SUPPORT_PROBLEM_TYPES as unknown as [string, ...string[]]),
+    message: z.string().trim().min(10).max(2000),
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+    return;
+  }
+
+  const report = await prisma.supportReport.create({
+    data: {
+      userId: authed.user.id,
+      problemType: parsed.data.problemType,
+      message: parsed.data.message.trim(),
+    },
+  });
+
+  res.status(201).json({
+    report: {
+      id: report.id,
+      problemType: report.problemType,
+      status: report.status,
+      createdAt: report.createdAt.toISOString(),
+    },
+  });
 });
 
