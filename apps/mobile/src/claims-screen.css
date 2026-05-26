@@ -1,7 +1,7 @@
 /* SAFE Claims — reporting center (390px master) */
 
 .claims-screen.claims-screen-board {
-  --claims-pad-x: 22px;
+  --claims-pad-x: 24px;
   --claims-content-width: 346px;
   position: relative;
   min-height: 100%;

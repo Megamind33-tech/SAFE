@@ -14,7 +14,7 @@ dashboardRouter.get('/metrics', async (_req, res) => {
   const [users, activeCovers, claimsPending, fraudFlags, purchases] = await Promise.all([
     prisma.user.count(),
     prisma.tripCover.count({ where: { status: 'active' } }),
-    prisma.claim.count({ where: { status: { in: ['submitted', 'processing'] } } }),
+    prisma.claim.count({ where: { status: { in: ['submitted', 'under_review'] } } }),
     prisma.fraudFlag.count(),
     prisma.tripCover.count(),
   ]);

@@ -38,5 +38,6 @@ export const env = {
   cardPaymentsEnabled: process.env.SAFE_CARD_PAYMENTS_ENABLED === 'true',
   allowCoverStacking: process.env.SAFE_ALLOW_COVER_STACKING === 'true',
   allowCoverExtension: process.env.SAFE_ALLOW_COVER_EXTENSION === 'true',
+  claimsUploadEnabled: process.env.SAFE_CLAIMS_UPLOAD_ENABLED === 'true',
+  claimWindowHours: Number.parseInt(process.env.SAFE_CLAIM_WINDOW_HOURS ?? '168', 10),
 };
-
