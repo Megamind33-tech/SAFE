@@ -534,3 +534,8 @@
   filter: brightness(0) saturate(100%) invert(84%) sepia(68%) saturate(620%) hue-rotate(359deg)
     brightness(103%) contrast(101%);
 }
+
+.cover-flow-review-card__payment-missing {
+  color: #b45309;
+  font-weight: 600;
+}

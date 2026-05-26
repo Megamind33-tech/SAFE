@@ -36,17 +36,29 @@ export async function fetchCoverActive(token) {
   const data = await request('/api/mobile/cover/active', { token });
   return {
     cover: data?.cover ?? null,
+    lastEndedCover: data?.lastEndedCover ?? null,
     pendingCover: data?.pendingCover ?? null,
     capabilities: data?.capabilities ?? {},
   };
 }
 
 export async function purchaseCover(token, payload) {
-  const data = await request('/api/mobile/cover/purchase', {
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8080';
+  const res = await fetch(`${API_BASE}/api/mobile/cover/purchase`, {
     method: 'POST',
-    token,
-    body: payload,
+    headers: {
+      'content-type': 'application/json',
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
   });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 501 && data?.purchase?.status === 'not_configured') {
+    return data;
+  }
+  if (!res.ok) {
+    throw new Error(data?.error || `Request failed (${res.status})`);
+  }
   return data;
 }
 
@@ -64,6 +76,7 @@ export async function loadCoverScreenBundle(token) {
     plans: plansRes.plans,
     capabilities: { ...plansRes.capabilities, ...activeRes.capabilities },
     activeCover: activeRes.cover,
+    lastEndedCover: activeRes.lastEndedCover,
     pendingCover: activeRes.pendingCover,
   };
 }

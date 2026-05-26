@@ -87,6 +87,24 @@ export async function loadPendingCoverForUser(userId: string) {
   });
 }
 
+/** Most recent ended cover (for hub expired state when nothing is active). */
+export async function loadLastEndedCoverForUser(userId: string) {
+  const now = new Date();
+  return prisma.tripCover.findFirst({
+    where: {
+      passengerUserId: userId,
+      payment: { status: 'succeeded' },
+      OR: [{ endsAt: { lte: now } }, { status: { in: ['expired', 'cancelled'] } }],
+    },
+    orderBy: { endsAt: 'desc' },
+    include: {
+      vehicle: { include: { route: true, driver: true } },
+      route: true,
+      payment: true,
+    },
+  });
+}
+
 export function coverCapabilities() {
   return {
     paymentGatewayEnabled: env.paymentGatewayEnabled,

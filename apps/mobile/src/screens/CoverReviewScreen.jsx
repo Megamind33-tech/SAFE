@@ -1,18 +1,52 @@
+import { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import {
   estimateEndsAt,
   formatDurationLabel,
   formatPrice,
 } from '../services/cover.js';
-import { providerDisplayName } from '../services/paymentMethods.js';
+import {
+  getPaymentMethods,
+  providerDisplayName,
+} from '../services/paymentMethods.js';
+import { loadToken } from '../api/safeApi.js';
+
 
 export default function CoverReviewScreen({
+  session,
   setScreen,
   selectedPlan,
   paymentMethod,
+  onPaymentMethodResolved,
   onContinue,
   onChangePlan,
 }) {
+  const [resolving, setResolving] = useState(true);
+  const onResolvedRef = useRef(onPaymentMethodResolved);
+  onResolvedRef.current = onPaymentMethodResolved;
+
+  useEffect(() => {
+    const token = session?.token?.trim() ? session.token : loadToken();
+    if (!token) {
+      setResolving(false);
+      return;
+    }
+    if (paymentMethod) {
+      setResolving(false);
+      return;
+    }
+    getPaymentMethods(token)
+      .then((methods) => {
+        const active = methods.filter((m) => m.status === 'active' || !m.status);
+        const def = active.find((m) => m.isDefault) ?? active[0] ?? null;
+        if (def) onResolvedRef.current?.(def);
+      })
+      .catch(() => {
+        /* review still usable; user can choose payment method */
+      })
+      .finally(() => setResolving(false));
+  }, [session?.token, paymentMethod]);
+
   if (!selectedPlan) {
     return (
       <main className="screen cover-flow">
@@ -20,6 +54,8 @@ export default function CoverReviewScreen({
       </main>
     );
   }
+
+  const hasPaymentMethod = Boolean(paymentMethod?.id);
 
   return (
     <main className="screen cover-flow">
@@ -51,9 +87,13 @@ export default function CoverReviewScreen({
             <div>
               <dt>Payment method</dt>
               <dd>
-                {paymentMethod
-                  ? providerDisplayName(paymentMethod.provider)
-                  : 'Not selected'}
+                {resolving ? (
+                  'Loading…'
+                ) : hasPaymentMethod ? (
+                  providerDisplayName(paymentMethod.provider)
+                ) : (
+                  <span className="cover-flow-review-card__payment-missing">Payment method required</span>
+                )}
               </dd>
             </div>
           </dl>
@@ -68,14 +108,25 @@ export default function CoverReviewScreen({
           <p className="cover-flow-note">Cover starts only after payment is confirmed.</p>
         </section>
 
-        <button
-          type="button"
-          className="cover-flow-btn cover-flow-btn--primary cover-flow-btn--wide"
-          disabled={!paymentMethod}
-          onClick={onContinue}
-        >
-          Continue to payment
-        </button>
+        {hasPaymentMethod ? (
+          <button
+            type="button"
+            className="cover-flow-btn cover-flow-btn--primary cover-flow-btn--wide"
+            disabled={resolving}
+            onClick={onContinue}
+          >
+            Continue to payment
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="cover-flow-btn cover-flow-btn--primary cover-flow-btn--wide"
+            disabled={resolving}
+            onClick={() => setScreen('coverPay')}
+          >
+            Choose payment method
+          </button>
+        )}
         <button type="button" className="cover-flow-btn cover-flow-btn--text" onClick={onChangePlan}>
           Change plan
         </button>

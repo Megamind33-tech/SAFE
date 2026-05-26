@@ -25,6 +25,7 @@ import {
   coverCapabilities,
   getPurchaseStatus,
   loadActiveCoverForUser,
+  loadLastEndedCoverForUser,
   loadPendingCoverForUser,
   serializeActiveCover,
   startCoverPurchase,
@@ -147,8 +148,10 @@ mobileRouter.get('/cover/active', async (req, res) => {
   const authed = req as AuthedRequest;
   const cover = await loadActiveCover(authed.user.id);
   const pending = await loadPendingCoverForUser(authed.user.id);
+  const lastEnded = cover ? null : await loadLastEndedCoverForUser(authed.user.id);
   res.json({
     cover: serializeActiveCover(cover),
+    lastEndedCover: lastEnded ? serializeActiveCover(lastEnded) : null,
     pendingCover: pending ? serializeActiveCover(pending) : null,
     trip: serializeActiveTrip(cover),
     capabilities: coverCapabilities(),

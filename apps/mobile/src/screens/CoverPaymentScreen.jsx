@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import PaymentBrandIcon from '../components/PaymentBrandIcon.jsx';
 import {
@@ -6,8 +6,9 @@ import {
   providerDisplayName,
   readCachedPaymentMethods,
 } from '../services/paymentMethods.js';
-import { formatPrice } from '../services/cover.js';
-import { purchaseCover } from '../services/cover.js';
+import { formatPrice, purchaseCover } from '../services/cover.js';
+import { loadToken } from '../api/safeApi.js';
+
 
 export default function CoverPaymentScreen({
   session,
@@ -23,9 +24,11 @@ export default function CoverPaymentScreen({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const onSelectRef = useRef(onSelectPaymentMethod);
+  onSelectRef.current = onSelectPaymentMethod;
 
   useEffect(() => {
-    const token = session?.token;
+    const token = session?.token?.trim() ? session.token : loadToken();
     if (!token) {
       setLoading(false);
       return;
@@ -39,21 +42,22 @@ export default function CoverPaymentScreen({
         setMethods(withoutCard);
         if (!selectedPaymentMethodId && withoutCard.length) {
           const def = withoutCard.find((m) => m.isDefault) ?? withoutCard[0];
-          onSelectPaymentMethod(def);
+          onSelectRef.current?.(def);
         }
       })
       .catch((e) => setError(e?.message || 'Could not load payment methods.'))
       .finally(() => setLoading(false));
-  }, [session?.token, capabilities?.cardPaymentsEnabled, onSelectPaymentMethod, selectedPaymentMethodId]);
+  }, [session?.token, capabilities?.cardPaymentsEnabled, selectedPaymentMethodId]);
 
   const selected = methods.find((m) => m.id === selectedPaymentMethodId);
 
   const startPurchase = async () => {
-    if (!session?.token || !selectedPlan || !selectedPaymentMethodId) return;
+    const purchaseToken = session?.token?.trim() ? session.token : loadToken();
+    if (!purchaseToken || !selectedPlan || !selectedPaymentMethodId) return;
     setBusy(true);
     setError('');
     try {
-      const result = await purchaseCover(session.token, {
+      const result = await purchaseCover(purchaseToken, {
         planId: selectedPlan.id,
         paymentMethodId: selectedPaymentMethodId,
         vehicleId: scannedVehicle?.vehicle?.id,

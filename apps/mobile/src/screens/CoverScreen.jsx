@@ -33,9 +33,10 @@ export default function CoverScreen({
   const token = session?.token || '';
 
   const activeCover = bundle?.activeCover ?? null;
+  const lastEndedCover = bundle?.lastEndedCover ?? null;
   const capabilities = bundle?.capabilities ?? capabilitiesProp ?? {};
   const active = isCoverActive(activeCover);
-  const expired = isCoverExpired(activeCover);
+  const expired = !active && isCoverExpired(lastEndedCover);
 
   const loadBundle = useCallback(async () => {
     if (!token) {
@@ -214,7 +215,7 @@ export default function CoverScreen({
           </section>
         ) : null}
 
-        {expired && activeCover ? (
+        {expired && lastEndedCover ? (
           <section className="cover-flow-hero cover-flow-hero--expired" aria-label="Cover expired">
             <span className="cover-flow-pill">Expired</span>
             <h3 className="cover-flow-hero__title">Cover expired</h3>

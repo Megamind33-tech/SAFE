@@ -261,6 +261,12 @@ function App() {
     }
   }, [screen, session.token]);
 
+  // Legacy Home CTAs still call setScreen('choose'|'payment'); map to the real cover flow.
+  useEffect(() => {
+    if (screen === 'choose') setScreen('coverPlans');
+    if (screen === 'payment') setScreen(coverFlow.selectedPlan ? 'coverReview' : 'coverPay');
+  }, [screen, coverFlow.selectedPlan]);
+
   const goHome = () => setScreen('home');
   const goCover = () => setScreen('active');
   const goClaims = () => setScreen('claim');
@@ -385,9 +391,13 @@ function App() {
         )}
         {screen === 'coverReview' && (
           <CoverReviewScreen
+            session={session}
             setScreen={setScreen}
             selectedPlan={coverFlow.selectedPlan}
             paymentMethod={coverFlow.selectedPaymentMethod}
+            onPaymentMethodResolved={(method) =>
+              setCoverFlow((f) => ({ ...f, selectedPaymentMethod: method }))
+            }
             onContinue={() => setScreen('coverPay')}
             onChangePlan={() => setScreen('coverPlans')}
           />
@@ -964,7 +974,8 @@ function TripRows() {
   );
 }
 
-function ChooseCoverScreen({ selectedPlan, setSelectedPlan, setScreen, scannedVehicle }) {
+/** @deprecated Unreachable legacy fake cover purchase UI — use coverPlans flow. */
+function ChooseCoverScreen_LEGACY({ selectedPlan, setSelectedPlan, setScreen, scannedVehicle }) {
   return (
     <main className="screen padded">
       <TopBar onBack={() => setScreen('home')} />
@@ -1013,7 +1024,8 @@ function ChooseCoverScreen({ selectedPlan, setSelectedPlan, setScreen, scannedVe
   );
 }
 
-function PaymentScreen({ activePlan, paymentMethod, selectedPlan, session, setPaymentMethod, setScreen, scannedVehicle, refreshPassengerData }) {
+/** @deprecated Unreachable legacy fake payment UI — use coverPay/coverStatus. */
+function PaymentScreen_LEGACY({ activePlan, paymentMethod, selectedPlan, session, setPaymentMethod, setScreen, scannedVehicle, refreshPassengerData }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 

@@ -29,9 +29,7 @@ export default function CoverPurchaseStatusScreen({
       setPurchase(data?.purchase ?? null);
       setCover(data?.cover ?? null);
       setMessage(data?.purchase?.message ?? '');
-      if (data?.purchase?.status === 'succeeded' && data?.cover && isCoverActive(data.cover)) {
-        onComplete(data);
-      }
+      // Stay on success screen until the user taps View cover (do not auto-navigate).
     } catch {
       setCheckError('Couldn’t confirm payment. Try checking again.');
     }
