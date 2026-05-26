@@ -325,6 +325,10 @@ function App() {
     openLiveTrip,
     goCover,
     openClaimFlow,
+    openClaimDetail,
+    invalidateClaimsCache,
+    claimFlowOpts,
+    selectedClaimId,
     paymentMethod,
     selectedPlan,
     setPaymentMethod,
@@ -465,13 +469,13 @@ function App() {
         {screen === 'claimFlow' && (
           <ClaimFlowScreen
             {...screenProps}
+            initialStep={claimFlowOpts.step ?? 1}
+            resumeClaimId={claimFlowOpts.claimId ?? null}
+            qaSubmittedClaimId={claimFlowOpts.qaSubmittedClaimId ?? null}
             claimFlowOpts={claimFlowOpts}
             openClaimDetail={openClaimDetail}
             invalidateClaimsCache={invalidateClaimsCache}
-            onExit={() => setScreen('claim')}            initialStep={claimFlowOpts.step ?? 1}
-            resumeClaimId={claimFlowOpts.claimId ?? null}
-            qaSubmittedClaimId={claimFlowOpts.qaSubmittedClaimId ?? null}
-            onClaimsChanged={invalidateClaimsCache}
+            onExit={() => setScreen('claim')}
           />
         )}
         {screen === 'claimDetail' && (
@@ -1136,7 +1140,8 @@ function PaymentScreen_LEGACY({ activePlan, paymentMethod, selectedPlan, session
 }
 
 
-function NotificationsScreenfunction NotificationsScreen({ setScreen }) {
+
+function NotificationsScreen({ setScreen }) {
   const [settings, setSettings] = useState({
     cover: true,
     claims: true,
