@@ -333,8 +333,6 @@ Do not change layout, spacing, typography, card design, nav design, icon style, 
   - `claims-error-no-cache.png`
   - `claims-sync-warning.png`
 
-- **Verified** badge appears only when the API returns `isVerified: true`.
-- Do not fake verification status in the UI.
 
 #### Help & Safety (`cursor/help-safety-a7cb` / PR #19)
 
@@ -447,3 +445,179 @@ Do not change layout, spacing, typography, card design, nav design, toggle desig
   - `notifications-error-no-cache.png`
   - `notifications-sync-warning.png`
   - `notifications-loading.png`
+
+#### Payment Methods (`cursor/use-payment-logos-a7cb` / PR #17)
+
+**Payment Methods is locked.**
+
+**Locked (do not modify):**
+- Payment Methods page layout, hero, header (+ back / add sheet)
+- Empty state
+- Saved methods list (brand logos, labels, default badge)
+- Add payment method bottom sheet
+- Duplicate number inline warning
+- Sync-warning (stale-while-revalidate with cache)
+- Error-no-cache state
+- Profile bottom nav behavior on this screen
+
+**Key files:**
+- `apps/mobile/src/screens/PaymentMethodsScreen.jsx`
+- `apps/mobile/src/payment-methods-screen.css`
+- `apps/mobile/src/services/paymentMethods.js`
+- `apps/mobile/src/profile-screen.css` (only `payment-methods-screen-board` bottom-nav rules)
+
+**Allowed future changes only:**
+1. API / integration fixes
+2. Backend / payment provider bugs
+3. Small copy tweaks
+4. Accessibility improvements
+5. Test / QA improvements
+
+Do not change layout, spacing, typography, card design, nav design, icon style, screen structure, or visual direction unless explicitly requested.
+
+**Behavior and copy to preserve:**
+- Payment methods must come from real API data (`GET /api/mobile/payment-methods`).
+- Default method must follow backend `isDefault` — do not fake default state.
+- Card payments remain disabled in UI unless backend/config allows.
+- Cached methods remain visible if refresh fails (sync warning, not full error).
+- Full error only when there is no cached data.
+
+**QA (preserve):**
+- Script: `apps/mobile/scripts/capture-payment-methods.mjs`
+- Six screenshot states (fail fast if regressions):
+  - `payment-methods-empty.png`
+  - `payment-methods-saved-airtel.png`
+  - `payment-methods-add-sheet.png`
+  - `payment-methods-duplicate-number.png`
+  - `payment-methods-error-no-cache.png`
+  - `payment-methods-sync-warning.png`
+
+#### Trusted Contacts (`cursor/trusted-contacts-a7cb` / PR #18)
+
+**Trusted Contacts is locked.**
+
+**Locked (do not modify):**
+- Trusted Contacts page layout, hero, header (+ back / add sheet)
+- Empty state
+- Contacts list (avatar, meta, verification line, Primary badge / edit)
+- Add / edit contact bottom sheets
+- Delete confirmation sheet
+- Duplicate phone inline warning
+- Sync-warning and error-no-cache states
+- Profile bottom nav behavior on this screen
+
+**Key files:**
+- `apps/mobile/src/screens/TrustedContactsScreen.jsx`
+- `apps/mobile/src/trusted-contacts-screen.css`
+- `apps/mobile/src/services/trustedContacts.js`
+- `apps/mobile/src/profile-screen.css` (only `trusted-contacts-screen-board` bottom-nav rules)
+
+**Allowed future changes only:**
+1. API / integration fixes
+2. Backend / config bugs
+3. Small copy tweaks
+4. Accessibility improvements
+5. Test / QA improvements
+
+Do not change layout, spacing, typography, card design, nav design, icon style, screen structure, or visual direction unless explicitly requested.
+
+**Behavior and copy to preserve:**
+- Contacts must come from real API CRUD (`/api/mobile/trusted-contacts`).
+- Phone numbers must remain masked in UI — never show full saved numbers.
+- **Verified** badge only when API returns `isVerified: true` — do not fake verification.
+- One primary contact per user; duplicate phones blocked with inline warning.
+- Cached contacts remain visible if refresh fails (sync warning, not full error).
+- Full error only when there is no cached data.
+
+**QA (preserve):**
+- Script: `apps/mobile/scripts/capture-trusted-contacts.mjs`
+- Eight screenshot states (fail fast if regressions):
+  - `trusted-contacts-empty.png`
+  - `trusted-contacts-list.png`
+  - `trusted-contacts-add-sheet.png`
+  - `trusted-contacts-edit-sheet.png`
+  - `trusted-contacts-duplicate-phone.png`
+  - `trusted-contacts-delete-confirm.png`
+  - `trusted-contacts-error-no-cache.png`
+  - `trusted-contacts-sync-warning.png`
+
+#### Live Trip (`cursor/live-trip-tracking-9936` / PR #26)
+
+**Live Trip is locked.**
+
+**Locked (do not modify):**
+- Live Trip screen layout and map card
+- Active route / no-route / no-active-trip states
+- Device location needed / denied states
+- Map offline and stale-location behavior
+- Cover-expired trip state
+- Sync-warning and error-no-cache states
+- Shared map component behavior (`LiveRouteMap` / `HomeMapPreview` usage from allowed screens only)
+
+**Key files:**
+- `apps/mobile/src/screens/LiveTripScreen.jsx`
+- `apps/mobile/src/live-trip-screen.css`
+- `apps/mobile/src/hooks/useLiveTrip.js`
+- `apps/mobile/src/components/LiveRouteMap.jsx`
+- `apps/mobile/src/components/HomeMapPreview.jsx`
+- `apps/backend/src/routes/tripTrackingMobile.ts`
+- `apps/backend/src/lib/tripTracking.ts`
+
+**Allowed future changes only:**
+1. API / integration fixes
+2. Backend trip-tracking bugs
+3. Small copy tweaks
+4. Accessibility improvements
+5. Test / QA improvements
+
+Do not change Home or Cover locked layouts when touching map plumbing.
+
+**Behavior and copy to preserve:**
+- No fake maps or demo GPS tracks.
+- Trip data must come from backend trip-tracking APIs.
+- Map tiles may show offline state — do not fake live tracking when API has no trip.
+- Cached trip remains visible if refresh fails (sync warning, not full error).
+- Full error only when there is no cached trip data.
+
+**QA (preserve):**
+- Script: `apps/mobile/scripts/capture-live-trip.mjs` (`npm run live-trip:capture` from `apps/mobile`)
+- Ten screenshot states (fail fast if regressions):
+  - `live-trip-active-route.png`
+  - `live-trip-active-no-route.png`
+  - `live-trip-no-active-trip.png`
+  - `live-trip-location-needed.png`
+  - `live-trip-location-denied.png`
+  - `live-trip-map-offline.png`
+  - `live-trip-sync-warning.png`
+  - `live-trip-error-no-cache.png`
+  - `live-trip-stale-location.png`
+  - `live-trip-cover-expired.png`
+
+#### Cover History / Cover Detail (`cursor/cover-history-screen-488b` / accepted)
+
+**Cover History and Cover Detail are locked.**
+
+**Locked (do not modify):**
+- Cover History list layout, filters, empty state, policy ID display, card styling
+- Cover History detail layout and policy summary
+- Scroll clearance and Profile bottom nav on history screens
+
+**Key files:**
+- `apps/mobile/src/screens/CoverHistoryScreen.jsx`
+- `apps/mobile/src/cover-history-screen.css`
+- `apps/mobile/src/utils/coverHistory.js`
+- `apps/mobile/src/profile-screen.css` (only `cover-history-screen-board` bottom-nav rules)
+
+**Allowed future changes only:**
+1. Real API data fixes
+2. Backend bugs
+3. Small copy corrections
+4. Accessibility improvements
+5. Test / QA improvements
+
+Do not change spacing, typography, card design, filters, or navigation unless explicitly requested.
+
+**Behavior and copy to preserve:**
+- History items must be built from real covers and claims data — no fake policy IDs.
+- Effective status (active / expired / etc.) must follow backend dates and payment state.
+- Detail view must reflect the selected cover from history navigation.

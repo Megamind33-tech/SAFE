@@ -36,7 +36,7 @@ import {
   serializeActiveCover,
   startCoverPurchase,
 } from '../lib/coverPurchase.js';
-import { requireAuth, type AuthedRequest } from '../middleware/requireAuth.js';
+import { getAuthed, requireAuth, type AuthedRequest } from '../middleware/requireAuth.js';
 import { env } from '../lib/env.js';
 import { requireRole } from '../middleware/requireRole.js';
 import {
@@ -62,7 +62,7 @@ async function loadActiveCover(userId: string) {
 }
 
 mobileRouter.get('/profile', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const profile = await prisma.passengerProfile.findUnique({
     where: { userId: authed.user.id },
   });
@@ -70,7 +70,7 @@ mobileRouter.get('/profile', async (req, res) => {
 });
 
 mobileRouter.patch('/profile', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const schema = z.object({ fullName: z.string().min(2).max(80) });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
@@ -163,7 +163,7 @@ mobileRouter.get('/cover/plans', async (_req, res) => {
 });
 
 mobileRouter.get('/cover/active', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const cover = await loadActiveCover(authed.user.id);
   const pending = await loadPendingCoverForUser(authed.user.id);
   const lastEnded = cover ? null : await loadLastEndedCoverForUser(authed.user.id);
@@ -177,7 +177,7 @@ mobileRouter.get('/cover/active', async (req, res) => {
 });
 
 mobileRouter.post('/cover/purchase', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const schema = z.object({
     planId: z.string().min(1),
     paymentMethodId: z.string().min(1),
@@ -205,7 +205,7 @@ mobileRouter.post('/cover/purchase', async (req, res) => {
 });
 
 mobileRouter.post('/cover/buy', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const schema = z.object({
     plan: z.enum(['basic', 'plus']),
     durationMinutes: z.number().int().min(30).max(24 * 60).optional(),
@@ -269,7 +269,7 @@ mobileRouter.post('/cover/buy', async (req, res) => {
 });
 
 mobileRouter.get('/cover/purchase/:purchaseId/status', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const status = await getPurchaseStatus(authed.user.id, req.params.purchaseId);
   if (!status) {
     res.status(404).json({ error: 'Purchase not found' });
@@ -279,10 +279,10 @@ mobileRouter.get('/cover/purchase/:purchaseId/status', async (req, res) => {
 });
 
 mobileRouter.get('/trips/:tripId/route', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const cover = await prisma.tripCover.findFirst({
     where: { id: req.params.tripId, passengerUserId: authed.user.id },
-    include: { vehicle: { include: { route: true, driver: true } }, route: true },
+    include: { vehicle: { include: { route: true, driver: true } }, route: true, payment: true },
   });
   if (!cover) {
     res.status(404).json({ error: 'Trip not found' });
@@ -292,7 +292,7 @@ mobileRouter.get('/trips/:tripId/route', async (req, res) => {
 });
 
 mobileRouter.get('/trips/:tripId/location', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const cover = await prisma.tripCover.findFirst({
     where: { id: req.params.tripId, passengerUserId: authed.user.id },
     include: { vehicle: true },
@@ -317,7 +317,7 @@ mobileRouter.get('/trips/:tripId/location', async (req, res) => {
 });
 
 mobileRouter.get('/cover/history', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const covers = await prisma.tripCover.findMany({
     where: { passengerUserId: authed.user.id },
     orderBy: { createdAt: 'desc' },
@@ -362,7 +362,7 @@ async function loadUserClaim(claimId: string, userId: string) {
 }
 
 mobileRouter.get('/claims/eligibility', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const covers = await loadEligibleCovers(authed.user.id);
   res.json({
     covers,
@@ -372,7 +372,7 @@ mobileRouter.get('/claims/eligibility', async (req, res) => {
 });
 
 mobileRouter.post('/claims/duplicate-check', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const schema = z.object({
     tripCoverId: z.string().min(1).optional(),
     incidentDateTime: z.string().optional(),
@@ -390,7 +390,7 @@ mobileRouter.post('/claims/duplicate-check', async (req, res) => {
 });
 
 mobileRouter.get('/claims', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const claims = await prisma.claim.findMany({
     where: { passengerUserId: authed.user.id },
     orderBy: { updatedAt: 'desc' },
@@ -401,7 +401,7 @@ mobileRouter.get('/claims', async (req, res) => {
 });
 
 mobileRouter.get('/claims/:claimId', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const claim = await loadUserClaim(req.params.claimId, authed.user.id);
   if (!claim) {
     res.status(404).json({ error: 'Claim not found' });
@@ -411,7 +411,7 @@ mobileRouter.get('/claims/:claimId', async (req, res) => {
 });
 
 mobileRouter.post('/claims', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const schema = z.object({ tripCoverId: z.string().min(1) });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
@@ -443,7 +443,7 @@ mobileRouter.post('/claims', async (req, res) => {
 });
 
 mobileRouter.patch('/claims/:claimId', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const parsed = claimDraftBodySchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
@@ -511,7 +511,7 @@ mobileRouter.patch('/claims/:claimId', async (req, res) => {
 });
 
 mobileRouter.post('/claims/:claimId/submit', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const existing = await loadUserClaim(req.params.claimId, authed.user.id);
   if (!existing) {
     res.status(404).json({ error: 'Claim not found' });
@@ -577,7 +577,7 @@ mobileRouter.post('/claims/:claimId/submit', async (req, res) => {
 });
 
 mobileRouter.post('/claims/:claimId/documents', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   if (!CLAIMS_UPLOAD_ENABLED) {
     res.status(501).json({
       error: 'Document upload is not connected yet',
@@ -616,7 +616,7 @@ mobileRouter.post('/claims/:claimId/documents', async (req, res) => {
 
 /** @deprecated Use POST /claims then PATCH + POST /claims/:id/submit */
 mobileRouter.post('/claims/create', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const schema = z.object({
     tripCoverId: z.string().min(1).optional(),
     description: z.string().min(20).max(2000),
@@ -664,7 +664,7 @@ mobileRouter.post('/claims/create', async (req, res) => {
 
 
 mobileRouter.get('/payment-methods', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const methods = await prisma.savedPaymentMethod.findMany({
     where: { userId: authed.user.id },
     orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
@@ -673,7 +673,7 @@ mobileRouter.get('/payment-methods', async (req, res) => {
 });
 
 mobileRouter.post('/payment-methods', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const schema = z.object({
     provider: z.enum(['airtel', 'mtn']),
     phoneNumber: z.string().min(9),
@@ -736,7 +736,7 @@ mobileRouter.post('/payment-methods', async (req, res) => {
 });
 
 mobileRouter.put('/payment-methods/:methodId/default', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const method = await prisma.savedPaymentMethod.findFirst({
     where: { id: req.params.methodId, userId: authed.user.id },
   });
@@ -764,7 +764,7 @@ mobileRouter.put('/payment-methods/:methodId/default', async (req, res) => {
 });
 
 mobileRouter.delete('/payment-methods/:methodId', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const method = await prisma.savedPaymentMethod.findFirst({
     where: { id: req.params.methodId, userId: authed.user.id },
   });
@@ -803,7 +803,7 @@ const trustedContactBodySchema = z.object({
 });
 
 mobileRouter.get('/trusted-contacts', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const contacts = await prisma.trustedContact.findMany({
     where: { userId: authed.user.id },
     orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
@@ -812,7 +812,7 @@ mobileRouter.get('/trusted-contacts', async (req, res) => {
 });
 
 mobileRouter.post('/trusted-contacts', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const parsed = trustedContactBodySchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
@@ -868,7 +868,7 @@ mobileRouter.post('/trusted-contacts', async (req, res) => {
 });
 
 mobileRouter.patch('/trusted-contacts/:contactId', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const schema = z.object({
     name: z.string().trim().min(2).optional(),
     relationship: z.enum(TRUSTED_CONTACT_RELATIONSHIPS as unknown as [string, ...string[]]).optional(),
@@ -940,7 +940,7 @@ mobileRouter.patch('/trusted-contacts/:contactId', async (req, res) => {
 });
 
 mobileRouter.put('/trusted-contacts/:contactId/primary', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const contact = await prisma.trustedContact.findFirst({
     where: { id: req.params.contactId, userId: authed.user.id },
   });
@@ -968,7 +968,7 @@ mobileRouter.put('/trusted-contacts/:contactId/primary', async (req, res) => {
 });
 
 mobileRouter.delete('/trusted-contacts/:contactId', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const contact = await prisma.trustedContact.findFirst({
     where: { id: req.params.contactId, userId: authed.user.id },
   });
@@ -1004,7 +1004,7 @@ mobileRouter.get('/settings/config', async (_req, res) => {
 });
 
 mobileRouter.get('/settings/account', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const account = await serializeAccountDetails(authed.user.id);
   if (!account) {
     res.status(404).json({ error: 'Account not found' });
@@ -1014,7 +1014,7 @@ mobileRouter.get('/settings/account', async (req, res) => {
 });
 
 mobileRouter.patch('/settings/account', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const schema = z.object({ fullName: z.string().min(2).max(80) });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
@@ -1033,7 +1033,7 @@ mobileRouter.patch('/settings/account', async (req, res) => {
 });
 
 mobileRouter.post('/settings/data-export', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   if (!env.dataExportEnabled) {
     res.status(501).json({ error: 'Data export is not connected yet.' });
     return;
@@ -1047,7 +1047,7 @@ mobileRouter.post('/settings/data-export', async (req, res) => {
 });
 
 mobileRouter.delete('/settings/account', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const schema = z.object({ confirmText: z.literal('DELETE') });
   const parsed = schema.safeParse(req.body ?? {});
   if (!parsed.success) {
@@ -1069,7 +1069,7 @@ mobileRouter.delete('/settings/account', async (req, res) => {
 });
 
 mobileRouter.get('/trusted-contacts/:contactId/dial', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const contact = await prisma.trustedContact.findFirst({
     where: { id: req.params.contactId, userId: authed.user.id },
   });
@@ -1086,7 +1086,7 @@ mobileRouter.get('/help-safety/config', async (_req, res) => {
 });
 
 mobileRouter.post('/support-reports', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const schema = z.object({
     problemType: z.enum(SUPPORT_PROBLEM_TYPES as unknown as [string, ...string[]]),
     message: z.string().trim().min(10).max(2000),
@@ -1126,13 +1126,13 @@ async function getOrCreateNotificationPreferences(userId: string) {
 }
 
 mobileRouter.get('/notification-preferences', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const pref = await getOrCreateNotificationPreferences(authed.user.id);
   res.json({ preferences: serializeNotificationPreferences(pref) });
 });
 
 mobileRouter.patch('/notification-preferences', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const updates = pickPreferenceUpdates(req.body ?? {});
   if (Object.keys(updates).length === 0) {
     res.status(400).json({ error: 'No valid preference fields provided.' });
@@ -1148,7 +1148,7 @@ mobileRouter.patch('/notification-preferences', async (req, res) => {
 });
 
 mobileRouter.post('/notification-preferences/permission-requested', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const schema = z.object({
     granted: z.boolean().optional(),
   });

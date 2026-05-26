@@ -37,7 +37,6 @@ export default function HomeMapPreview({
         onStartTracking={onStartTracking}
         onBuyCover={onBuyCover}
         onMapTileError={onMapTileError}
-        onMapTileError={onMapTileError}
         compact={compact}
         requireDeviceLocation={requireDeviceLocation}
       />

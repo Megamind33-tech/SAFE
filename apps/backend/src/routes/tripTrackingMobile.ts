@@ -6,7 +6,7 @@ import {
   coverIsTrackable,
   isValidCoordinate,
 } from '../lib/tripTracking.js';
-import { requireAuth, type AuthedRequest } from '../middleware/requireAuth.js';
+import { getAuthed, requireAuth, type AuthedRequest } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
 
 export const tripTrackingRouter = Router();
@@ -50,7 +50,7 @@ async function loadTripForUser(userId: string, tripId: string) {
 
 async function finalizeTripIfCoverExpired(
   cover: NonNullable<Awaited<ReturnType<typeof loadActiveCover>>>,
-  tracking: { id: string; status: string } | null
+  tracking: NonNullable<Awaited<ReturnType<typeof loadActiveCover>>>['tripTracking']
 ) {
   const expired = !coverIsTrackable(cover);
   if (!expired || !tracking || tracking.status !== 'active') {
@@ -78,7 +78,7 @@ async function loadExpiredTrackingTrip(userId: string) {
 }
 
 tripTrackingRouter.get('/active-trip', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   let cover = await loadActiveCover(authed.user.id);
   let tracking = cover?.tripTracking ?? null;
   let coverExpired = false;
@@ -114,7 +114,7 @@ tripTrackingRouter.get('/active-trip', async (req, res) => {
 });
 
 tripTrackingRouter.post('/trips/start', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const schema = z.object({
     coverId: z.string().min(1).optional(),
     startLocation: z
@@ -186,7 +186,7 @@ tripTrackingRouter.post('/trips/start', async (req, res) => {
 });
 
 tripTrackingRouter.patch('/trips/:tripId/location', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const schema = z.object({
     lat: z.number(),
     lng: z.number(),
@@ -243,7 +243,7 @@ tripTrackingRouter.patch('/trips/:tripId/location', async (req, res) => {
 });
 
 tripTrackingRouter.post('/trips/:tripId/end', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const ctx = await loadTripForUser(authed.user.id, req.params.tripId);
   if (!ctx?.cover) {
     res.status(404).json({ error: 'Trip not found' });
@@ -276,7 +276,7 @@ tripTrackingRouter.post('/trips/:tripId/end', async (req, res) => {
 });
 
 tripTrackingRouter.get('/trips/:tripId', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const ctx = await loadTripForUser(authed.user.id, req.params.tripId);
   if (!ctx?.cover) {
     res.status(404).json({ error: 'Trip not found' });
@@ -287,7 +287,7 @@ tripTrackingRouter.get('/trips/:tripId', async (req, res) => {
 });
 
 tripTrackingRouter.get('/trips/:tripId/location', async (req, res) => {
-  const authed = req as AuthedRequest;
+  const authed = getAuthed(req);
   const ctx = await loadTripForUser(authed.user.id, req.params.tripId);
   if (!ctx?.cover) {
     res.status(404).json({ error: 'Trip not found' });
