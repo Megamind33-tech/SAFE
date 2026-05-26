@@ -120,6 +120,8 @@ export async function startCoverPurchase(
     planId: string;
     paymentMethodId: string;
     vehicleId?: string;
+    routeId?: string;
+    qrCodeId?: string;
     startMode?: string;
   },
 ) {
@@ -165,6 +167,16 @@ export async function startCoverPurchase(
       })
     : null;
 
+  if (input.qrCodeId) {
+    const qrRecord = await prisma.qRCode.findUnique({ where: { id: input.qrCodeId } });
+    if (!qrRecord || qrRecord.status !== 'active' || !qrRecord.isActive) {
+      throw new Error('QR code is not valid for cover purchase.');
+    }
+    if (input.vehicleId && qrRecord.vehicleId && qrRecord.vehicleId !== input.vehicleId) {
+      throw new Error('QR code does not match the selected vehicle.');
+    }
+  }
+
   const endsAt = new Date(Date.now() + plan.durationMinutes * 60_000);
 
   const cover = await prisma.tripCover.create({
@@ -175,7 +187,7 @@ export async function startCoverPurchase(
       currency: 'ZMW',
       endsAt,
       vehicleId: vehicle?.id ?? null,
-      routeId: vehicle?.routeId ?? null,
+      routeId: input.routeId ?? vehicle?.routeId ?? null,
       payment: {
         create: {
           amount: plan.price,

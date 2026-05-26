@@ -19,6 +19,7 @@ import './settings-screen.css';
 import './live-trip-screen.css';
 import './help-safety-screen.css';
 import './notifications-screen.css';
+import './qr-screen.css';
 
 // react-leaflet expects React on window in dev bundles
 if (typeof window !== 'undefined') {

@@ -40,6 +40,7 @@ import { getAuthed, requireAuth, type AuthedRequest } from '../middleware/requir
 import { env } from '../lib/env.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { buildHomeSummary } from '../lib/homeSummary.js';
+import { verifyQrCode } from '../lib/qrCodes.js';
 import {
   appendTimeline,
   assertCoverEligibleForUser,
@@ -156,6 +157,40 @@ mobileRouter.post('/vehicle/verify', async (req, res) => {
   });
 });
 
+mobileRouter.get('/qr/verify/:code', async (req, res) => {
+  const authed = getAuthed(req);
+  const rawCode = String(req.params.code ?? '');
+  const result = await verifyQrCode(rawCode, {
+    userId: authed.user.id,
+    userAgent: req.get('user-agent') ?? null,
+    approximateLat: req.query.lat ? Number(req.query.lat) : undefined,
+    approximateLng: req.query.lng ? Number(req.query.lng) : undefined,
+  });
+  res.json(result);
+});
+
+mobileRouter.post('/qr/scan', async (req, res) => {
+  const authed = getAuthed(req);
+  const schema = z.object({
+    code: z.string().min(3),
+    approximateLat: z.number().optional(),
+    approximateLng: z.number().optional(),
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+    return;
+  }
+
+  const result = await verifyQrCode(parsed.data.code, {
+    userId: authed.user.id,
+    userAgent: req.get('user-agent') ?? null,
+    approximateLat: parsed.data.approximateLat,
+    approximateLng: parsed.data.approximateLng,
+  });
+  res.json(result);
+});
+
 mobileRouter.get('/cover/plans', async (_req, res) => {
   res.json({
     plans: listAvailableCoverPlans(),
@@ -183,6 +218,8 @@ mobileRouter.post('/cover/purchase', async (req, res) => {
     planId: z.string().min(1),
     paymentMethodId: z.string().min(1),
     vehicleId: z.string().min(1).optional(),
+    routeId: z.string().min(1).optional(),
+    qrCodeId: z.string().min(1).optional(),
     startMode: z.literal('after_payment_confirmation').optional(),
   });
   const parsed = schema.safeParse(req.body);
