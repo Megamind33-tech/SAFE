@@ -57,6 +57,7 @@ import ProfileScreen from './screens/ProfileScreen.jsx';
 import CoverHistoryScreen, { CoverHistoryDetailScreen } from './screens/CoverHistoryScreen.jsx';
 import PaymentMethodsScreen from './screens/PaymentMethodsScreen.jsx';
 import TrustedContactsScreen from './screens/TrustedContactsScreen.jsx';
+import NotificationsScreen from './screens/NotificationsScreen.jsx';
 import HelpSafetyScreen from './screens/HelpSafetyScreen.jsx';
 import SettingsScreen from './screens/SettingsScreen.jsx';
 import PaymentBrandIcon from './components/PaymentBrandIcon.jsx';
@@ -1141,49 +1142,6 @@ function PaymentScreen_LEGACY({ activePlan, paymentMethod, selectedPlan, session
 }
 
 
-
-function NotificationsScreen({ setScreen }) {
-  const [settings, setSettings] = useState({
-    cover: true,
-    claims: true,
-    payment: true,
-    safety: false,
-  });
-
-  const rows = [
-    { id: 'cover', title: 'Cover reminders', detail: 'Expiry and renewal alerts', icon: ShieldCheck },
-    { id: 'claims', title: 'Claim updates', detail: 'Submission, review, and payout status', icon: FileText },
-    { id: 'payment', title: 'Payment receipts', detail: 'Successful purchases and failed attempts', icon: WalletCards },
-    { id: 'safety', title: 'Safety notices', detail: 'Route and connection updates', icon: Bell },
-  ];
-
-  return (
-    <main className="screen padded detail-screen">
-      <TopBar onBack={() => setScreen('profile')} title="Notifications" />
-      <section className="page-heading compact">
-        <h1>Stay updated</h1>
-      </section>
-      <section className="toggle-list">
-        {rows.map((row) => {
-          const Icon = row.icon;
-          const active = settings[row.id];
-          return (
-            <button
-              className="toggle-row"
-              key={row.id}
-              type="button"
-              onClick={() => setSettings((current) => ({ ...current, [row.id]: !current[row.id] }))}
-            >
-              <span className="row-icon"><Icon size={18} /></span>
-              <span><strong>{row.title}</strong><small>{row.detail}</small></span>
-              <span className={`switch ${active ? 'on' : ''}`}><i /></span>
-            </button>
-          );
-        })}
-      </section>
-    </main>
-  );
-}
 
 function ChatScreen({ setScreen }) {
   const [message, setMessage] = useState('');

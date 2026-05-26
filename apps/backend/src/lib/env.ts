@@ -44,4 +44,6 @@ export const env = {
   allowCoverExtension: process.env.SAFE_ALLOW_COVER_EXTENSION === 'true',
   claimsUploadEnabled: process.env.SAFE_CLAIMS_UPLOAD_ENABLED === 'true',
   claimWindowHours: Number.parseInt(process.env.SAFE_CLAIM_WINDOW_HOURS ?? '168', 10),
+  notificationSmsEnabled: process.env.SAFE_NOTIFICATION_SMS_ENABLED === 'true',
+  notificationEmailEnabled: process.env.SAFE_NOTIFICATION_EMAIL_ENABLED === 'true',
 };

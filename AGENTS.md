@@ -389,3 +389,61 @@ Do not change layout, spacing, typography, card design, nav design, icon style, 
   - `help-safety-contact-picker.png`
   - `help-safety-error-no-cache.png`
   - `help-safety-sync-warning.png`
+
+#### Notifications (`cursor/notifications-a7cb` / PR #20)
+
+**Notifications is locked.**
+
+**Locked (do not modify):**
+- Notifications screen layout
+- Hero / status card
+- Important alerts section
+- Trip and cover activity section
+- Trusted contacts notification section
+- Marketing and product updates section
+- Permission state behavior
+- Toggle row styling
+- Save failure behavior
+- Error-no-cache state
+- Sync-warning state
+- Loading state
+- Profile bottom nav behavior on this screen
+
+**Key files:**
+- `apps/mobile/src/screens/NotificationsScreen.jsx`
+- `apps/mobile/src/notifications-screen.css`
+- `apps/mobile/src/components/NotificationToggleRow.jsx`
+- `apps/mobile/src/services/notificationPreferences.js`
+- `apps/backend/src/lib/notificationPreferences.ts`
+- `apps/mobile/src/profile-screen.css` (only `notifications-screen-board` bottom-nav rules)
+
+**Allowed future changes only:**
+1. API / integration fixes
+2. Backend / config bugs
+3. Small copy tweaks
+4. Accessibility improvements
+5. Test / QA improvements
+
+Do not change layout, spacing, typography, card design, nav design, toggle design, icon style, screen structure, or visual direction unless explicitly requested.
+
+**Behavior and copy to preserve:**
+- No fake notification delivery claims.
+- Push permission must reflect real browser / device state (`Notification.permission`).
+- SMS / email toggles remain disabled unless `SAFE_NOTIFICATION_SMS_ENABLED` / `SAFE_NOTIFICATION_EMAIL_ENABLED` are `true`.
+- Marketing toggles default off unless backend says otherwise.
+- Failed toggle save must revert and show: “Couldn’t save that change. Try again.”
+- Cached preferences must remain visible if refresh fails (sync warning, not full error).
+- Full error only when there is no cached data.
+- Quiet hours remains “Coming later” until fully wired.
+
+**QA (preserve):**
+- Script: `apps/mobile/scripts/capture-notifications.mjs`
+- Eight screenshot states (fail fast if regressions):
+  - `notifications-main.png`
+  - `notifications-enabled-state.png`
+  - `notifications-permission-off.png`
+  - `notifications-marketing-off.png`
+  - `notifications-save-failure.png`
+  - `notifications-error-no-cache.png`
+  - `notifications-sync-warning.png`
+  - `notifications-loading.png`
