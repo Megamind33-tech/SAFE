@@ -84,3 +84,7 @@ export async function listClaims(token) {
   return request('/api/mobile/claims', { token });
 }
 
+export async function homeSummary(token) {
+  return request('/api/mobile/home-summary', { token });
+}
+
