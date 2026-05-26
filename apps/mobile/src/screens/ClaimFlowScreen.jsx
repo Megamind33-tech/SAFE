@@ -10,6 +10,11 @@ import {
   uploadClaimDocument,
 } from '../services/claims.js';
 import { claimStatusLabel } from '../utils/claimStatus.js';
+import {
+  clearQaSubmittedClaimId,
+  isClaimsQaCapture,
+  readQaSubmittedClaimId,
+} from '../utils/claimsQa.js';
 
 const STEPS = ['Cover', 'Accident', 'Documents', 'Review', 'Submitted'];
 
@@ -26,7 +31,7 @@ export default function ClaimFlowScreen({
   openClaimDetail,
   initialStep = 1,
   resumeClaimId = null,
-  submittedClaimId = null,
+  qaSubmittedClaimId = null,
   onClaimsChanged,
 }) {
   const [step, setStep] = useState(initialStep);
@@ -61,27 +66,34 @@ export default function ClaimFlowScreen({
   const token = session?.token || '';
 
   useEffect(() => {
-    if (!submittedClaimId || !token) return;
-    getClaimDetail(token, submittedClaimId)
+    if (!isClaimsQaCapture || !qaSubmittedClaimId || !token) return;
+    getClaimDetail(token, qaSubmittedClaimId)
       .then((claim) => {
-        if (claim?.reference) {
+        if (
+          claim?.reference &&
+          ['submitted', 'under_review'].includes(String(claim.status))
+        ) {
           setSubmittedClaim(claim);
           setStep(5);
+          clearQaSubmittedClaimId();
         }
       })
       .catch(() => {});
-  }, [submittedClaimId, token]);
-
+  }, [qaSubmittedClaimId, token]);
 
   useEffect(() => {
-    const qaClaimId = sessionStorage.getItem('safe_qa_submitted_claim');
-    if (!qaClaimId || !token) return;
+    if (!isClaimsQaCapture || !token) return;
+    const qaClaimId = readQaSubmittedClaimId();
+    if (!qaClaimId) return;
     getClaimDetail(token, qaClaimId)
       .then((claim) => {
-        if (claim && ['submitted', 'under_review'].includes(String(claim.status))) {
+        if (
+          claim?.reference &&
+          ['submitted', 'under_review'].includes(String(claim.status))
+        ) {
           setSubmittedClaim(claim);
           setStep(5);
-          sessionStorage.removeItem('safe_qa_submitted_claim');
+          clearQaSubmittedClaimId();
         }
       })
       .catch(() => {});
@@ -192,7 +204,11 @@ export default function ClaimFlowScreen({
     }
   };
 
-  if (step === 5 && submittedClaim) {
+  if (
+    step === 5 &&
+    submittedClaim?.reference &&
+    ['submitted', 'under_review'].includes(String(submittedClaim.status))
+  ) {
     return (
       <main className="screen claim-flow-screen claim-submitted-screen">
         <header className="claim-flow-screen__header">
@@ -475,7 +491,11 @@ export default function ClaimFlowScreen({
       {step === 3 ? (
         <section className="claim-flow-panel">
           <h2 className="claim-flow-panel__title">Documents and evidence</h2>
-          {uploadNotice ? (
+          {!eligibility.uploadEnabled ? (
+            <p className="claims-upload-notice" role="status">
+              Document upload is not connected yet.
+            </p>
+          ) : uploadNotice ? (
             <p className="claims-upload-notice" role="status">
               {uploadNotice}
             </p>

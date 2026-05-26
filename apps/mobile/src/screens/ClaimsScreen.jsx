@@ -82,8 +82,8 @@ export default function ClaimsScreen({
     loadClaims();
   }, [loadClaims]);
 
-  const summaryClaim = pickSummaryClaim(claims);
   const visibleClaims = claims.filter((c) => normalizeClaimStatus(c.status) !== 'draft');
+  const summaryClaim = pickSummaryClaim(visibleClaims);
   const hasClaims = visibleClaims.length > 0;
 
   if (loadError && !claims.length) {

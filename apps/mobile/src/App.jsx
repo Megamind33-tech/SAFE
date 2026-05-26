@@ -190,7 +190,10 @@ function App() {
     if (!qaClaimId) return;
     import('./services/claims.js').then(({ getClaimDetail }) =>
       getClaimDetail(session.token, qaClaimId).then((claim) => {
-        if (claim?.reference && ['submitted', 'under_review'].includes(String(claim.status))) {
+        if (
+          claim?.reference &&
+          ['submitted', 'under_review'].includes(String(claim.status))
+        ) {
           clearQaSubmittedClaimId();
           setClaimFlowOpts({ qaSubmittedClaimId: claim.id });
           setScreen('claimFlow');
@@ -465,7 +468,10 @@ function App() {
             claimFlowOpts={claimFlowOpts}
             openClaimDetail={openClaimDetail}
             invalidateClaimsCache={invalidateClaimsCache}
-            onExit={() => setScreen('claim')}
+            onExit={() => setScreen('claim')}            initialStep={claimFlowOpts.step ?? 1}
+            resumeClaimId={claimFlowOpts.claimId ?? null}
+            qaSubmittedClaimId={claimFlowOpts.qaSubmittedClaimId ?? null}
+            onClaimsChanged={invalidateClaimsCache}
           />
         )}
         {screen === 'claimDetail' && (

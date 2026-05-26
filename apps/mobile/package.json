@@ -7,8 +7,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "live-trip:capture": "node scripts/capture-live-trip.mjs"
-  },
+    "live-trip:capture": "node scripts/capture-live-trip.mjs"    "claims:capture": "VITE_CLAIMS_QA_CAPTURE=true node scripts/capture-claims.mjs"  },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
     "leaflet": "^1.9.4",
