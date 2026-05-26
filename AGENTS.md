@@ -647,4 +647,69 @@ Run from repo root with **backend** (`8080`) and **mobile** (`5173`) dev servers
 | Trusted Contacts | `npm --workspace apps/mobile run trusted-contacts:capture` |
 | All (sequential) | `npm run qa:mobile` |
 
-Backend seed helpers: `npx tsx apps/backend/scripts/qaHomeStates.mjs`, `qaClaimsSeed.mjs`, `qaCoverPayment.mjs`, `qaTripStates.mjs`.
+Backend seed helpers: `npx tsx apps/backend/scripts/qaHomeStates.mjs`, `qaClaimsSeed.mjs`, `qaCoverPayment.mjs`, `qaTripStates.mjs`, `qaQrStates.mjs`.
+
+#### QR vehicle verification (`cursor/safe-qr-system` / PR #29)
+
+**QR Phase 1 is locked** (after QA pass — do not merge-lock until PR review completes).
+
+**Locked (do not modify):**
+- QR token strategy (token-only payload; no vehicle/driver/private data embedded in QR)
+- Vehicle QR verification flow (`/api/mobile/qr/verify/:code`, `/api/mobile/qr/scan`)
+- QR scan logging (`QrScanLog`)
+- Dashboard vehicle QR generation (`GET/POST /api/dashboard/vehicles/:vehicleId/qr`)
+- QR scanner + manual entry flow (`QRScannerScreen`)
+- Vehicle verified result screen (`VehicleVerifiedScreen`)
+- Invalid / expired / disabled QR states and copy
+- Public URL entry (`/q/:code`, `#qr/:code`, `safe://vehicle/:code`)
+- Cover purchase QR context passing (`vehicleId`, `routeId`, `qrCodeId`)
+- Camera cleanup on scanner unmount
+
+**Key files:**
+- `apps/backend/prisma/schema.prisma` (`QRCode`, `QrScanLog`)
+- `apps/backend/src/lib/qrCodes.ts`, `qrImage.ts`
+- `apps/backend/src/routes/mobile.ts` (QR verify/scan routes)
+- `apps/backend/src/routes/dashboard.ts` (vehicle QR generation)
+- `apps/mobile/src/screens/QRScannerScreen.jsx`, `VehicleVerifiedScreen.jsx`
+- `apps/mobile/src/services/qr.js`, `utils/qrLaunch.js`, `qr-screen.css`
+- `apps/mobile/src/App.jsx` (QR launch routing only — do not redesign locked screens)
+- `apps/mobile/vite.config.js` (SPA fallback for `/q/:code`)
+
+**Allowed future changes only:**
+1. API / integration bugs
+2. Scanner compatibility fixes
+3. QR print / export tools (Phase 2)
+4. Partner / policy / claim QR (Phase 2)
+5. Accessibility improvements
+6. Test / QA improvements
+7. Small copy tweaks
+
+**Not allowed:**
+- Fake vehicle verification or fake QR success
+- Embedding full vehicle, driver, or private data inside QR payload
+- Activating cover from QR without payment
+- Starting trip without active paid cover
+- Redesigning locked screens (Home, Cover hub, Claims, Live Trip, Settings, etc.)
+
+**Behavior and copy to preserve:**
+- QR encodes public URL `https://safe.co.zm/q/{code}` or deep link `safe://vehicle/{code}` only
+- Scanning public URL outside the app must open SAFE verification (SPA `/q/:code` route)
+- Invalid / expired / disabled codes must not show verified vehicle data
+- Every scan logged server-side; disabled/expired QR must not verify
+- Use careful wording: “This QR code could not be verified.” — never “fraud detected”
+- Buy cover passes real `vehicleId` / `routeId` / `qrCodeId`; trip start requires active paid cover
+
+**QA (preserve):**
+- Seed: `apps/backend/scripts/qaQrStates.mjs`
+- Script: `apps/mobile/scripts/capture-qr.mjs` (`npm run qr:capture`)
+- Ten screenshot states (fail fast if regressions):
+  - `qr-scanner-permission-needed.png`
+  - `qr-scanner-manual-entry.png`
+  - `qr-vehicle-verified-no-cover.png`
+  - `qr-vehicle-verified-active-cover.png`
+  - `qr-invalid-code.png`
+  - `qr-expired-code.png`
+  - `qr-disabled-code.png`
+  - `qr-buy-cover-prefilled.png`
+  - `qr-start-trip-ready.png`
+  - `qr-error-no-cache.png`

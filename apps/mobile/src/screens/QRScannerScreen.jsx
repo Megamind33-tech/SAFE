@@ -15,6 +15,7 @@ export default function QRScannerScreen({
   onVerified,
   initialMode = 'scan',
   initialCode = '',
+  initialInvalidState = null,
   qaForcePermission = false,
   qaForceDenied = false,
 }) {
@@ -23,7 +24,7 @@ export default function QRScannerScreen({
   const [manualCode, setManualCode] = useState(initialCode);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [invalidState, setInvalidState] = useState(null);
+  const [invalidState, setInvalidState] = useState(initialInvalidState);
   const scannerRef = useRef(null);
   const handledRef = useRef(false);
 
@@ -74,6 +75,11 @@ export default function QRScannerScreen({
   );
 
   useEffect(() => {
+    if (initialInvalidState) setInvalidState(initialInvalidState);
+  }, [initialInvalidState]);
+
+  useEffect(() => {
+    if (invalidState && invalidState.status !== 'verified') return undefined;
     if (mode !== 'scan' || qaForcePermission || qaForceDenied) return undefined;
 
     let cancelled = false;
@@ -119,7 +125,7 @@ export default function QRScannerScreen({
       cancelled = true;
       stopScanner();
     };
-  }, [handleVerify, mode, qaForceDenied, qaForcePermission, stopScanner]);
+  }, [handleVerify, invalidState, mode, qaForceDenied, qaForcePermission, stopScanner]);
 
   if (invalidState && invalidState.status !== 'verified') {
     const reason = invalidReasonLabel(invalidState.reason || invalidState.status);

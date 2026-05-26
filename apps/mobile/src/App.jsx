@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -88,6 +88,8 @@ import {
   readQrQaCode,
   readQrQaResult,
 } from './utils/qrQa.js';
+import { extractQrCodeFromLocation, replaceLocationAfterQrLaunch } from './utils/qrLaunch.js';
+import { verifyQrCode } from './services/qr.js';
 
 const bgImage = zambiaScene;
 
@@ -139,6 +141,8 @@ function App() {
   const [activeCoverState, setActiveCoverState] = useState(null);
   const [scannedVehicle, setScannedVehicle] = useState(null);
   const [qrResult, setQrResult] = useState(null);
+  const [pendingQrCode, setPendingQrCode] = useState(null);
+  const consumedQrLaunchRef = useRef(false);
   const [coversHistory, setCoversHistory] = useState([]);
   const [coverFlow, setCoverFlow] = useState({
     selectedPlan: null,
@@ -227,11 +231,65 @@ function App() {
   }, [session.ready, session.token]);
 
   useEffect(() => {
+    const code = extractQrCodeFromLocation();
+    if (code) setPendingQrCode(code);
+  }, []);
+
+  useEffect(() => {
+    if (!session.ready || !pendingQrCode) return;
+    if (!session.token) {
+      if (screen === 'splash') setScreen('login');
+      return;
+    }
+  }, [session.ready, session.token, pendingQrCode, screen]);
+
+  useEffect(() => {
+    if (!session.ready || !pendingQrCode) return;
+    if (isQrQaCapture && readQrQaMode()) return;
+    if (!session.token) return;
+    if (consumedQrLaunchRef.current) return;
+
+    consumedQrLaunchRef.current = true;
+    let cancelled = false;
+    verifyQrCode(session.token, pendingQrCode)
+      .then((result) => {
+        if (cancelled) return;
+        setQrResult(result);
+        setPendingQrCode(null);
+        replaceLocationAfterQrLaunch();
+        if (result.status === 'verified') {
+          setScreen('vehicleVerified');
+        } else {
+          setQrResult(result);
+          setScreen('qrScanner');
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPendingQrCode(null);
+        replaceLocationAfterQrLaunch();
+        setQrResult({ status: 'invalid', qrType: 'vehicle', reason: 'invalid' });
+        setScreen('qrScanner');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session.ready, session.token, pendingQrCode]);
+
+  useEffect(() => {
     if (!session.ready || !session.token) return;
 
     const applyHashRoute = () => {
+      if (pendingQrCode && isQrQaCapture && readQrQaMode()) return;
       const hash = typeof window !== 'undefined' ? window.location.hash.replace(/^#/, '') : '';
       const hashBase = hash.split('?')[0];
+      if (hashBase.startsWith('qr/')) {
+        if (consumedQrLaunchRef.current) return;
+        const code = extractQrCodeFromLocation();
+        if (code) setPendingQrCode(code);
+        return;
+      }
       if (hashBase === 'liveTrip') setScreen('liveTrip');
       else if (hashBase === 'viewPolicy') setScreen('viewPolicy');
       else if (hashBase === 'qrScanner') setScreen('qrScanner');
@@ -253,7 +311,7 @@ function App() {
     applyHashRoute();
     window.addEventListener('hashchange', applyHashRoute);
     return () => window.removeEventListener('hashchange', applyHashRoute);
-  }, [session.ready, session.token]);
+  }, [session.ready, session.token, pendingQrCode]);
 
   useEffect(() => {
     if (!session.ready || !isQrQaCapture) return;
@@ -549,11 +607,14 @@ function App() {
         {screen === 'helpSafety' && <HelpSafetyScreen {...screenProps} />}
         {screen === 'qrScanner' && (
           <QRScannerScreen
-            key={`qr-${readQrQaMode() || 'scan'}-${readQrQaCode() || 'none'}`}
+            key={`qr-${readQrQaMode() || 'scan'}-${readQrQaCode() || 'none'}-${qrResult?.status || 'none'}`}
             session={session}
             setScreen={setScreen}
             initialMode={readQrQaMode() === 'manual' ? 'manual' : 'scan'}
             initialCode={readQrQaCode()}
+            initialInvalidState={
+              qrResult && qrResult.status !== 'verified' && !pendingQrCode ? qrResult : null
+            }
             qaForcePermission={readQrQaMode() === 'permission'}
             qaForceDenied={readQrQaMode() === 'denied'}
             onVerified={(result) => {

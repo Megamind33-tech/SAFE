@@ -15,9 +15,17 @@ export function normalizeQrCodeInput(raw: string): string {
     }
     if (/^https?:\/\//i.test(trimmed)) {
       const url = new URL(trimmed);
+      const hashPart = url.hash.replace(/^#/, '');
+      if (hashPart.startsWith('qr/')) {
+        return decodeURIComponent(hashPart.slice(3).split(/[?#]/)[0] ?? '').trim();
+      }
       const pathParts = url.pathname.split('/').filter(Boolean);
+      const qIndex = pathParts.findIndex((part) => part.toLowerCase() === 'q');
+      if (qIndex >= 0 && pathParts[qIndex + 1]) {
+        return decodeURIComponent(pathParts[qIndex + 1]).trim();
+      }
       const last = pathParts[pathParts.length - 1];
-      if (last) return decodeURIComponent(last).trim();
+      if (last && last.toLowerCase() !== 'q') return decodeURIComponent(last).trim();
     }
   } catch {
     /* fall through to raw code */

@@ -177,6 +177,23 @@ async function main() {
   }
   await capturePhone(page, 'qr-vehicle-verified-no-cover.png');
 
+  await setQaSession(page, { token: tokenNoCover });
+  await page.goto(`${BASE_URL}/q/${validCode}?pub=${Date.now()}`, { waitUntil: 'networkidle' });
+  await page.waitForSelector('text=Vehicle verified', { timeout: 20000 });
+  await page.waitForSelector(`text=${verifiedNoCover.vehicle.plateNumber}`);
+  const publicUrlText = await page.locator('.qr-verified-card').innerText();
+  if (/driver|private/i.test(publicUrlText) && !/operator/i.test(publicUrlText)) {
+    throw new Error('Public URL verify must not expose private driver data');
+  }
+
+  await setQaSession(page, { token: tokenNoCover });
+  await page.goto(`${BASE_URL}/#qr/${validCode}?hash=${Date.now()}`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('text=Vehicle verified', { timeout: 20000 });
+
+  await setQaSession(page, { token: tokenNoCover });
+  await page.goto(`${BASE_URL}/q/SAFE-INV-000000?bad=${Date.now()}`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('text=This QR code could not be verified.', { timeout: 25000 });
+
   await setQaSession(page, { mode: 'verified-active-cover', result: verifiedActive, token: tokenActive });
   await page.goto(`${BASE_URL}/?active=${Date.now()}#vehicleVerified`, { waitUntil: 'networkidle' });
   await page.evaluate(({ tokenActive, verifiedActive }) => {
