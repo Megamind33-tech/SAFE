@@ -31,3 +31,69 @@ SAFE is a minibus commuter micro-insurance monorepo (npm workspaces) with three 
 ### Default accounts
 
 See `README.md` for default dev credentials.
+
+### Locked mobile screens (Profile sub-pages)
+
+Do not change layout, spacing, typography, card design, nav design, icon style, screen structure, or visual direction on locked screens unless explicitly requested.
+
+#### Settings (`cursor/settings-a7cb` / PR #21)
+
+**Settings is locked.**
+
+**Locked (do not modify):**
+- Settings screen layout
+- Account section
+- Privacy and data section
+- Legal section
+- App section
+- Personal details sheet
+- Login and security sheet
+- Privacy sheet
+- Delete account two-step flow
+- Logout confirmation flow
+- Error-no-cache state
+- Sync-warning state
+- Profile bottom nav behavior on this screen
+
+**Key files:**
+- `apps/mobile/src/screens/SettingsScreen.jsx`
+- `apps/mobile/src/settings-screen.css`
+- `apps/mobile/src/services/settings.js`
+- `apps/mobile/src/profile-screen.css` (only `settings-screen-board` bottom-nav rules)
+
+**Allowed future changes only:**
+1. API / integration fixes
+2. Backend / config bugs
+3. Small copy tweaks
+4. Accessibility improvements
+5. Test / QA improvements
+
+**Behavior and copy to preserve:**
+- Account data must come from real API / session data.
+- Phone numbers must remain masked in UI.
+- Legal links must come from env-backed config only.
+- No fake legal URLs.
+- Data export must not fake success when disabled.
+- Account deletion must not fake success when disabled.
+- Delete account requires typing `DELETE` exactly.
+- Logout must show confirmation before clearing session.
+- Environment row only appears in development builds.
+- Language and currency remain disabled unless fully supported.
+- Two-step verification remains “Coming later” until wired.
+- Cached settings remain visible if refresh fails (sync warning, not full error).
+- Full error only when there is no cached data.
+
+**QA (preserve):**
+- Script: `apps/mobile/scripts/capture-settings.mjs`
+- Eleven screenshot states (fail fast if regressions):
+  - `settings-main.png`
+  - `settings-personal-details.png`
+  - `settings-login-security.png`
+  - `settings-privacy-sheet.png`
+  - `settings-legal-not-configured.png`
+  - `settings-delete-step-one.png`
+  - `settings-delete-confirm-disabled.png`
+  - `settings-delete-not-connected.png`
+  - `settings-logout-confirm.png`
+  - `settings-error-no-cache.png`
+  - `settings-sync-warning.png`

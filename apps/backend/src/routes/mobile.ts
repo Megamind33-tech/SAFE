@@ -16,7 +16,12 @@ import {
   serializeTrustedContact,
   TRUSTED_CONTACT_RELATIONSHIPS,
 } from '../lib/trustedContacts.js';
+import {
+  getSettingsConfigPayload,
+  serializeAccountDetails,
+} from '../lib/settings.js';
 import { requireAuth, type AuthedRequest } from '../middleware/requireAuth.js';
+import { env } from '../lib/env.js';
 import { requireRole } from '../middleware/requireRole.js';
 
 export const mobileRouter = Router();
@@ -651,5 +656,74 @@ mobileRouter.delete('/trusted-contacts/:contactId', async (req, res) => {
     orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
   });
   res.json({ trustedContacts: contacts.map(serializeTrustedContact) });
+});
+
+mobileRouter.get('/settings/config', async (_req, res) => {
+  res.json({ config: getSettingsConfigPayload() });
+});
+
+mobileRouter.get('/settings/account', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const account = await serializeAccountDetails(authed.user.id);
+  if (!account) {
+    res.status(404).json({ error: 'Account not found' });
+    return;
+  }
+  res.json({ account });
+});
+
+mobileRouter.patch('/settings/account', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const schema = z.object({ fullName: z.string().min(2).max(80) });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+    return;
+  }
+
+  await prisma.passengerProfile.upsert({
+    where: { userId: authed.user.id },
+    create: { userId: authed.user.id, fullName: parsed.data.fullName },
+    update: { fullName: parsed.data.fullName },
+  });
+
+  const account = await serializeAccountDetails(authed.user.id);
+  res.json({ account });
+});
+
+mobileRouter.post('/settings/data-export', async (req, res) => {
+  const authed = req as AuthedRequest;
+  if (!env.dataExportEnabled) {
+    res.status(501).json({ error: 'Data export is not connected yet.' });
+    return;
+  }
+
+  res.json({
+    message: 'Data request received. SAFE will prepare your account data.',
+    requestedAt: new Date().toISOString(),
+    userId: authed.user.id,
+  });
+});
+
+mobileRouter.delete('/settings/account', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const schema = z.object({ confirmText: z.literal('DELETE') });
+  const parsed = schema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Type DELETE to confirm account deletion.' });
+    return;
+  }
+
+  if (!env.accountDeletionEnabled) {
+    res.status(501).json({ error: 'Account deletion is not connected yet.' });
+    return;
+  }
+
+  await prisma.user.update({
+    where: { id: authed.user.id },
+    data: { isActive: false },
+  });
+
+  res.json({ deleted: true });
 });
 
