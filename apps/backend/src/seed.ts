@@ -92,6 +92,26 @@ async function main() {
       isActive: true,
     },
   });
+
+  await prisma.qRCode.upsert({
+    where: { code: 'SAFE-LSK-2481' },
+    create: {
+      code: 'SAFE-LSK-2481',
+      type: 'vehicle',
+      targetId: vehicle.id,
+      vehicleId: vehicle.id,
+      partnerId: partner.id,
+      status: 'active',
+      isActive: true,
+    },
+    update: {
+      vehicleId: vehicle.id,
+      partnerId: partner.id,
+      targetId: vehicle.id,
+      status: 'active',
+      isActive: true,
+    },
+  });
 }
 
 main()
