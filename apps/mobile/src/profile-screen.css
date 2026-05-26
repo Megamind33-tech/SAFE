@@ -222,6 +222,7 @@
 .phone-frame:has(.cover-history-screen-board) .bottom-nav,
 .phone-frame:has(.payment-methods-screen-board) .bottom-nav,
 .phone-frame:has(.trusted-contacts-screen-board) .bottom-nav,
+.phone-frame:has(.help-safety-screen-board) .bottom-nav {
 .phone-frame:has(.settings-screen-board) .bottom-nav {
   left: 16px;
   right: 16px;
@@ -247,6 +248,7 @@
 .phone-frame:has(.cover-history-screen-board) .bottom-nav .nav-item,
 .phone-frame:has(.payment-methods-screen-board) .bottom-nav .nav-item,
 .phone-frame:has(.trusted-contacts-screen-board) .bottom-nav .nav-item,
+.phone-frame:has(.help-safety-screen-board) .bottom-nav .nav-item {
 .phone-frame:has(.settings-screen-board) .bottom-nav .nav-item {
   width: 72px;
   height: 60px;
@@ -273,6 +275,7 @@
 .phone-frame:has(.trusted-contacts-screen-board) .bottom-nav .nav-item img.nav-item-icon,
 .phone-frame:has(.trusted-contacts-screen-board) .bottom-nav .nav-item svg.nav-item-icon,
 .phone-frame:has(.settings-screen-board) .bottom-nav .nav-item img.nav-item-icon,
+.phone-frame:has(.help-safety-screen-board) .bottom-nav .nav-item svg.nav-item-icon {
 .phone-frame:has(.settings-screen-board) .bottom-nav .nav-item svg.nav-item-icon {
   width: 22px;
   height: 22px;
@@ -283,6 +286,7 @@
 .phone-frame:has(.cover-history-screen-board) .bottom-nav .nav-item:not(.active) img.nav-item-icon,
 .phone-frame:has(.payment-methods-screen-board) .bottom-nav .nav-item:not(.active) img.nav-item-icon,
 .phone-frame:has(.trusted-contacts-screen-board) .bottom-nav .nav-item:not(.active) img.nav-item-icon,
+.phone-frame:has(.help-safety-screen-board) .bottom-nav .nav-item:not(.active) img.nav-item-icon {
 .phone-frame:has(.settings-screen-board) .bottom-nav .nav-item:not(.active) img.nav-item-icon {
   opacity: 0.58;
   filter: brightness(0) saturate(100%) invert(100%);
@@ -292,6 +296,7 @@
 .phone-frame:has(.cover-history-screen-board) .bottom-nav .nav-item.active,
 .phone-frame:has(.payment-methods-screen-board) .bottom-nav .nav-item.active,
 .phone-frame:has(.trusted-contacts-screen-board) .bottom-nav .nav-item.active,
+.phone-frame:has(.help-safety-screen-board) .bottom-nav .nav-item.active {
 .phone-frame:has(.settings-screen-board) .bottom-nav .nav-item.active {
   width: 84px;
   height: 62px;
@@ -310,6 +315,7 @@
 .phone-frame:has(.cover-history-screen-board) .bottom-nav .nav-item.active span,
 .phone-frame:has(.payment-methods-screen-board) .bottom-nav .nav-item.active span,
 .phone-frame:has(.trusted-contacts-screen-board) .bottom-nav .nav-item.active span,
+.phone-frame:has(.help-safety-screen-board) .bottom-nav .nav-item.active span {
 .phone-frame:has(.settings-screen-board) .bottom-nav .nav-item.active span {
   color: #ffc612;
 }
@@ -318,6 +324,7 @@
 .phone-frame:has(.cover-history-screen-board) .bottom-nav .nav-item.active::after,
 .phone-frame:has(.payment-methods-screen-board) .bottom-nav .nav-item.active::after,
 .phone-frame:has(.trusted-contacts-screen-board) .bottom-nav .nav-item.active::after,
+.phone-frame:has(.help-safety-screen-board) .bottom-nav .nav-item.active::after {
 .phone-frame:has(.settings-screen-board) .bottom-nav .nav-item.active::after {
   content: '';
   position: absolute;
@@ -334,6 +341,7 @@
 .phone-frame:has(.cover-history-screen-board) .bottom-nav .nav-item.active img.nav-item-icon,
 .phone-frame:has(.payment-methods-screen-board) .bottom-nav .nav-item.active img.nav-item-icon,
 .phone-frame:has(.trusted-contacts-screen-board) .bottom-nav .nav-item.active img.nav-item-icon,
+.phone-frame:has(.help-safety-screen-board) .bottom-nav .nav-item.active img.nav-item-icon {
 .phone-frame:has(.settings-screen-board) .bottom-nav .nav-item.active img.nav-item-icon {
   opacity: 1;
   filter: brightness(0) saturate(100%) invert(78%) sepia(61%) saturate(600%) hue-rotate(359deg) brightness(103%) contrast(101%);
@@ -399,6 +407,7 @@
 /* Profile sub-screens — Profile tab only (never Claims active on this screen) */
 .phone-frame:has(.payment-methods-screen-board) .bottom-nav.bottom-nav--profile-current .nav-item.active svg.nav-item-icon--profile-active,
 .phone-frame:has(.trusted-contacts-screen-board) .bottom-nav.bottom-nav--profile-current .nav-item.active svg.nav-item-icon--profile-active,
+.phone-frame:has(.help-safety-screen-board) .bottom-nav.bottom-nav--profile-current .nav-item.active svg.nav-item-icon--profile-active {
 .phone-frame:has(.settings-screen-board) .bottom-nav.bottom-nav--profile-current .nav-item.active svg.nav-item-icon--profile-active {
   opacity: 1 !important;
   filter: none !important;
@@ -407,12 +416,14 @@
 
 .phone-frame:has(.payment-methods-screen-board) .bottom-nav .nav-item:not(.active)::after,
 .phone-frame:has(.trusted-contacts-screen-board) .bottom-nav .nav-item:not(.active)::after,
+.phone-frame:has(.help-safety-screen-board) .bottom-nav .nav-item:not(.active)::after {
 .phone-frame:has(.settings-screen-board) .bottom-nav .nav-item:not(.active)::after {
   display: none !important;
 }
 
 .phone-frame:has(.payment-methods-screen-board) .bottom-nav.bottom-nav--profile-current .nav-item.active::after,
 .phone-frame:has(.trusted-contacts-screen-board) .bottom-nav.bottom-nav--profile-current .nav-item.active::after,
+.phone-frame:has(.help-safety-screen-board) .bottom-nav.bottom-nav--profile-current .nav-item.active::after {
 .phone-frame:has(.settings-screen-board) .bottom-nav.bottom-nav--profile-current .nav-item.active::after {
   display: block !important;
 }

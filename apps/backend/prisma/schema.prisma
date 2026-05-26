@@ -89,6 +89,22 @@ model User {
   auditLogs     AuditLog[] @relation("AuditActor")
   savedPaymentMethods SavedPaymentMethod[]
   trustedContacts     TrustedContact[]
+  supportReports      SupportReport[]
+}
+
+model SupportReport {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  problemType String
+  message     String
+  status      String   @default("submitted")
+
+  @@index([userId])
 }
 
 model TrustedContact {

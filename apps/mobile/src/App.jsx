@@ -57,6 +57,7 @@ import ProfileScreen from './screens/ProfileScreen.jsx';
 import CoverHistoryScreen, { CoverHistoryDetailScreen } from './screens/CoverHistoryScreen.jsx';
 import PaymentMethodsScreen from './screens/PaymentMethodsScreen.jsx';
 import TrustedContactsScreen from './screens/TrustedContactsScreen.jsx';
+import HelpSafetyScreen from './screens/HelpSafetyScreen.jsx';
 import SettingsScreen from './screens/SettingsScreen.jsx';
 import PaymentBrandIcon from './components/PaymentBrandIcon.jsx';
 import { getPaymentMethods, resolveDefaultCheckoutId } from './services/paymentMethods.js';
@@ -1179,42 +1180,6 @@ function NotificationsScreen({ setScreen }) {
             </button>
           );
         })}
-      </section>
-    </main>
-  );
-}
-
-function HelpSafetyScreen({ setScreen }) {
-  return (
-    <main className="screen padded detail-screen help-screen">
-      <TopBar onBack={() => setScreen('profile')} title="Help and safety" />
-      <section className="help-hero">
-        <ShieldCheck size={44} />
-        <h1>SAFE support</h1>
-      </section>
-
-      <section className="help-grid">
-        <button type="button" className="help-card" onClick={() => setScreen('claim')}>
-          <Siren size={24} />
-          <span><strong>Report an accident</strong><small>Start a claim and upload documents.</small></span>
-          <ChevronRight size={18} />
-        </button>
-        <button type="button" className="help-card" onClick={() => setScreen('active')}>
-          <Shield size={24} />
-          <span><strong>My active cover</strong><small>View policy, route, and expiry time.</small></span>
-          <ChevronRight size={18} />
-        </button>
-        <button type="button" className="help-card" onClick={() => setScreen('offline')}>
-          <AlertTriangle size={24} />
-          <span><strong>Connection help</strong><small>See the offline recovery screen.</small></span>
-          <ChevronRight size={18} />
-        </button>
-      </section>
-
-      <section className="support-panel">
-        <h2>Need help now?</h2>
-        <button type="button" onClick={() => setScreen('chat')}><MessageCircle size={18} /> Chat with SAFE</button>
-        <button type="button"><Mail size={18} /> support@safe.co.zm</button>
       </section>
     </main>
   );
