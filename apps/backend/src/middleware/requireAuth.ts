@@ -8,6 +8,11 @@ export type AuthedUser = {
 
 export type AuthedRequest = Request & { user: AuthedUser };
 
+/** Narrow Express request after requireAuth — no runtime effect. */
+export function getAuthed(req: Request): AuthedRequest {
+  return req as unknown as AuthedRequest;
+}
+
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const header = req.header('authorization') ?? '';
   const match = header.match(/^Bearer\s+(.+)$/i);
