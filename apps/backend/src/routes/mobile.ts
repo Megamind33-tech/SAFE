@@ -20,6 +20,7 @@ import {
   getSettingsConfigPayload,
   serializeAccountDetails,
 } from '../lib/settings.js';
+import { buildHomeSummary } from '../lib/homeSummary.js';
 import { requireAuth, type AuthedRequest } from '../middleware/requireAuth.js';
 import { env } from '../lib/env.js';
 import { requireRole } from '../middleware/requireRole.js';
@@ -310,6 +311,12 @@ mobileRouter.get('/claims', async (req, res) => {
     take: 50,
   });
   res.json({ claims });
+});
+
+mobileRouter.get('/home-summary', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const summary = await buildHomeSummary(authed.user.id);
+  res.json({ summary });
 });
 
 mobileRouter.get('/payment-methods', async (req, res) => {
