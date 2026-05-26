@@ -119,6 +119,7 @@ export function buildClaimSubmitPayload(claimDraft, { tripCoverId, policeReferen
   };
 }
 
+/** @deprecated Legacy claim flow only — never use for production submitted UI. */
 export function buildClaimReference(claim) {
   if (!claim?.id) return null;
   const date = claim.createdAt ? new Date(claim.createdAt) : new Date();

@@ -63,6 +63,13 @@ import navClaimsIcon from './assets/pack/icons/nav-claims.svg';
 import navAccountIcon from './assets/pack/icons/nav-account.svg';
 import { buyCover, clearToken, loadToken, login, me, registerPassenger, saveToken, activeCover as fetchActiveCover, coverHistory, verifyVehicle } from './api/safeApi.js';
 import { writeCachedClaims } from './services/claims.js';
+import {
+  clearQaOpenClaimFlowFlag,
+  clearQaSubmittedClaimId,
+  isClaimsQaCapture,
+  readQaOpenClaimFlowFlag,
+  readQaSubmittedClaimId,
+} from './utils/claimsQa.js';
 
 const bgImage = zambiaScene;
 
@@ -160,25 +167,26 @@ function App() {
 
 
   useEffect(() => {
-    if (!session.ready) return;
-    if (sessionStorage.getItem('safe_qa_open_claim_flow') === '1') {
-      sessionStorage.removeItem('safe_qa_open_claim_flow');
+    if (!session.ready || !isClaimsQaCapture) return;
+    if (readQaOpenClaimFlowFlag()) {
+      clearQaOpenClaimFlowFlag();
       setClaimFlowOpts({});
       setScreen('claimFlow');
     }
   }, [session.ready]);
 
   useEffect(() => {
-    if (!session.ready || !session.token) return;
-    const qaClaimId = sessionStorage.getItem('safe_qa_submitted_claim');
+    if (!session.ready || !session.token || !isClaimsQaCapture) return;
+    const qaClaimId = readQaSubmittedClaimId();
     if (!qaClaimId) return;
     import('./services/claims.js').then(({ getClaimDetail }) =>
       getClaimDetail(session.token, qaClaimId).then((claim) => {
-        if (claim?.reference) {
-          sessionStorage.removeItem('safe_qa_submitted_claim');
-          sessionStorage.setItem('safe_qa_show_submitted', '1');
-          setSelectedClaimId(claim.id);
-          setClaimFlowOpts({ submittedClaimId: claim.id });
+        if (
+          claim?.reference &&
+          ['submitted', 'under_review'].includes(String(claim.status))
+        ) {
+          clearQaSubmittedClaimId();
+          setClaimFlowOpts({ qaSubmittedClaimId: claim.id });
           setScreen('claimFlow');
         }
       })
@@ -368,7 +376,7 @@ function App() {
             openClaimDetail={openClaimDetail}
             initialStep={claimFlowOpts.step ?? 1}
             resumeClaimId={claimFlowOpts.claimId ?? null}
-            submittedClaimId={claimFlowOpts.submittedClaimId ?? null}
+            qaSubmittedClaimId={claimFlowOpts.qaSubmittedClaimId ?? null}
             onClaimsChanged={invalidateClaimsCache}
           />
         )}

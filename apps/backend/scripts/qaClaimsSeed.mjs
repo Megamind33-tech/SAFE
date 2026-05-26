@@ -134,7 +134,7 @@ async function main() {
   if (mode === 'duplicate') {
     const dupRef = 'POL-TEST-99001';
     await createClaim(user.id, cover.id, {
-      status: 'submitted',
+      status: 'rejected',
       description: 'First claim for duplicate detection testing scenario.',
       location: 'Kafue Road',
       incidentAt,

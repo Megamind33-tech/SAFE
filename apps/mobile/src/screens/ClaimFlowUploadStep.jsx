@@ -1,3 +1,4 @@
+/** @deprecated Unreachable legacy claim flow — App.jsx routes to ClaimFlowScreen only. */
 import { useRef, useState } from 'react';
 import {
   ArrowLeft,

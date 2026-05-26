@@ -1,3 +1,4 @@
+/** @deprecated Unreachable legacy claim flow — App.jsx routes to ClaimFlowScreen only. */
 import { ArrowLeft, Check, ShieldCheck } from 'lucide-react';
 import BottomScrollSpacer from '../components/BottomScrollSpacer.jsx';
 import {
