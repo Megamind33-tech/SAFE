@@ -21,6 +21,11 @@ import {
   serializeAccountDetails,
 } from '../lib/settings.js';
 import { getHelpSafetyConfig, SUPPORT_PROBLEM_TYPES } from '../lib/helpSafety.js';
+import {
+  defaultNotificationPreferences,
+  pickPreferenceUpdates,
+  serializeNotificationPreferences,
+} from '../lib/notificationPreferences.js';
 import { listAvailableCoverPlans } from '../lib/coverPlans.js';
 import {
   coverCapabilities,
@@ -1108,5 +1113,53 @@ mobileRouter.post('/support-reports', async (req, res) => {
       createdAt: report.createdAt.toISOString(),
     },
   });
+});
+
+async function getOrCreateNotificationPreferences(userId: string) {
+  const existing = await prisma.notificationPreference.findUnique({
+    where: { userId },
+  });
+  if (existing) return existing;
+  return prisma.notificationPreference.create({
+    data: { userId, ...defaultNotificationPreferences() },
+  });
+}
+
+mobileRouter.get('/notification-preferences', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const pref = await getOrCreateNotificationPreferences(authed.user.id);
+  res.json({ preferences: serializeNotificationPreferences(pref) });
+});
+
+mobileRouter.patch('/notification-preferences', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const updates = pickPreferenceUpdates(req.body ?? {});
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: 'No valid preference fields provided.' });
+    return;
+  }
+
+  await getOrCreateNotificationPreferences(authed.user.id);
+  const pref = await prisma.notificationPreference.update({
+    where: { userId: authed.user.id },
+    data: updates,
+  });
+  res.json({ preferences: serializeNotificationPreferences(pref) });
+});
+
+mobileRouter.post('/notification-preferences/permission-requested', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const schema = z.object({
+    granted: z.boolean().optional(),
+  });
+  const parsed = schema.safeParse(req.body ?? {});
+  const granted = parsed.success ? Boolean(parsed.data.granted) : false;
+
+  await getOrCreateNotificationPreferences(authed.user.id);
+  const pref = await prisma.notificationPreference.update({
+    where: { userId: authed.user.id },
+    data: { pushEnabled: granted },
+  });
+  res.json({ preferences: serializeNotificationPreferences(pref) });
 });
 
