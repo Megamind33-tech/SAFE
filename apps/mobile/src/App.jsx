@@ -43,6 +43,11 @@ import shareTrackMap from './assets/share-track-map.png';
 import lusakaNightAerial from './assets/lusaka-night-aerial.png';
 import HomeScreen from './screens/HomeScreen.jsx';
 import CoverScreen from './screens/CoverScreen.jsx';
+import CoverPlanSelectScreen from './screens/CoverPlanSelectScreen.jsx';
+import CoverReviewScreen from './screens/CoverReviewScreen.jsx';
+import CoverPaymentScreen from './screens/CoverPaymentScreen.jsx';
+import CoverPurchaseStatusScreen from './screens/CoverPurchaseStatusScreen.jsx';
+import { writeCachedCoverScreen } from './services/cover.js';
 import ViewPolicyScreen from './screens/ViewPolicyScreen.jsx';
 import LiveTripScreen from './screens/LiveTripScreen.jsx';
 import ClaimsScreen from './screens/ClaimsScreen.jsx';
@@ -65,7 +70,7 @@ import navHomeIcon from './assets/pack/icons/nav-home.svg';
 import navCoverIcon from './assets/pack/icons/nav-cover-active.svg';
 import navClaimsIcon from './assets/pack/icons/nav-claims.svg';
 import navAccountIcon from './assets/pack/icons/nav-account.svg';
-import { buyCover, clearToken, createClaim, loadToken, login, me, registerPassenger, saveToken, activeCover as fetchActiveCover, coverHistory, listClaims, verifyVehicle } from './api/safeApi.js';
+import { clearToken, createClaim, loadToken, login, me, registerPassenger, saveToken, activeCover as fetchActiveCover, coverHistory, listClaims, verifyVehicle } from './api/safeApi.js';
 
 const bgImage = zambiaScene;
 
@@ -121,6 +126,11 @@ function App() {
   const [scannedVehicle, setScannedVehicle] = useState(null);
   const [coversHistory, setCoversHistory] = useState([]);
   const [claimsList, setClaimsList] = useState([]);
+  const [coverFlow, setCoverFlow] = useState({
+    selectedPlan: null,
+    selectedPaymentMethod: null,
+    purchaseResult: null,
+  });
   
   // Scanner Modal States
   const [showScannerModal, setShowScannerModal] = useState(false);
@@ -140,7 +150,15 @@ function App() {
         coverHistory(token),
         listClaims(token),
       ]);
-      setActiveCoverState(activeRes?.cover || null);
+      const cover = activeRes?.cover || null;
+      setActiveCoverState(cover ? { ...cover, plan: cover.planId || cover.plan } : null);
+      if (cover) {
+        writeCachedCoverScreen({
+          activeCover: cover,
+          pendingCover: activeRes?.pendingCover ?? null,
+          capabilities: activeRes?.capabilities ?? {},
+        });
+      }
       setCoversHistory(historyRes?.covers || []);
       setClaimsList(claimsRes?.claims || []);
     } catch (err) {
@@ -243,6 +261,12 @@ function App() {
     }
   }, [screen, session.token]);
 
+  // Legacy Home CTAs still call setScreen('choose'|'payment'); map to the real cover flow.
+  useEffect(() => {
+    if (screen === 'choose') setScreen('coverPlans');
+    if (screen === 'payment') setScreen(coverFlow.selectedPlan ? 'coverReview' : 'coverPay');
+  }, [screen, coverFlow.selectedPlan]);
+
   const goHome = () => setScreen('home');
   const goCover = () => setScreen('active');
   const goClaims = () => setScreen('claim');
@@ -338,16 +362,87 @@ function App() {
         {screen === 'login' && <LoginScreen {...screenProps} />}
         {screen === 'signup' && <SignupScreen {...screenProps} />}
         {screen === 'home' && <HomeScreen {...screenProps} goCover={goCover} />}
-        {screen === 'choose' && <ChooseCoverScreen {...screenProps} />}
-        {screen === 'payment' && <PaymentScreen {...screenProps} />}
-        {screen === 'active' && <CoverScreen {...screenProps} />}
+        {screen === 'active' && (
+          <CoverScreen
+            session={session}
+            setScreen={setScreen}
+            openHistory={openHistory}
+            openClaimFlow={openClaimFlow}
+            onBuyCover={() => setScreen('coverPlans')}
+            onCheckPendingPurchase={(pending) => {
+              setCoverFlow((f) => ({
+                ...f,
+                purchaseId: pending?.paymentReference || pending?.id,
+                purchaseResult: { purchase: { status: 'pending', id: pending?.paymentReference } },
+              }));
+              setScreen('coverStatus');
+            }}
+          />
+        )}
+        {screen === 'coverPlans' && (
+          <CoverPlanSelectScreen
+            session={session}
+            setScreen={setScreen}
+            selectedPlanId={coverFlow.selectedPlan?.id}
+            scannedVehicle={scannedVehicle}
+            onSelectPlan={(plan) => setCoverFlow((f) => ({ ...f, selectedPlan: plan }))}
+            onContinue={() => setScreen('coverReview')}
+          />
+        )}
+        {screen === 'coverReview' && (
+          <CoverReviewScreen
+            session={session}
+            setScreen={setScreen}
+            selectedPlan={coverFlow.selectedPlan}
+            paymentMethod={coverFlow.selectedPaymentMethod}
+            onPaymentMethodResolved={(method) =>
+              setCoverFlow((f) => ({ ...f, selectedPaymentMethod: method }))
+            }
+            onContinue={() => setScreen('coverPay')}
+            onChangePlan={() => setScreen('coverPlans')}
+          />
+        )}
+        {screen === 'coverPay' && (
+          <CoverPaymentScreen
+            session={session}
+            setScreen={setScreen}
+            selectedPlan={coverFlow.selectedPlan}
+            selectedPaymentMethodId={coverFlow.selectedPaymentMethod?.id}
+            scannedVehicle={scannedVehicle}
+            capabilities={coverFlow.capabilities}
+            onSelectPaymentMethod={(method) =>
+              setCoverFlow((f) => ({ ...f, selectedPaymentMethod: method }))
+            }
+            onPurchaseStarted={(result) => {
+              setCoverFlow((f) => ({
+                ...f,
+                purchaseResult: result,
+                purchaseId: result?.purchase?.id,
+              }));
+              setScreen('coverStatus');
+            }}
+          />
+        )}
+        {screen === 'coverStatus' && (
+          <CoverPurchaseStatusScreen
+            session={session}
+            setScreen={setScreen}
+            purchaseId={coverFlow.purchaseId}
+            initialPurchase={coverFlow.purchaseResult}
+            onComplete={async () => {
+              await refreshPassengerData(session.token);
+              setScreen('active');
+            }}
+            onRetryPayment={() => setScreen('coverPay')}
+          />
+        )}
         {screen === 'viewPolicy' && <ViewPolicyScreen {...screenProps} />}
         {screen === 'liveTrip' && <LiveTripScreen {...screenProps} />}
         {screen === 'history' && (
           <CoverHistoryScreen
             {...screenProps}
             onSelectCover={openCoverHistoryDetail}
-            onStartCover={() => setScreen('choose')}
+            onStartCover={() => setScreen('coverPlans')}
           />
         )}
         {screen === 'coverHistoryDetail' && (
@@ -424,7 +519,7 @@ function App() {
                           try {
                             const data = await verifyVehicle(session.token, { qrCode: 'SAFE-LSK-2481' });
                             setScannedVehicle(data);
-                            setScreen('choose');
+                            setScreen('coverPlans');
                             setShowScannerModal(false);
                           } catch (e) {
                             setError(e.message || 'Failed to verify vehicle');
@@ -478,7 +573,7 @@ function App() {
                         try {
                           const data = await verifyVehicle(session.token, { plateNumber: plateInput.trim() });
                           setScannedVehicle(data);
-                          setScreen('choose');
+                          setScreen('coverPlans');
                           setShowScannerModal(false);
                         } catch (e) {
                           setError(e.message || 'Failed to verify vehicle');
@@ -524,7 +619,7 @@ function App() {
 
 function navState(screen) {
   if (screen === 'home') return 'home';
-  if (['choose', 'payment', 'active', 'viewPolicy'].includes(screen)) return 'cover';
+  if (['choose', 'payment', 'active', 'viewPolicy', 'coverPlans', 'coverReview', 'coverPay', 'coverStatus'].includes(screen)) return 'cover';
   if (['claim', 'claimFlow'].includes(screen)) return 'claims';
   if (['history', 'coverHistoryDetail', 'profile', 'profilePayments', 'trustedContacts', 'settings', 'notifications', 'helpSafety'].includes(screen)) {
     return 'profile';
@@ -879,7 +974,8 @@ function TripRows() {
   );
 }
 
-function ChooseCoverScreen({ selectedPlan, setSelectedPlan, setScreen, scannedVehicle }) {
+/** @deprecated Unreachable legacy fake cover purchase UI — use coverPlans flow. */
+function ChooseCoverScreen_LEGACY({ selectedPlan, setSelectedPlan, setScreen, scannedVehicle }) {
   return (
     <main className="screen padded">
       <TopBar onBack={() => setScreen('home')} />
@@ -928,14 +1024,15 @@ function ChooseCoverScreen({ selectedPlan, setSelectedPlan, setScreen, scannedVe
   );
 }
 
-function PaymentScreen({ activePlan, paymentMethod, selectedPlan, session, setPaymentMethod, setScreen, scannedVehicle, refreshPassengerData }) {
+/** @deprecated Unreachable legacy fake payment UI — use coverPay/coverStatus. */
+function PaymentScreen_LEGACY({ activePlan, paymentMethod, selectedPlan, session, setPaymentMethod, setScreen, scannedVehicle, refreshPassengerData }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   return (
     <main className="screen padded payment-screen">
       <div className="soft-visual" style={{ backgroundImage: `linear-gradient(180deg, rgba(248,249,250,.2), rgba(248,249,250,.9)), url(${bgImage})` }} />
-      <TopBar onBack={() => setScreen('choose')} />
+      <TopBar onBack={() => setScreen('coverPlans')} />
       <section className="page-heading with-lock">
         <div>
           <h1>Pay securely</h1>

@@ -30,7 +30,7 @@ function routeDisplay(cover) {
 
 function heroSubtext(cover) {
   if (!cover) return 'No active cover';
-  return `${planCoverTitle(cover.plan)} • ${routeDisplay(cover)}`;
+  return `${planCoverTitle(cover)} • ${routeDisplay(cover)}`;
 }
 
 function formatValidUntil(endsAt) {

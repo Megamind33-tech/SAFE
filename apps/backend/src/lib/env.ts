@@ -33,5 +33,10 @@ export const env = {
   appVersion: process.env.SAFE_APP_VERSION ?? '1.0.0',
   dataExportEnabled: process.env.SAFE_DATA_EXPORT_ENABLED === 'true',
   accountDeletionEnabled: process.env.SAFE_ACCOUNT_DELETION_ENABLED === 'true',
+  paymentGatewayEnabled: process.env.SAFE_PAYMENT_GATEWAY_ENABLED === 'true',
+  paymentSimulateSuccess: process.env.SAFE_PAYMENT_SIMULATE_SUCCESS === 'true',
+  cardPaymentsEnabled: process.env.SAFE_CARD_PAYMENTS_ENABLED === 'true',
+  allowCoverStacking: process.env.SAFE_ALLOW_COVER_STACKING === 'true',
+  allowCoverExtension: process.env.SAFE_ALLOW_COVER_EXTENSION === 'true',
 };
 
