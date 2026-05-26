@@ -333,3 +333,59 @@ Do not change layout, spacing, typography, card design, nav design, icon style, 
   - `claims-error-no-cache.png`
   - `claims-sync-warning.png`
 
+- **Verified** badge appears only when the API returns `isVerified: true`.
+- Do not fake verification status in the UI.
+
+#### Help & Safety (`cursor/help-safety-a7cb` / PR #19)
+
+**Help & Safety is locked.**
+
+**Locked (do not modify):**
+- Help & Safety page layout, hero, header (back / chat icon)
+- Primary emergency card and actions
+- Accident steps (“What to do first”)
+- Claim checklist
+- Document guidance
+- Fraud prevention section (“How SAFE protects claims”)
+- Support options (chat, call, email, report problem)
+- Report problem bottom sheet
+- Trusted contacts picker behavior (masked phones; dial via API)
+- Error-no-cache state
+- Sync-warning state (stale-while-revalidate for config)
+- Profile bottom nav on this screen
+
+**Key files:**
+- `apps/mobile/src/screens/HelpSafetyScreen.jsx`
+- `apps/mobile/src/help-safety-screen.css`
+- `apps/mobile/src/services/helpSafety.js`
+- `apps/backend/src/lib/helpSafety.ts`
+- `apps/mobile/src/profile-screen.css` (only `help-safety-screen-board` bottom-nav rules)
+
+**Allowed future changes only:**
+1. API / integration fixes
+2. Backend / config bugs
+3. Small copy tweaks
+4. Accessibility improvements
+5. Test / QA improvements
+
+Do not change layout, spacing, typography, card design, nav design, icon style, screen structure, or visual direction unless explicitly requested.
+
+**Behavior and copy to preserve:**
+- No hardcoded fake support phone or email — use env-backed config (`SAFE_SUPPORT_PHONE`, `SAFE_SUPPORT_EMAIL`, `SAFE_EMERGENCY_PHONE`, `SAFE_SUPPORT_HOURS`, `SAFE_CLAIMS_GUIDE_VERSION`).
+- Trusted contact phones stay masked in UI; dial only via `GET /api/mobile/trusted-contacts/:id/dial`.
+- Support reports submit through real API (`POST /api/mobile/support-reports`); do not fake success silently.
+- Fraud wording stays careful: reviews, checks, may flag — not guarantees of fraud detection.
+- Static safety guidance (steps, documents, fraud bullets) remains visible even when config refresh fails.
+- Chat remains the existing route only; do not fake a new chat backend.
+
+**QA (preserve):**
+- Script: `apps/mobile/scripts/capture-help-safety.mjs`
+- Eight screenshot states (fail fast if regressions):
+  - `help-safety-main.png`
+  - `help-safety-accident-steps.png`
+  - `help-safety-claim-checklist.png`
+  - `help-safety-support-options.png`
+  - `help-safety-report-problem-sheet.png`
+  - `help-safety-contact-picker.png`
+  - `help-safety-error-no-cache.png`
+  - `help-safety-sync-warning.png`
