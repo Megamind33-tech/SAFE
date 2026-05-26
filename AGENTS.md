@@ -32,7 +32,7 @@ SAFE is a minibus commuter micro-insurance monorepo (npm workspaces) with three 
 
 See `README.md` for default dev credentials.
 
-### Locked mobile screens (Profile sub-pages)
+### Locked mobile screens
 
 Do not change layout, spacing, typography, card design, nav design, icon style, screen structure, or visual direction on locked screens unless explicitly requested.
 
