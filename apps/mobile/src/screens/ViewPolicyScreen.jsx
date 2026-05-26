@@ -2,6 +2,8 @@ import { ArrowLeft, FileText, Share2, Siren } from 'lucide-react';
 import safeShieldIcon from '../assets/real/safe_shield_clean.png';
 import iconLockShield from '../assets/pack/icons/lock-shield.svg';
 import { coverDurationMins, formatPlanLabel } from '../hooks/useActiveTrip.js';
+import HomeMapPreview from '../components/HomeMapPreview.jsx';
+import { useLiveTrip } from '../hooks/useLiveTrip.js';
 
 function policyId(cover) {
   if (!cover?.id) return 'Pending';
@@ -53,11 +55,63 @@ function isCoverExpired(cover) {
   return new Date(cover.endsAt).getTime() <= Date.now();
 }
 
+function ViewPolicyLiveMap({ openLiveTrip, goCover }) {
+  const {
+    trip,
+    activeCover,
+    loading,
+    loadError,
+    syncWarning,
+    locationState,
+    mapTileError,
+    setMapTileError,
+    refresh,
+    requestLocationPermission,
+    startTrip,
+  } = useLiveTrip({ trackLocation: false });
+
+  const handleStart = async () => {
+    await requestLocationPermission();
+    await startTrip();
+    await refresh();
+  };
+
+  return (
+    <section className="view-policy-map-section" aria-label="Live trip preview">
+      <HomeMapPreview
+        trip={trip}
+        activeCover={activeCover}
+        loading={loading}
+        loadError={loadError}
+        syncWarning={syncWarning}
+        locationState={locationState}
+        mapTileError={mapTileError}
+        onRetry={() => {
+          setMapTileError(false);
+          refresh();
+        }}
+        onEnableLocation={requestLocationPermission}
+        onStartTracking={handleStart}
+        onBuyCover={goCover}
+        onMapTileError={() => setMapTileError(true)}
+        compact
+      />
+      {openLiveTrip ? (
+        <button type="button" className="view-policy-map-section-link" onClick={openLiveTrip}>
+          View full live map
+        </button>
+      ) : null}
+    </section>
+  );
+}
+
 export default function ViewPolicyScreen({
   activeCoverState,
   countdown,
   setScreen,
   viewPolicyReturn = 'active',
+  openLiveTrip,
+  goCover,
 }) {
   const expired = isCoverExpired(activeCoverState);
   const displayCountdown = expired ? '00:00:00' : countdown || '00:00:00';
@@ -133,6 +187,8 @@ export default function ViewPolicyScreen({
           </div>
         ))}
       </section>
+
+      <ViewPolicyLiveMap openLiveTrip={openLiveTrip} goCover={goCover} />
 
       <div className="view-policy-screen__actions">
         <button className="view-policy-screen__btn view-policy-screen__btn--document" type="button">

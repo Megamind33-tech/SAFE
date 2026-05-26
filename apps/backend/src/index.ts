@@ -3,6 +3,7 @@ import express from 'express';
 import { env } from './lib/env.js';
 import { sharedAuthRouter } from './routes/sharedAuth.js';
 import { mobileRouter } from './routes/mobile.js';
+import { tripTrackingRouter } from './routes/tripTrackingMobile.js';
 import { dashboardRouter } from './routes/dashboard.js';
 
 const app = express();
@@ -24,6 +25,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/api/shared/auth', sharedAuthRouter);
+app.use('/api/mobile', tripTrackingRouter);
 app.use('/api/mobile', mobileRouter);
 app.use('/api/dashboard', dashboardRouter);
 
@@ -34,4 +36,3 @@ app.use((_req, res) => {
 app.listen(env.port, () => {
   console.log(`[safe-backend] listening on http://127.0.0.1:${env.port}`);
 });
-

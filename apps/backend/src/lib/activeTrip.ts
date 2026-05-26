@@ -1,93 +1,70 @@
-import type { DriverProfile, Route, TripCover, Vehicle } from '@prisma/client';
+import type { DriverProfile, Route, TripCover, TripTracking, Vehicle } from '@prisma/client';
+import {
+  buildPolylineFromRoute,
+  serializeActiveTripPayload,
+  type LatLng,
+} from './tripTracking.js';
+
+export type { LatLng };
 
 type CoverWithRelations = TripCover & {
   vehicle: (Vehicle & { driver: DriverProfile | null; route: Route | null }) | null;
   route: Route | null;
+  payment: { status: string } | null;
+  tripTracking?: TripTracking | null;
 };
 
-export type LatLng = { lat: number; lng: number };
-
-function parsePolyline(raw: string | null | undefined): LatLng[] {
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw) as LatLng[];
-    return Array.isArray(parsed) ? parsed.filter((p) => typeof p?.lat === 'number' && typeof p?.lng === 'number') : [];
-  } catch {
-    return [];
-  }
-}
-
-function buildPolylineFromRoute(route: Route | null): LatLng[] {
-  if (!route) return [];
-  const fromPolyline = parsePolyline(route.polyline);
-  if (fromPolyline.length >= 2) return fromPolyline;
-  if (
-    route.originLat != null &&
-    route.originLng != null &&
-    route.destinationLat != null &&
-    route.destinationLng != null
-  ) {
-    return [
-      { lat: route.originLat, lng: route.originLng },
-      { lat: route.destinationLat, lng: route.destinationLng },
-    ];
-  }
-  return [];
-}
-
+/** @deprecated Legacy trip shape for older clients — prefer serializeActiveTripPayload */
 export function serializeActiveTrip(cover: CoverWithRelations | null) {
-  if (!cover) return null;
+  const trip = serializeActiveTripPayload(cover, cover?.tripTracking ?? null);
+  if (!trip) return null;
 
-  const routeRecord = cover.route ?? cover.vehicle?.route ?? null;
-  const polyline = buildPolylineFromRoute(routeRecord);
-  const vehicle = cover.vehicle;
+  const routeRecord = cover?.route ?? cover?.vehicle?.route ?? null;
+  const polyline = trip.routePolyline ?? buildPolylineFromRoute(routeRecord);
 
   return {
-    tripId: cover.id,
-    coverId: cover.id,
-    status: cover.status,
-    coverStatus: cover.status === 'active' ? 'valid' : cover.status,
-    plan: cover.plan,
-    vehicle: vehicle
+    tripId: trip.id || trip.coverId,
+    coverId: trip.coverId,
+    status: cover?.status ?? 'active',
+    coverStatus: cover?.status === 'active' ? 'valid' : cover?.status,
+    plan: cover?.plan,
+    vehicle: trip.vehicle
       ? {
-          id: vehicle.id,
-          plateNumber: vehicle.plateNumber,
+          id: cover?.vehicle?.id,
+          plateNumber: trip.vehicle.plateNumber,
           type: 'minibus',
         }
       : null,
-    driver: vehicle?.driver
+    driver: cover?.vehicle?.driver
       ? {
-          name: vehicle.driver.fullName ?? 'Verified Driver',
-          verified: Boolean(vehicle.driver.licenseNumber),
+          name: cover.vehicle.driver.fullName ?? 'Verified Driver',
+          verified: Boolean(cover.vehicle.driver.licenseNumber),
         }
-      : vehicle
+      : cover?.vehicle
         ? { name: 'Verified Driver', verified: true }
         : null,
     route: routeRecord
       ? {
           from: routeRecord.origin,
           to: routeRecord.destination,
-          start:
-            routeRecord.originLat != null && routeRecord.originLng != null
-              ? { lat: routeRecord.originLat, lng: routeRecord.originLng }
-              : polyline[0] ?? null,
-          destination:
-            routeRecord.destinationLat != null && routeRecord.destinationLng != null
-              ? { lat: routeRecord.destinationLat, lng: routeRecord.destinationLng }
-              : polyline[polyline.length - 1] ?? null,
+          start: trip.startLocation ? { lat: trip.startLocation.lat, lng: trip.startLocation.lng } : null,
+          destination: trip.endLocation
+            ? { lat: trip.endLocation.lat, lng: trip.endLocation.lng }
+            : null,
           polyline,
         }
       : null,
-    vehicleLocation:
-      vehicle?.lastLat != null && vehicle?.lastLng != null
-        ? {
-            lat: vehicle.lastLat,
-            lng: vehicle.lastLng,
-            heading: vehicle.lastHeading ?? null,
-            updatedAt: vehicle.locationAt?.toISOString() ?? null,
-          }
-        : null,
-    startedAt: cover.startedAt.toISOString(),
-    expiresAt: cover.endsAt.toISOString(),
+    vehicleLocation: trip.currentLocation
+      ? {
+          lat: trip.currentLocation.lat,
+          lng: trip.currentLocation.lng,
+          heading: null,
+          updatedAt: trip.currentLocation.recordedAt ?? trip.lastUpdatedAt ?? null,
+        }
+      : null,
+    startedAt: trip.startedAt,
+    expiresAt: trip.expiresAt,
   };
 }
+
+export { serializeActiveTripPayload, coverIsTrackable, isValidCoordinate } from './tripTracking.js';

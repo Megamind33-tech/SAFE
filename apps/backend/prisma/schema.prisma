@@ -22,6 +22,12 @@ enum TripCoverStatus {
   cancelled
 }
 
+enum TripTrackingStatus {
+  pending
+  active
+  ended
+}
+
 enum PaymentStatus {
   pending
   succeeded
@@ -222,6 +228,35 @@ model TripCover {
 
   payment   Payment?
   claims    Claim[]
+  tripTracking TripTracking?
+}
+
+model TripTracking {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tripCoverId String   @unique
+  tripCover   TripCover @relation(fields: [tripCoverId], references: [id], onDelete: Cascade)
+
+  status    TripTrackingStatus @default(pending)
+  startedAt DateTime?
+  endedAt   DateTime?
+
+  startLat   Float?
+  startLng   Float?
+  startLabel String?
+
+  currentLat          Float?
+  currentLng          Float?
+  currentAccuracy     Float?
+  currentRecordedAt   DateTime?
+
+  endLat   Float?
+  endLng   Float?
+  endLabel String?
+
+  lastUpdatedAt DateTime?
 }
 
 model Payment {

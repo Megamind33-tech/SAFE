@@ -64,6 +64,22 @@ export async function activeTrip(token) {
   return request('/api/mobile/active-trip', { token });
 }
 
+export async function startTripTracking(token, body = {}) {
+  return request('/api/mobile/trips/start', { method: 'POST', token, body });
+}
+
+export async function updateTripLocation(token, tripId, body) {
+  return request(`/api/mobile/trips/${tripId}/location`, { method: 'PATCH', token, body });
+}
+
+export async function endTripTracking(token, tripId) {
+  return request(`/api/mobile/trips/${tripId}/end`, { method: 'POST', token });
+}
+
+export async function getTrip(token, tripId) {
+  return request(`/api/mobile/trips/${tripId}`, { token });
+}
+
 export async function tripLocation(token, tripId) {
   return request(`/api/mobile/trips/${tripId}/location`, { token });
 }

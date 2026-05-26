@@ -212,16 +212,6 @@ mobileRouter.get('/cover/active', async (req, res) => {
   res.json({ cover, trip: serializeActiveTrip(cover) });
 });
 
-mobileRouter.get('/active-trip', async (req, res) => {
-  const authed = req as AuthedRequest;
-  const cover = await loadActiveCover(authed.user.id);
-  if (!cover) {
-    res.json({ trip: null });
-    return;
-  }
-  res.json({ trip: serializeActiveTrip(cover) });
-});
-
 mobileRouter.get('/trips/:tripId/route', async (req, res) => {
   const authed = req as AuthedRequest;
   const cover = await prisma.tripCover.findFirst({
