@@ -1,0 +1,536 @@
+/* SAFE Cover flow — purchase experience */
+
+.screen.cover-flow {
+  --cover-pad-x: 24px;
+  --cover-card-radius: 24px;
+  position: relative;
+  min-height: 100%;
+  padding: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #f4fff9 0%, #edf7f2 48%, #f8faf9 100%);
+}
+
+.cover-flow__scroll {
+  height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) var(--cover-pad-x) 150px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cover-flow__loading {
+  text-align: center;
+  color: rgba(16, 24, 32, 0.55);
+  font-size: 14px;
+  padding: 24px 0;
+}
+
+.cover-flow-sync-warning {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 198, 18, 0.18);
+  border: 1px solid rgba(255, 198, 18, 0.35);
+  color: #5c4a00;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cover-flow-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.cover-flow-header__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #101820;
+  text-align: center;
+  flex: 1;
+}
+
+.cover-flow-header__back,
+.cover-flow-header__link {
+  min-height: 44px;
+  padding: 0 4px;
+  border: none;
+  background: transparent;
+  color: #007a3d;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cover-flow-header__spacer {
+  width: 52px;
+  flex-shrink: 0;
+}
+
+.cover-flow-intro {
+  margin-top: 20px;
+}
+
+.cover-flow-intro__title {
+  margin: 0;
+  font-size: 26px;
+  line-height: 30px;
+  font-weight: 900;
+  color: #101820;
+}
+
+.cover-flow-intro__sub {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: rgba(16, 24, 32, 0.62);
+}
+
+.cover-flow-vehicle-chip {
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #007a3d;
+}
+
+.cover-flow-hero,
+.cover-flow-review-card,
+.cover-flow-status-card,
+.cover-flow-empty-card,
+.cover-flow-error-card {
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: var(--cover-card-radius);
+  background: #ffffff;
+  border: 1px solid rgba(0, 122, 61, 0.08);
+  box-shadow: 0 12px 28px rgba(0, 45, 28, 0.08);
+}
+
+.cover-flow-hero--active {
+  background: linear-gradient(145deg, #ffffff 0%, #f0fff6 100%);
+}
+
+.cover-flow-pill {
+  display: inline-flex;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: rgba(16, 24, 32, 0.08);
+  color: rgba(16, 24, 32, 0.72);
+}
+
+.cover-flow-pill--active {
+  background: rgba(0, 122, 61, 0.12);
+  color: #007a3d;
+}
+
+.cover-flow-hero__details {
+  margin: 16px 0 0;
+  display: grid;
+  gap: 10px;
+}
+
+.cover-flow-hero__details div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.cover-flow-hero__details dt {
+  margin: 0;
+  color: rgba(16, 24, 32, 0.55);
+  font-weight: 600;
+}
+
+.cover-flow-hero__details dd {
+  margin: 0;
+  font-weight: 800;
+  color: #101820;
+  text-align: right;
+}
+
+.cover-flow-hero__actions {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cover-flow-hero__title {
+  margin: 12px 0 0;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.cover-flow-hero__sub {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: rgba(16, 24, 32, 0.62);
+}
+
+.cover-flow-start {
+  margin-top: 20px;
+}
+
+.cover-flow-btn {
+  min-height: 56px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: none;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.cover-flow-btn--primary {
+  background: #007a3d;
+  color: #fff;
+}
+
+.cover-flow-btn--secondary {
+  background: #fff;
+  color: #007a3d;
+  border: 1.5px solid rgba(0, 122, 61, 0.35);
+}
+
+.cover-flow-btn--text {
+  background: transparent;
+  color: #007a3d;
+  min-height: 44px;
+}
+
+.cover-flow-btn--wide {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.cover-flow-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cover-flow-note,
+.cover-flow-note-block {
+  margin-top: 12px;
+  font-size: 12px;
+  line-height: 16px;
+  color: rgba(16, 24, 32, 0.55);
+}
+
+.cover-flow-note--muted {
+  margin-top: 4px;
+}
+
+.cover-flow-banner {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 198, 18, 0.12);
+  border: 1px solid rgba(255, 198, 18, 0.3);
+}
+
+.cover-flow-banner strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.cover-flow-plan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.cover-flow-plan-card {
+  position: relative;
+  width: 100%;
+  padding: 18px 44px 18px 18px;
+  border: 1.5px solid rgba(0, 122, 61, 0.1);
+  border-radius: 22px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 45, 28, 0.06);
+}
+
+.cover-flow-plan-card--selected {
+  border-color: #007a3d;
+  box-shadow: 0 0 0 2px rgba(0, 122, 61, 0.15);
+}
+
+.cover-flow-plan-card--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cover-flow-plan-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cover-flow-plan-card__name {
+  font-size: 16px;
+  font-weight: 800;
+  color: #101820;
+}
+
+.cover-flow-plan-card__badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 198, 18, 0.25);
+  color: #5c4a00;
+}
+
+.cover-flow-plan-card__price {
+  display: block;
+  margin-top: 8px;
+  font-size: 28px;
+  font-weight: 900;
+  color: #007a3d;
+}
+
+.cover-flow-plan-card__duration {
+  display: block;
+  font-size: 13px;
+  color: rgba(16, 24, 32, 0.55);
+  margin-top: 2px;
+}
+
+.cover-flow-plan-card__benefits {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.cover-flow-plan-card__benefits li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(16, 24, 32, 0.65);
+}
+
+.cover-flow-plan-card__chevron {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #007a3d;
+}
+
+.cover-flow-review-card__plan {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.cover-flow-review-card__price {
+  margin: 8px 0 0;
+  font-size: 32px;
+  font-weight: 900;
+  color: #007a3d;
+}
+
+.cover-flow-review-card__rows {
+  margin: 16px 0 0;
+  display: grid;
+  gap: 10px;
+}
+
+.cover-flow-review-card__rows div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.cover-flow-review-card__rows dt {
+  color: rgba(16, 24, 32, 0.55);
+  font-weight: 600;
+}
+
+.cover-flow-review-card__rows dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+}
+
+.cover-flow-review-card__benefits {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.cover-flow-review-card__benefits li {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.cover-flow-section-title {
+  margin: 24px 0 12px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.cover-flow-method-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cover-flow-method-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1.5px solid rgba(0, 122, 61, 0.1);
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.cover-flow-method-card--selected {
+  border-color: #007a3d;
+}
+
+.cover-flow-method-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cover-flow-method-card__body strong {
+  font-size: 14px;
+}
+
+.cover-flow-method-card__body small {
+  font-size: 12px;
+  color: rgba(16, 24, 32, 0.55);
+}
+
+.cover-flow-method-card__radio {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 122, 61, 0.35);
+  display: grid;
+  place-items: center;
+  color: #007a3d;
+}
+
+.cover-flow-method-card--selected .cover-flow-method-card__radio {
+  background: #007a3d;
+  border-color: #007a3d;
+  color: #fff;
+}
+
+.cover-flow-status-card--success {
+  border-color: rgba(0, 122, 61, 0.2);
+}
+
+.cover-flow-status-card--error {
+  border-color: rgba(196, 30, 58, 0.2);
+}
+
+.cover-flow-status-card h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.cover-flow-status-card p {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: rgba(16, 24, 32, 0.62);
+}
+
+.cover-flow-inline-error {
+  margin-top: 12px;
+  color: #c41e3a;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cover-flow-error-card h2,
+.cover-flow-empty-card h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.cover-flow-error-card p,
+.cover-flow-empty-card p {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: rgba(16, 24, 32, 0.6);
+}
+
+/* Cover tab bottom nav — preserve dock on cover-flow screens */
+.phone-frame:has(.cover-flow) .bottom-nav {
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  height: 82px;
+  border-radius: 30px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 50;
+  background: linear-gradient(180deg, rgba(17, 28, 42, 0.86) 0%, rgba(10, 18, 28, 0.92) 100%);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.34);
+}
+
+.phone-frame:has(.cover-flow) .bottom-nav .nav-item {
+  width: 72px;
+  min-height: 60px;
+  border-radius: 22px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.phone-frame:has(.cover-flow) .bottom-nav .nav-item.active {
+  color: #ffc612;
+  font-weight: 700;
+  background: linear-gradient(180deg, rgba(255, 198, 18, 0.16) 0%, rgba(255, 198, 18, 0.1) 100%);
+  border: 1px solid rgba(255, 198, 18, 0.24);
+}
+
+.phone-frame:has(.cover-flow) .bottom-nav .nav-item img,
+.phone-frame:has(.cover-flow) .bottom-nav .nav-item svg {
+  opacity: 0.58;
+  filter: brightness(0) saturate(100%) invert(100%);
+}
+
+.phone-frame:has(.cover-flow) .bottom-nav .nav-item.active img,
+.phone-frame:has(.cover-flow) .bottom-nav .nav-item.active svg {
+  opacity: 1;
+  filter: brightness(0) saturate(100%) invert(84%) sepia(68%) saturate(620%) hue-rotate(359deg)
+    brightness(103%) contrast(101%);
+}

@@ -60,6 +60,18 @@ export async function activeCover(token) {
   return request('/api/mobile/cover/active', { token });
 }
 
+export async function coverPlans(token) {
+  return request('/api/mobile/cover/plans', { token });
+}
+
+export async function purchaseCover(token, payload) {
+  return request('/api/mobile/cover/purchase', { method: 'POST', token, body: payload });
+}
+
+export async function purchaseCoverStatus(token, purchaseId) {
+  return request(`/api/mobile/cover/purchase/${purchaseId}/status`, { token });
+}
+
 export async function activeTrip(token) {
   return request('/api/mobile/active-trip', { token });
 }
@@ -98,9 +110,5 @@ export async function createClaim(token, payload) {
 
 export async function listClaims(token) {
   return request('/api/mobile/claims', { token });
-}
-
-export async function homeSummary(token) {
-  return request('/api/mobile/home-summary', { token });
 }
 

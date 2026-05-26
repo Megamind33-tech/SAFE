@@ -20,7 +20,15 @@ import {
   getSettingsConfigPayload,
   serializeAccountDetails,
 } from '../lib/settings.js';
-import { buildHomeSummary } from '../lib/homeSummary.js';
+import { listAvailableCoverPlans } from '../lib/coverPlans.js';
+import {
+  coverCapabilities,
+  getPurchaseStatus,
+  loadActiveCoverForUser,
+  loadPendingCoverForUser,
+  serializeActiveCover,
+  startCoverPurchase,
+} from '../lib/coverPurchase.js';
 import { requireAuth, type AuthedRequest } from '../middleware/requireAuth.js';
 import { env } from '../lib/env.js';
 import { requireRole } from '../middleware/requireRole.js';
@@ -31,16 +39,7 @@ mobileRouter.use(requireAuth);
 mobileRouter.use(requireRole(['passenger']));
 
 async function loadActiveCover(userId: string) {
-  const now = new Date();
-  return prisma.tripCover.findFirst({
-    where: { passengerUserId: userId, status: 'active', endsAt: { gt: now } },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      vehicle: { include: { route: true, driver: true } },
-      route: true,
-      payment: true,
-    },
-  });
+  return loadActiveCoverForUser(userId);
 }
 
 mobileRouter.get('/profile', async (req, res) => {
@@ -137,6 +136,53 @@ mobileRouter.post('/vehicle/verify', async (req, res) => {
   });
 });
 
+mobileRouter.get('/cover/plans', async (_req, res) => {
+  res.json({
+    plans: listAvailableCoverPlans(),
+    capabilities: coverCapabilities(),
+  });
+});
+
+mobileRouter.get('/cover/active', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const cover = await loadActiveCover(authed.user.id);
+  const pending = await loadPendingCoverForUser(authed.user.id);
+  res.json({
+    cover: serializeActiveCover(cover),
+    pendingCover: pending ? serializeActiveCover(pending) : null,
+    trip: serializeActiveTrip(cover),
+    capabilities: coverCapabilities(),
+  });
+});
+
+mobileRouter.post('/cover/purchase', async (req, res) => {
+  const authed = req as AuthedRequest;
+  const schema = z.object({
+    planId: z.string().min(1),
+    paymentMethodId: z.string().min(1),
+    vehicleId: z.string().min(1).optional(),
+    startMode: z.literal('after_payment_confirmation').optional(),
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+    return;
+  }
+
+  try {
+    const result = await startCoverPurchase(authed.user.id, parsed.data);
+    res.status(result.purchase.status === 'not_configured' ? 501 : 201).json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Purchase failed';
+    const statusCode = (err as Error & { statusCode?: number }).statusCode;
+    if (statusCode === 409) {
+      res.status(409).json({ error: message });
+      return;
+    }
+    res.status(400).json({ error: message });
+  }
+});
+
 mobileRouter.post('/cover/buy', async (req, res) => {
   const authed = req as AuthedRequest;
   const schema = z.object({
@@ -152,64 +198,63 @@ mobileRouter.post('/cover/buy', async (req, res) => {
     return;
   }
 
-  const durationMinutes = parsed.data.durationMinutes ?? 240;
-  const endsAt = new Date(Date.now() + durationMinutes * 60_000);
-  const amount = parsed.data.plan === 'basic' ? 3 : 5;
+  let paymentMethodId = parsed.data.paymentMethod;
+  if (paymentMethodId && !paymentMethodId.startsWith('c')) {
+    const type =
+      paymentMethodId === 'airtel'
+        ? 'airtel_money'
+        : paymentMethodId === 'mtn'
+          ? 'mtn_mobile_money'
+          : 'card';
+    const saved = await prisma.savedPaymentMethod.findFirst({
+      where: { userId: authed.user.id, type },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+    });
+    if (!saved) {
+      res.status(400).json({ error: 'Save a payment method before purchasing cover.' });
+      return;
+    }
+    paymentMethodId = saved.id;
+  }
 
-  const vehicle =
-    parsed.data.vehicleId
-      ? await prisma.vehicle.findUnique({ where: { id: parsed.data.vehicleId }, include: { route: true } })
-      : parsed.data.plateNumber
-        ? await prisma.vehicle.findUnique({ where: { plateNumber: parsed.data.plateNumber }, include: { route: true } })
-        : null;
+  if (!paymentMethodId) {
+    res.status(400).json({ error: 'paymentMethodId is required' });
+    return;
+  }
 
-  const cover = await prisma.tripCover.create({
-    data: {
-      passengerUserId: authed.user.id,
-      plan: parsed.data.plan,
-      amount,
-      currency: 'ZMW',
-      endsAt,
-      vehicleId: vehicle?.id ?? null,
-      routeId: vehicle?.routeId ?? null,
-      payment: {
-        create: {
-          amount,
-          currency: 'ZMW',
-          method: parsed.data.paymentMethod ?? 'mobile_money',
-          status: 'pending',
-        },
-      },
-    },
-    include: { payment: true, vehicle: { include: { route: true } }, route: true },
-  });
+  let vehicleId = parsed.data.vehicleId;
+  if (!vehicleId && parsed.data.plateNumber) {
+    const vehicle = await prisma.vehicle.findUnique({ where: { plateNumber: parsed.data.plateNumber } });
+    vehicleId = vehicle?.id;
+  }
 
-  res.json({
-    cover: {
-      id: cover.id,
-      plan: cover.plan,
-      status: cover.status,
-      amount: cover.amount,
-      currency: cover.currency,
-      startedAt: cover.startedAt,
-      endsAt: cover.endsAt,
-      route: cover.route
-        ? { origin: cover.route.origin, destination: cover.route.destination }
-        : cover.vehicle?.route
-          ? { origin: cover.vehicle.route.origin, destination: cover.vehicle.route.destination }
-          : null,
-      vehicle: cover.vehicle ? { plateNumber: cover.vehicle.plateNumber, busId: cover.vehicle.busId } : null,
-    },
-    payment: cover.payment
-      ? { id: cover.payment.id, status: cover.payment.status, method: cover.payment.method, amount: cover.payment.amount }
-      : null,
-  });
+  try {
+    const result = await startCoverPurchase(authed.user.id, {
+      planId: parsed.data.plan,
+      paymentMethodId,
+      vehicleId,
+      startMode: 'after_payment_confirmation',
+    });
+    res.status(result.purchase.status === 'not_configured' ? 501 : 201).json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Purchase failed';
+    const statusCode = (err as Error & { statusCode?: number }).statusCode;
+    if (statusCode === 409) {
+      res.status(409).json({ error: message });
+      return;
+    }
+    res.status(400).json({ error: message });
+  }
 });
 
-mobileRouter.get('/cover/active', async (req, res) => {
+mobileRouter.get('/cover/purchase/:purchaseId/status', async (req, res) => {
   const authed = req as AuthedRequest;
-  const cover = await loadActiveCover(authed.user.id);
-  res.json({ cover, trip: serializeActiveTrip(cover) });
+  const status = await getPurchaseStatus(authed.user.id, req.params.purchaseId);
+  if (!status) {
+    res.status(404).json({ error: 'Purchase not found' });
+    return;
+  }
+  res.json(status);
 });
 
 mobileRouter.get('/trips/:tripId/route', async (req, res) => {
@@ -311,12 +356,6 @@ mobileRouter.get('/claims', async (req, res) => {
     take: 50,
   });
   res.json({ claims });
-});
-
-mobileRouter.get('/home-summary', async (req, res) => {
-  const authed = req as AuthedRequest;
-  const summary = await buildHomeSummary(authed.user.id);
-  res.json({ summary });
 });
 
 mobileRouter.get('/payment-methods', async (req, res) => {

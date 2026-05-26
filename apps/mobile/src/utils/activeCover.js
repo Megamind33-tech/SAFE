@@ -2,6 +2,7 @@ import { formatPlanLabel } from '../hooks/useActiveTrip.js';
 
 export function isActiveCover(cover) {
   if (!cover) return false;
+  if (cover.paymentStatus === 'pending' || cover.status === 'pending') return false;
   if (cover.status && cover.status !== 'active') return false;
   if (cover.endsAt && new Date(cover.endsAt) <= new Date()) return false;
   return true;
