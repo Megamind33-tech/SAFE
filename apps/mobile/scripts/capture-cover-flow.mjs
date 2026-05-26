@@ -56,6 +56,7 @@ const QA_ENV_DEFAULT = {
   SAFE_PAYMENT_SIMULATE_SUCCESS: 'false',
   SAFE_CARD_PAYMENTS_ENABLED: 'false',
   SAFE_ALLOW_COVER_STACKING: 'false',
+  SAFE_CLAIMS_UPLOAD_ENABLED: 'false',
 };
 
 function assertLockedScreensUnchanged() {
@@ -119,6 +120,9 @@ async function waitForBackend(maxMs = 45000) {
 
 function killBackend() {
   try {
+    execSync('tmux -f /exec-daemon/tmux.portal.conf send-keys -t "safe-backend-dev:0.0" C-c 2>/dev/null || true', {
+      stdio: 'ignore',
+    });
     execSync('pkill -f "tsx watch src/index.ts" 2>/dev/null || true', { stdio: 'ignore' });
     execSync('fuser -k 8080/tcp 2>/dev/null || true', { stdio: 'ignore' });
   } catch {
@@ -126,12 +130,27 @@ function killBackend() {
   }
 }
 
+async function ensurePortFree() {
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    try {
+      const res = await fetch(`${API_BASE}/health`);
+      if (!res.ok) return;
+      killBackend();
+      await new Promise((r) => setTimeout(r, 1500));
+    } catch {
+      return;
+    }
+  }
+  throw new Error('Port 8080 still in use after backend shutdown');
+}
+
 let backendProc = null;
 
 async function restartBackend(envOverrides = {}) {
   setBackendEnv({ ...QA_ENV_DEFAULT, ...envOverrides });
   killBackend();
-  await new Promise((r) => setTimeout(r, 1500));
+  await ensurePortFree();
+  await new Promise((r) => setTimeout(r, 1000));
   if (backendProc) {
     try {
       backendProc.kill();
@@ -181,6 +200,20 @@ async function apiLogin(phone, password) {
     body: { identifier: phone, password },
   });
   return data.token;
+}
+
+async function apiLoginResilient(phone, password) {
+  let lastErr;
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    try {
+      return await apiLogin(phone, password);
+    } catch (err) {
+      lastErr = err;
+      await waitForBackend(15000);
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+  }
+  throw lastErr;
 }
 
 function qaPayment(command, arg) {
@@ -372,16 +405,16 @@ async function main() {
     qaPayment('clear-covers', phone);
   }
 
-  const tokenActive = await apiLogin(PHONE_ACTIVE, PASS);
+  const tokenActive = await apiLoginResilient(PHONE_ACTIVE, PASS);
   const purchaseActive = await startPurchaseViaApi(tokenActive);
   if (purchaseActive.purchase?.id) qaPayment('succeed', purchaseActive.purchase.id);
 
   for (const phone of [PHONE_BUY, PHONE_PENDING, PHONE_FAILED, PHONE_NOT_CFG]) {
-    await addPaymentMethod(await apiLogin(phone, PASS));
+    await addPaymentMethod(await apiLoginResilient(phone, PASS));
   }
   qaPayment('seed-expired', PHONE_EXPIRED);
 
-  const tokenSync = await apiLogin(PHONE_SYNC, PASS);
+  const tokenSync = await apiLoginResilient(PHONE_SYNC, PASS);
   const { data: syncPlans } = await apiRequest('/api/mobile/cover/plans', { token: tokenSync });
   const { data: syncActive } = await apiRequest('/api/mobile/cover/active', { token: tokenSync });
   const cachedBundle = {

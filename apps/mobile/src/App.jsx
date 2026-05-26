@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -60,6 +60,8 @@ import TrustedContactsScreen from './screens/TrustedContactsScreen.jsx';
 import NotificationsScreen from './screens/NotificationsScreen.jsx';
 import HelpSafetyScreen from './screens/HelpSafetyScreen.jsx';
 import SettingsScreen from './screens/SettingsScreen.jsx';
+import QRScannerScreen from './screens/QRScannerScreen.jsx';
+import VehicleVerifiedScreen from './screens/VehicleVerifiedScreen.jsx';
 import PaymentBrandIcon from './components/PaymentBrandIcon.jsx';
 import { getPaymentMethods, resolveDefaultCheckoutId } from './services/paymentMethods.js';
 import {
@@ -77,7 +79,17 @@ import {
   readQaOpenClaimFlowFlag,
   readQaSubmittedClaimId,
 } from './utils/claimsQa.js';
-import { clearToken, loadToken, login, me, registerPassenger, saveToken, activeCover as fetchActiveCover, coverHistory, verifyVehicle } from './api/safeApi.js';
+import { clearToken, loadToken, login, me, registerPassenger, saveToken, activeCover as fetchActiveCover, coverHistory } from './api/safeApi.js';
+import {
+  clearQrQaMode,
+  clearQrQaResult,
+  isQrQaCapture,
+  readQrQaMode,
+  readQrQaCode,
+  readQrQaResult,
+} from './utils/qrQa.js';
+import { extractQrCodeFromLocation, replaceLocationAfterQrLaunch } from './utils/qrLaunch.js';
+import { verifyQrCode } from './services/qr.js';
 
 const bgImage = zambiaScene;
 
@@ -128,6 +140,9 @@ function App() {
   // New Dynamic States
   const [activeCoverState, setActiveCoverState] = useState(null);
   const [scannedVehicle, setScannedVehicle] = useState(null);
+  const [qrResult, setQrResult] = useState(null);
+  const [pendingQrCode, setPendingQrCode] = useState(null);
+  const consumedQrLaunchRef = useRef(false);
   const [coversHistory, setCoversHistory] = useState([]);
   const [coverFlow, setCoverFlow] = useState({
     selectedPlan: null,
@@ -135,10 +150,6 @@ function App() {
     purchaseResult: null,
   });
   
-  // Scanner Modal States
-  const [showScannerModal, setShowScannerModal] = useState(false);
-  const [scannerType, setScannerType] = useState('qr'); // 'qr' or 'plate'
-  const [plateInput, setPlateInput] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -220,11 +231,109 @@ function App() {
   }, [session.ready, session.token]);
 
   useEffect(() => {
+    const code = extractQrCodeFromLocation();
+    if (code) setPendingQrCode(code);
+  }, []);
+
+  useEffect(() => {
+    if (!session.ready || !pendingQrCode) return;
+    if (!session.token) {
+      if (screen === 'splash') setScreen('login');
+      return;
+    }
+  }, [session.ready, session.token, pendingQrCode, screen]);
+
+  useEffect(() => {
+    if (!session.ready || !pendingQrCode) return;
+    if (isQrQaCapture && readQrQaMode()) return;
+    if (!session.token) return;
+    if (consumedQrLaunchRef.current) return;
+
+    consumedQrLaunchRef.current = true;
+    let cancelled = false;
+    verifyQrCode(session.token, pendingQrCode)
+      .then((result) => {
+        if (cancelled) return;
+        setQrResult(result);
+        setPendingQrCode(null);
+        replaceLocationAfterQrLaunch();
+        if (result.status === 'verified') {
+          setScreen('vehicleVerified');
+        } else {
+          setQrResult(result);
+          setScreen('qrScanner');
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPendingQrCode(null);
+        replaceLocationAfterQrLaunch();
+        setQrResult({ status: 'invalid', qrType: 'vehicle', reason: 'invalid' });
+        setScreen('qrScanner');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session.ready, session.token, pendingQrCode]);
+
+  useEffect(() => {
     if (!session.ready || !session.token) return;
-    const hash = typeof window !== 'undefined' ? window.location.hash.replace(/^#/, '') : '';
-    if (hash === 'liveTrip') setScreen('liveTrip');
-    else if (hash === 'viewPolicy') setScreen('viewPolicy');
-  }, [session.ready, session.token]);
+
+    const applyHashRoute = () => {
+      if (pendingQrCode && isQrQaCapture && readQrQaMode()) return;
+      const hash = typeof window !== 'undefined' ? window.location.hash.replace(/^#/, '') : '';
+      const hashBase = hash.split('?')[0];
+      if (hashBase.startsWith('qr/')) {
+        if (consumedQrLaunchRef.current) return;
+        const code = extractQrCodeFromLocation();
+        if (code) setPendingQrCode(code);
+        return;
+      }
+      if (hashBase === 'liveTrip') setScreen('liveTrip');
+      else if (hashBase === 'viewPolicy') setScreen('viewPolicy');
+      else if (hashBase === 'qrScanner') setScreen('qrScanner');
+      else if (hashBase === 'vehicleVerified') {
+        const qaResult = readQrQaResult();
+        if (qaResult) setQrResult(qaResult);
+        setScreen('vehicleVerified');
+      } else if (hashBase === 'coverPlansQr') {
+        const qaResult = readQrQaResult();
+        if (qaResult) {
+          import('./services/qr.js').then(({ toCoverVehicleContext }) => {
+            setScannedVehicle(toCoverVehicleContext(qaResult));
+            setScreen('coverPlans');
+          });
+        }
+      }
+    };
+
+    applyHashRoute();
+    window.addEventListener('hashchange', applyHashRoute);
+    return () => window.removeEventListener('hashchange', applyHashRoute);
+  }, [session.ready, session.token, pendingQrCode]);
+
+  useEffect(() => {
+    if (!session.ready || !isQrQaCapture) return;
+    const mode = readQrQaMode();
+    if (mode === 'permission') setScreen('qrScanner');
+    if (mode === 'manual') setScreen('qrScanner');
+    if (mode === 'verified-no-cover' || mode === 'verified-active-cover' || mode === 'start-trip-ready') {
+      const qaResult = readQrQaResult();
+      if (qaResult) setQrResult(qaResult);
+      setScreen('vehicleVerified');
+    }
+    if (mode === 'buy-cover-prefilled') {
+      const qaResult = readQrQaResult();
+      if (qaResult) {
+        setQrResult(qaResult);
+        import('./services/qr.js').then(({ toCoverVehicleContext }) => {
+          setScannedVehicle(toCoverVehicleContext(qaResult));
+          setScreen('coverPlans');
+        });
+      }
+    }
+  }, [session.ready]);
 
   useEffect(() => {
     if (session.token) {
@@ -304,6 +413,7 @@ function App() {
     setScreen('viewPolicy');
   };
   const openLiveTrip = () => setScreen('liveTrip');
+  const openQrScanner = () => setScreen('qrScanner');
   const openClaimFlow = (opts = {}) => {
     setClaimFlowOpts(typeof opts === 'object' ? opts : {});
     setScreen('claimFlow');
@@ -349,11 +459,12 @@ function App() {
     countdown,
     scannedVehicle,
     setScannedVehicle,
+    qrResult,
+    setQrResult,
     coversHistory,
     selectedHistoryCover,
     refreshPassengerData,
-    setShowScannerModal,
-    setScannerType,
+    openQrScanner,
   };
 
   return (
@@ -494,158 +605,39 @@ function App() {
         {screen === 'settings' && <SettingsScreen {...screenProps} />}
         {screen === 'notifications' && <NotificationsScreen {...screenProps} />}
         {screen === 'helpSafety' && <HelpSafetyScreen {...screenProps} />}
+        {screen === 'qrScanner' && (
+          <QRScannerScreen
+            key={`qr-${readQrQaMode() || 'scan'}-${readQrQaCode() || 'none'}-${qrResult?.status || 'none'}`}
+            session={session}
+            setScreen={setScreen}
+            initialMode={readQrQaMode() === 'manual' ? 'manual' : 'scan'}
+            initialCode={readQrQaCode()}
+            initialInvalidState={
+              qrResult && qrResult.status !== 'verified' && !pendingQrCode ? qrResult : null
+            }
+            qaForcePermission={readQrQaMode() === 'permission'}
+            qaForceDenied={readQrQaMode() === 'denied'}
+            onVerified={(result) => {
+              setQrResult(result);
+              if (isQrQaCapture) {
+                import('./utils/qrQa.js').then(({ setQrQaResult }) => setQrQaResult(result));
+              }
+            }}
+          />
+        )}
+        {screen === 'vehicleVerified' && (
+          <VehicleVerifiedScreen
+            session={session}
+            setScreen={setScreen}
+            qrResult={qrResult}
+            setScannedVehicle={setScannedVehicle}
+            openLiveTrip={openLiveTrip}
+            refreshPassengerData={refreshPassengerData}
+          />
+        )}
         {screen === 'chat' && <ChatScreen {...screenProps} />}
         {screen === 'offline' && <OfflineScreen {...screenProps} />}
         {showBottomNav && <BottomNav current={navState(screen)} onHome={goHome} onCover={goCover} onClaims={goClaims} onProfile={goProfile} />}
-        
-        {/* Minibus Verification Scanner Modal Overlay */}
-        {showScannerModal && (
-          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md z-[60] flex flex-col justify-end">
-            <div className="bg-slate-900 border-t border-slate-800 rounded-t-[32px] p-6 pb-8 space-y-6 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-              {/* Header */}
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-white font-black text-lg tracking-tight">
-                    {scannerType === 'qr' ? 'Verify Minibus QR' : 'Enter Minibus Plate'}
-                  </h2>
-                  <p className="text-slate-400 text-[11px] font-semibold mt-0.5">
-                    {scannerType === 'qr' ? 'Scan the code near the passenger door' : 'Input the vehicle registration number'}
-                  </p>
-                </div>
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    setShowScannerModal(false);
-                    setError('');
-                  }}
-                  className="h-8 w-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Main Content */}
-              <div className="space-y-4">
-                {scannerType === 'qr' ? (
-                  <div className="space-y-4">
-                    {/* Visual Scan Area */}
-                    <div className="relative h-44 rounded-2xl border border-emerald-500/30 bg-emerald-950/10 overflow-hidden flex flex-col items-center justify-center">
-                      <div className="absolute inset-x-0 top-0 h-[2px] bg-emerald-400 shadow-[0_0_12px_#34d399] animate-scan" />
-                      
-                      <div className="relative p-4 rounded-2xl border border-dashed border-emerald-400/40 animate-pulse">
-                        <ShieldCheck size={38} className="text-emerald-400" />
-                      </div>
-                      <span className="text-[9px] font-black tracking-widest text-emerald-400 mt-3 uppercase animate-pulse">
-                        Positioning sensor active
-                      </span>
-                    </div>
-
-                    {/* Detected Vehicles List */}
-                    <div className="space-y-2">
-                      <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase block">
-                        Detected Nearby Vehicles
-                      </span>
-                      <button
-                        type="button"
-                        className="w-full flex items-center justify-between p-3.5 bg-slate-800/60 border border-slate-700 hover:border-emerald-500/50 rounded-2xl transition-all text-left"
-                        onClick={async () => {
-                          setError('');
-                          try {
-                            const data = await verifyVehicle(session.token, { qrCode: 'SAFE-LSK-2481' });
-                            setScannedVehicle(data);
-                            setScreen('coverPlans');
-                            setShowScannerModal(false);
-                          } catch (e) {
-                            setError(e.message || 'Failed to verify vehicle');
-                          }
-                        }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="h-10 w-10 bg-emerald-500/10 text-emerald-400 rounded-xl flex items-center justify-center">
-                            <Bus size={20} />
-                          </span>
-                          <div>
-                            <strong className="block text-white text-xs font-black">SAFE-LSK-2481</strong>
-                            <small className="block text-slate-400 text-[10px] font-bold">Matero ➔ Town Route</small>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-black text-emerald-400 bg-emerald-950/50 border border-emerald-500/20 px-3 py-1 rounded-full uppercase">
-                          Select
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase block">
-                        Zambian Plate Number
-                      </span>
-                      <div className="relative flex items-center">
-                        <span className="absolute left-4 text-slate-400">
-                          <Bus size={18} />
-                        </span>
-                        <input
-                          type="text"
-                          placeholder="e.g. LSK 2481"
-                          value={plateInput}
-                          onChange={(e) => setPlateInput(e.target.value.toUpperCase())}
-                          className="w-full bg-slate-800 border border-slate-700 text-white rounded-2xl py-3.5 pl-12 pr-4 text-xs font-semibold focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 tracking-wider"
-                        />
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setError('');
-                        if (!plateInput.trim()) {
-                          setError('Please input a minibus plate number.');
-                          return;
-                        }
-                        setLoading(true);
-                        try {
-                          const data = await verifyVehicle(session.token, { plateNumber: plateInput.trim() });
-                          setScannedVehicle(data);
-                          setScreen('coverPlans');
-                          setShowScannerModal(false);
-                        } catch (e) {
-                          setError(e.message || 'Failed to verify vehicle');
-                        } finally {
-                          setLoading(false);
-                        }
-                      }}
-                      className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs rounded-2xl transition-all shadow-[0_4px_16px_rgba(16,185,129,0.2)] active:scale-[0.98]"
-                      disabled={loading}
-                    >
-                      {loading ? 'Verifying...' : 'Verify & Continue'}
-                    </button>
-                  </div>
-                )}
-
-                {error && (
-                  <p className="text-[10px] font-bold text-red-400 bg-red-950/30 border border-red-500/20 px-3 py-2 rounded-xl text-center">
-                    ⚠️ {error}
-                  </p>
-                )}
-              </div>
-
-              {/* Footer Toggle */}
-              <div className="border-t border-slate-800 pt-4 text-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setScannerType(scannerType === 'qr' ? 'plate' : 'qr');
-                    setError('');
-                  }}
-                  className="text-xs font-black text-emerald-400 hover:underline tracking-wide"
-                >
-                  {scannerType === 'qr' ? 'Enter Minibus Plate Number' : 'Use QR Scanner Sim'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -655,6 +647,7 @@ function navState(screen) {
   if (screen === 'home') return 'home';
   if (['choose', 'payment', 'active', 'viewPolicy', 'coverPlans', 'coverReview', 'coverPay', 'coverStatus'].includes(screen)) return 'cover';
   if (['claim', 'claimFlow', 'claimDetail'].includes(screen)) return 'claims';
+  if (['qrScanner', 'vehicleVerified'].includes(screen)) return 'profile';
   if (['history', 'coverHistoryDetail', 'profile', 'profilePayments', 'trustedContacts', 'settings', 'notifications', 'helpSafety'].includes(screen)) {
     return 'profile';
   }

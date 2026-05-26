@@ -61,6 +61,8 @@ export default function CoverPaymentScreen({
         planId: selectedPlan.id,
         paymentMethodId: selectedPaymentMethodId,
         vehicleId: scannedVehicle?.vehicle?.id,
+        routeId: scannedVehicle?.route?.id,
+        qrCodeId: scannedVehicle?.qrCodeId,
         startMode: 'after_payment_confirmation',
       });
       onPurchaseStarted(result);

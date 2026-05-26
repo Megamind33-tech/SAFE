@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
-import { requireAuth } from '../middleware/requireAuth.js';
+import { requireAuth, getAuthed } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { hashPassword } from '../lib/auth.js';
+import { getOrCreateVehicleQr } from '../lib/qrCodes.js';
+import { generateQrSvg, serializeQrRecord } from '../lib/qrImage.js';
 
 export const dashboardRouter = Router();
 
@@ -41,6 +43,39 @@ dashboardRouter.get('/vehicles', async (_req, res) => {
     include: { route: true, transportPartner: true, driver: true },
   });
   res.json({ vehicles });
+});
+
+dashboardRouter.get('/vehicles/:vehicleId/qr', async (req, res) => {
+  const vehicleId = String(req.params.vehicleId);
+  const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
+  if (!vehicle) {
+    res.status(404).json({ error: 'Vehicle not found' });
+    return;
+  }
+
+  const qr = await getOrCreateVehicleQr(vehicleId);
+  const svg = await generateQrSvg(qr.code);
+  res.json({
+    qr: serializeQrRecord(qr),
+    qrImageSvg: svg,
+  });
+});
+
+dashboardRouter.post('/vehicles/:vehicleId/qr', requireRole(['admin', 'super_admin', 'transport_partner']), async (req, res) => {
+  const authed = getAuthed(req);
+  const vehicleId = String(req.params.vehicleId);
+  const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
+  if (!vehicle) {
+    res.status(404).json({ error: 'Vehicle not found' });
+    return;
+  }
+
+  const qr = await getOrCreateVehicleQr(vehicleId, authed.user.id);
+  const svg = await generateQrSvg(qr.code);
+  res.status(201).json({
+    qr: serializeQrRecord(qr),
+    qrImageSvg: svg,
+  });
 });
 
 dashboardRouter.patch('/vehicles/:id/location', requireRole(['admin', 'super_admin', 'transport_partner']), async (req, res) => {

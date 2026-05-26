@@ -2,6 +2,7 @@ import {
   Bell,
   ChevronRight,
   FileText,
+  QrCode,
   Settings,
   ShieldCheck,
   Users,
@@ -49,6 +50,13 @@ function ProfileMenuIcon({ Icon }) {
 }
 
 const MENU_ITEMS = [
+  {
+    key: 'scanQr',
+    title: 'Scan vehicle QR',
+    subtitle: 'Verify your minibus before buying cover',
+    icon: QrCode,
+    screen: 'qrScanner',
+  },
   {
     key: 'history',
     title: 'Cover history',

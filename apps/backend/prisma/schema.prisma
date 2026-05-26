@@ -66,6 +66,24 @@ enum PayoutStatus {
   failed
 }
 
+enum QrCodeType {
+  vehicle
+}
+
+enum QrCodeStatus {
+  active
+  disabled
+  expired
+}
+
+enum QrScanResult {
+  verified
+  invalid
+  expired
+  disabled
+  mismatch
+}
+
 model User {
   id           String   @id @default(cuid())
   createdAt    DateTime @default(now())
@@ -211,6 +229,7 @@ model TransportPartner {
 
   drivers   DriverProfile[]
   vehicles  Vehicle[]
+  qrCodes   QRCode[]
 }
 
 model InsurancePartner {
@@ -422,10 +441,36 @@ model QRCode {
   updatedAt DateTime @updatedAt
 
   code      String   @unique
-  isActive  Boolean  @default(true)
-
+  type      QrCodeType   @default(vehicle)
+  targetId  String?
   vehicleId String?
   vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
+  partnerId String?
+  partner   TransportPartner? @relation(fields: [partnerId], references: [id])
+  status    QrCodeStatus @default(active)
+  isActive  Boolean  @default(true)
+  createdBy String?
+  expiresAt DateTime?
+  lastScannedAt DateTime?
+
+  scanLogs  QrScanLog[]
+}
+
+model QrScanLog {
+  id        String   @id @default(cuid())
+  qrCodeId  String?
+  qrCode    QRCode?  @relation(fields: [qrCodeId], references: [id], onDelete: SetNull)
+  userId    String?
+  result    QrScanResult
+  scannedAt DateTime @default(now())
+  userAgent String?
+  approximateLat Float?
+  approximateLng Float?
+  metadataJson String?
+
+  @@index([qrCodeId])
+  @@index([userId])
+  @@index([scannedAt])
 }
 
 model FraudFlag {

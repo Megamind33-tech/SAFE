@@ -15,10 +15,12 @@
     "notifications:capture": "node scripts/capture-notifications.mjs",
     "settings:capture": "node scripts/capture-settings.mjs",
     "payment-methods:capture": "node scripts/capture-payment-methods.mjs",
-    "trusted-contacts:capture": "node scripts/capture-trusted-contacts.mjs"
+    "trusted-contacts:capture": "node scripts/capture-trusted-contacts.mjs",
+    "qr:capture": "VITE_QR_QA_CAPTURE=true node scripts/capture-qr.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
+    "html5-qrcode": "^2.3.8",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",

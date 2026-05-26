@@ -52,6 +52,14 @@ export async function verifyVehicle(token, payload) {
   return request('/api/mobile/vehicle/verify', { method: 'POST', token, body: payload });
 }
 
+export async function verifyQrScan(token, payload) {
+  return request('/api/mobile/qr/scan', { method: 'POST', token, body: payload });
+}
+
+export async function verifyQrCode(token, code) {
+  return request(`/api/mobile/qr/verify/${encodeURIComponent(code)}`, { token });
+}
+
 export async function buyCover(token, payload) {
   return request('/api/mobile/cover/buy', { method: 'POST', token, body: payload });
 }

@@ -46,4 +46,5 @@ export const env = {
   claimWindowHours: Number.parseInt(process.env.SAFE_CLAIM_WINDOW_HOURS ?? '168', 10),
   notificationSmsEnabled: process.env.SAFE_NOTIFICATION_SMS_ENABLED === 'true',
   notificationEmailEnabled: process.env.SAFE_NOTIFICATION_EMAIL_ENABLED === 'true',
+  qrPublicBaseUrl: process.env.SAFE_QR_PUBLIC_BASE_URL?.trim() || 'https://safe.co.zm',
 };

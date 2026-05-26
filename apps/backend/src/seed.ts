@@ -23,6 +23,12 @@ async function main() {
     });
   }
 
+  const partner = await prisma.transportPartner.upsert({
+    where: { id: 'partner-lusaka-coop' },
+    create: { id: 'partner-lusaka-coop', name: 'Lusaka Minibus Co-op' },
+    update: { name: 'Lusaka Minibus Co-op' },
+  });
+
   const route = await prisma.route.upsert({
     where: { id: 'route-matero-town' },
     create: {
@@ -50,6 +56,7 @@ async function main() {
       plateNumber: 'LSK 2481',
       busId: 'LSK-2481',
       routeId: route.id,
+      transportPartnerId: partner.id,
       lastLat: -15.395,
       lastLng: 28.281,
       lastHeading: 185,
@@ -58,6 +65,7 @@ async function main() {
     update: {
       busId: 'LSK-2481',
       routeId: route.id,
+      transportPartnerId: partner.id,
       lastLat: -15.395,
       lastLng: 28.281,
       lastHeading: 185,
@@ -66,9 +74,43 @@ async function main() {
   });
 
   await prisma.qRCode.upsert({
+    where: { code: 'SAFE-LSK-8KJ29X' },
+    create: {
+      code: 'SAFE-LSK-8KJ29X',
+      type: 'vehicle',
+      targetId: vehicle.id,
+      vehicleId: vehicle.id,
+      partnerId: partner.id,
+      status: 'active',
+      isActive: true,
+    },
+    update: {
+      vehicleId: vehicle.id,
+      partnerId: partner.id,
+      targetId: vehicle.id,
+      status: 'active',
+      isActive: true,
+    },
+  });
+
+  await prisma.qRCode.upsert({
     where: { code: 'SAFE-LSK-2481' },
-    create: { code: 'SAFE-LSK-2481', vehicleId: vehicle.id, isActive: true },
-    update: { vehicleId: vehicle.id, isActive: true },
+    create: {
+      code: 'SAFE-LSK-2481',
+      type: 'vehicle',
+      targetId: vehicle.id,
+      vehicleId: vehicle.id,
+      partnerId: partner.id,
+      status: 'active',
+      isActive: true,
+    },
+    update: {
+      vehicleId: vehicle.id,
+      partnerId: partner.id,
+      targetId: vehicle.id,
+      status: 'active',
+      isActive: true,
+    },
   });
 }
 
