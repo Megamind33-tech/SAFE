@@ -39,6 +39,7 @@ import {
 import { getAuthed, requireAuth, type AuthedRequest } from '../middleware/requireAuth.js';
 import { env } from '../lib/env.js';
 import { requireRole } from '../middleware/requireRole.js';
+import { buildHomeSummary } from '../lib/homeSummary.js';
 import {
   appendTimeline,
   assertCoverEligibleForUser,
@@ -662,6 +663,13 @@ mobileRouter.post('/claims/create', async (req, res) => {
   res.json({ claim: serializeClaimListItem(claim) });
 });
 
+
+
+mobileRouter.get('/home-summary', async (req, res) => {
+  const authed = getAuthed(req);
+  const summary = await buildHomeSummary(authed.user.id);
+  res.json({ summary });
+});
 
 mobileRouter.get('/payment-methods', async (req, res) => {
   const authed = getAuthed(req);

@@ -629,3 +629,22 @@ Do not change spacing, typography, card design, filters, or navigation unless ex
 - History items must be built from real covers and claims data — no fake policy IDs.
 - Effective status (active / expired / etc.) must follow backend dates and payment state.
 - Detail view must reflect the selected cover from history navigation.
+
+### Mobile QA capture (stabilization)
+
+Run from repo root with **backend** (`8080`) and **mobile** (`5173`) dev servers up. Backend `.env` should include payment gateway flags for cover capture (see `apps/backend/.env.example`).
+
+| Script | Command |
+|--------|---------|
+| Home | `npm --workspace apps/mobile run home:capture` |
+| Cover | `npm --workspace apps/mobile run cover:capture` |
+| Claims | `npm --workspace apps/mobile run claims:capture` |
+| Help & Safety | `npm --workspace apps/mobile run help:capture` |
+| Notifications | `npm --workspace apps/mobile run notifications:capture` |
+| Live Trip | `npm --workspace apps/mobile run live-trip:capture` |
+| Settings | `npm --workspace apps/mobile run settings:capture` |
+| Payment Methods | `npm --workspace apps/mobile run payment-methods:capture` |
+| Trusted Contacts | `npm --workspace apps/mobile run trusted-contacts:capture` |
+| All (sequential) | `npm run qa:mobile` |
+
+Backend seed helpers: `npx tsx apps/backend/scripts/qaHomeStates.mjs`, `qaClaimsSeed.mjs`, `qaCoverPayment.mjs`, `qaTripStates.mjs`.

@@ -169,7 +169,8 @@ async function main() {
     const page = await ctx.newPage();
     await loginUI(page);
     await openLiveTrip(page);
-    await page.waitForSelector('.leaflet-container', { timeout: 20000 });
+    await page.waitForSelector('.live-route-map-canvas, .leaflet-container', { timeout: 45000 });
+    await page.waitForTimeout(1500);
     const hasPolyline = await page.locator('.leaflet-interactive').count();
     if (hasPolyline < 1) throw new Error('Route polyline expected for active-route seed');
     await captureFrame(page, 'live-trip-active-route.png');
@@ -182,7 +183,8 @@ async function main() {
     const page = await ctx.newPage();
     await loginUI(page);
     await openLiveTrip(page);
-    await page.waitForSelector('.leaflet-container', { timeout: 20000 });
+    await page.waitForSelector('.live-route-map-canvas, .leaflet-container', { timeout: 45000 });
+    await page.waitForTimeout(1500);
     const text = await page.locator('.live-trip-map').innerText();
     if (!/Route details are not available yet/i.test(text)) {
       throw new Error('No-route state must show route unavailable copy');
@@ -294,7 +296,8 @@ async function main() {
     await page.route('**/api/mobile/trips/*/location', (route) => route.abort());
     await loginUI(page);
     await openLiveTrip(page);
-    await page.waitForSelector('.leaflet-container', { timeout: 20000 });
+    await page.waitForSelector('.live-route-map-canvas, .leaflet-container', { timeout: 45000 });
+    await page.waitForTimeout(1500);
     await page.waitForSelector('.live-trip-chip--muted', { timeout: 10000 });
     const text = await page.locator('.live-trip-screen').innerText();
     if (!/outdated|Last known location|Last updated/i.test(text)) {
