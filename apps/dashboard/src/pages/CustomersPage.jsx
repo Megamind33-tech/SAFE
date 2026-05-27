@@ -67,32 +67,21 @@ export default function CustomersPage() {
   const selected = useMemo(() => {
     const d = drivers.find((x) => x.id === selectedId);
     if (!d) return drivers[0] || null;
-    
-    // Deterministic stats calculated from the record to present rich, consistent metrics
-    const codeSum = (d.fullName || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const rating = (4.7 + (codeSum % 3) * 0.1).toFixed(2);
-    const safety = 85 + (codeSum % 16);
-    const hoursVal = 32 + (codeSum % 15);
-    const hours = `${hoursVal}.0 hrs`;
-    const earnings = `K${(hoursVal * 45).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-    const role = d.licenseNumber ? 'Class A Commercial License' : 'Commercial License';
-    const compliance = d.licenseNumber ? 'Verified' : 'Pending Audit';
-    const status = d.user?.isActive ? 'Active Now' : 'Offline';
+
     const vehicle = d.vehicles?.[0];
     const plate = vehicle?.plateNumber || 'None';
     const route = vehicle?.route ? `${vehicle.route.origin} to ${vehicle.route.destination}` : 'Unassigned';
+    const compliance = d.licenseNumber ? 'License on file' : 'License not recorded';
+    const status = d.user?.isActive ? 'Active' : 'Offline';
 
     return {
       ...d,
-      rating,
-      safety,
-      hours,
-      earnings,
-      role,
+      role: d.licenseNumber ? 'Licensed driver' : 'Driver',
       compliance,
       status,
       plate,
       route,
+      vehicleCount: d.vehicles?.length ?? 0,
     };
   }, [drivers, selectedId]);
 
@@ -197,8 +186,8 @@ export default function CustomersPage() {
                 <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
                   <tr className="text-[11px] font-black uppercase tracking-widest text-slate-500">
                     <th className="py-3.5 px-5">Driver</th>
-                    <th className="py-3.5 px-5">License ID</th>
-                    <th className="py-3.5 px-5">Safety</th>
+                    <th className="py-3.5 px-5">Phone</th>
+                    <th className="py-3.5 px-5">Vehicles</th>
                     <th className="py-3.5 px-5">Status</th>
                     <th className="py-3.5 px-5 text-right">Compliance</th>
                   </tr>
@@ -206,13 +195,8 @@ export default function CustomersPage() {
                 <tbody className="divide-y divide-slate-200 text-sm">
                   {drivers.map((d) => {
                     const active = d.id === selectedId;
-                    
-                    // Stats calculated for matching display
-                    const codeSum = (d.fullName || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                    const rating = (4.7 + (codeSum % 3) * 0.1).toFixed(2);
-                    const safety = 85 + (codeSum % 16);
-                    const compliance = d.licenseNumber ? 'Verified' : 'Pending Audit';
-                    const status = d.user?.isActive ? 'Active Now' : 'Offline';
+                    const compliance = d.licenseNumber ? 'License on file' : 'License not recorded';
+                    const status = d.user?.isActive ? 'Active' : 'Offline';
 
                     return (
                       <tr
@@ -230,29 +214,23 @@ export default function CustomersPage() {
                             </div>
                             <div>
                               <div className="text-sm font-black text-safe-ink leading-tight">{d.fullName}</div>
-                              <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-black text-slate-400">
-                                <Star size={12} className="text-amber-500 fill-amber-500" />
-                                {rating} · {d.user?.phone || 'No phone'}
+                              <div className="mt-1 text-[10px] font-semibold text-slate-500">
+                                {d.user?.phone || 'No phone'}
                               </div>
                             </div>
                           </div>
                         </td>
-                        <td className="py-4 px-5 text-slate-600 font-bold text-xs select-all">
-                          {d.licenseNumber || `CDL-${d.id.slice(-8).toUpperCase()}`}
+                        <td className="py-4 px-5 text-slate-600 font-bold text-xs">
+                          {d.licenseNumber || '—'}
                         </td>
-                        <td className="py-4 px-5">
-                          <div className="flex items-center gap-2">
-                            <span className="text-safe-ink font-black text-xs min-w-[22px]">{safety}%</span>
-                            <div className="h-1.5 w-16 rounded-full bg-slate-100 overflow-hidden shrink-0">
-                              <div className="h-full bg-safe-ink" style={{ width: `${safety}%` }} />
-                            </div>
-                          </div>
+                        <td className="py-4 px-5 text-slate-600 font-bold text-xs">
+                          {d.vehicles?.length ?? 0}
                         </td>
                         <td className="py-4 px-5">
                           <span
                             className={[
                               'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider',
-                              status === 'Active Now'
+                              status === 'Active'
                                 ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                                 : 'bg-slate-50 border-slate-200 text-slate-500',
                             ].join(' ')}
@@ -260,7 +238,7 @@ export default function CustomersPage() {
                             <span
                               className={[
                                 'h-1.5 w-1.5 rounded-full',
-                                status === 'Active Now' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300',
+                                status === 'Active' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300',
                               ].join(' ')}
                               aria-hidden="true"
                             />
@@ -271,7 +249,7 @@ export default function CustomersPage() {
                           <span
                             className={[
                               'inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider',
-                              compliance === 'Verified'
+                              compliance === 'License on file'
                                 ? 'bg-slate-50 border-slate-200 text-safe-ink'
                                 : 'bg-amber-50 border-amber-200 text-amber-700',
                             ].join(' ')}
@@ -323,12 +301,12 @@ export default function CustomersPage() {
                 <div className="p-4 space-y-3.5 overflow-auto max-h-[500px]">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Weekly Earnings</div>
-                      <div className="mt-1 text-lg font-black text-safe-ink">{selected.earnings}</div>
+                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Vehicles</div>
+                      <div className="mt-1 text-lg font-black text-safe-ink">{selected.vehicleCount}</div>
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hours Logged</div>
-                      <div className="mt-1 text-lg font-black text-safe-ink">{selected.hours}</div>
+                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Phone</div>
+                      <div className="mt-1 text-sm font-black text-safe-ink">{selected.user?.phone || '—'}</div>
                     </div>
                   </div>
 
@@ -346,31 +324,10 @@ export default function CustomersPage() {
                   </div>
 
                   <div className="space-y-2 border-t border-slate-100 pt-4">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Credential Audit</div>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 h-32 grid place-items-center relative overflow-hidden">
-                      <div className="text-center p-4">
-                        <FileText size={28} className="text-safe-ink/50 mx-auto" />
-                        <div className="mt-1.5 text-xs font-bold text-slate-600">{selected.licenseNumber ? `${selected.licenseNumber}.pdf` : 'CDL_Onboard_Scan.pdf'}</div>
-                        <div className="text-[9px] font-bold text-slate-400 mt-0.5">Verified Commercial Carrier File</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 border-t border-slate-100 pt-4">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Compliance Log</div>
-                    <div className="rounded-2xl border border-slate-200 overflow-hidden divide-y divide-slate-200">
-                      {[
-                        { title: 'Carrier Verified', desc: 'Commercial background check complete.', good: true },
-                        { title: 'Fleet Asset Mapped', desc: `Plate ${selected.plate} validated.`, good: true },
-                      ].map((h) => (
-                        <div key={h.title} className="p-3 bg-white flex items-start gap-2.5">
-                          <CheckCircle size={16} className="text-emerald-500 shrink-0 mt-0.5" />
-                          <div>
-                            <div className="text-xs font-black text-safe-ink leading-none">{h.title}</div>
-                            <div className="mt-1 text-[10px] font-semibold text-slate-500">{h.desc}</div>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">License</div>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs">
+                      <div className="font-bold text-safe-ink">{selected.licenseNumber || 'Not recorded'}</div>
+                      <div className="text-slate-500 mt-1">{selected.compliance}</div>
                     </div>
                   </div>
                 </div>
