@@ -12,7 +12,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "node scripts/ensureSqliteFile.mjs && prisma migrate dev",
     "prisma:studio": "node scripts/ensureSqliteFile.mjs && prisma studio",
-    "seed": "node scripts/ensureSqliteFile.mjs && tsx src/seed.ts"
+    "seed": "node scripts/ensureSqliteFile.mjs && tsx src/seed.ts",
+    "create-staging-admin": "node scripts/createStagingAdmin.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.10.1",
