@@ -17,9 +17,16 @@
     "payment-methods:capture": "node scripts/capture-payment-methods.mjs",
     "trusted-contacts:capture": "node scripts/capture-trusted-contacts.mjs",
     "qr:capture": "VITE_QR_QA_CAPTURE=true node scripts/capture-qr.mjs",
-    "responsive:capture": "node scripts/capture-responsive.mjs"
+    "responsive:capture": "node scripts/capture-responsive.mjs",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npx cap open android",
+    "android:run": "npm run build && npx cap sync android && npx cap run android",
+    "android:apk": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
     "@vitejs/plugin-react": "^5.0.0",
     "html5-qrcode": "^2.3.8",
     "leaflet": "^1.9.4",

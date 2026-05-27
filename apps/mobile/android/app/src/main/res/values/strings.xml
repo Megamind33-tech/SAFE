@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SAFE</string>
+    <string name="title_activity_main">SAFE</string>
+    <string name="package_name">zm.co.safe.app</string>
+    <string name="custom_url_scheme">zm.co.safe.app</string>
+</resources>
