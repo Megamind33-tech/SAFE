@@ -241,5 +241,6 @@ Runtime prompts are handled by the WebView when the app requests camera/location
 ## Related docs
 
 - [ANDROID_DEVICE_TEST_CHECKLIST.md](./ANDROID_DEVICE_TEST_CHECKLIST.md) — real-device manual checklist
+- [PENDING_ANDROID_SAFE_AREA_QA.md](./PENDING_ANDROID_SAFE_AREA_QA.md) — PR #36 safe-area sign-off still pending on physical device
 - [STAGING_DEPLOYMENT.md](./STAGING_DEPLOYMENT.md) — staging API and env setup
 - [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) — web QA and responsive coverage

@@ -2,6 +2,8 @@
 
 Manual verification on a **physical Android device** using the Capacitor debug build. Use a real backend (staging recommended) — no fake data.
 
+> **Pending (PR #36):** Fake in-app status bar removal is on `main` but **physical safe-area verification is still open**. See [PENDING_ANDROID_SAFE_AREA_QA.md](./PENDING_ANDROID_SAFE_AREA_QA.md). Do not revert PR #36; use hotfix branch `cursor/android-safe-area-hotfix` for spacing-only fixes if device test fails.
+
 **Device under test:** ___________________________  
 **Android version:** ___________________________  
 **APK build date / git SHA:** ___________________________  
@@ -46,6 +48,16 @@ Mark each **PASS** / **FAIL** / **N/A**.
 | 19 | No horizontal page overflow on 360–430px width | ☐ | ☐ | |
 | 20 | App survives force-stop and reopen (session / cache sane) | ☐ | ☐ | |
 
+### Safe area / status bar (PR #36 — required on next physical pass)
+
+| # | Check | PASS | FAIL | Notes |
+|---|--------|------|------|-------|
+| SA-1 | Splash: no fake `9:41` / duplicate status row | ☐ | ☐ | |
+| SA-2 | Onboarding: no fake status row; content below system bar | ☐ | ☐ | |
+| SA-3 | Login / signup: no fake status row; fields not under system bar | ☐ | ☐ | |
+| SA-4 | No huge empty top gap (only real system status bar + minimal inset) | ☐ | ☐ | |
+| SA-5 | Home, QR scanner, live trip: top content not clipped | ☐ | ☐ | |
+
 ---
 
 ## QR deep link note (expected for Phase 1)
@@ -72,3 +84,4 @@ Mark each **PASS** / **FAIL** / **N/A**.
 ## Related docs
 
 - [ANDROID_TEST_BUILD.md](./ANDROID_TEST_BUILD.md) — setup, build, install, env, permissions
+- [PENDING_ANDROID_SAFE_AREA_QA.md](./PENDING_ANDROID_SAFE_AREA_QA.md) — PR #36 device sign-off tracker
