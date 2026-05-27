@@ -22,8 +22,6 @@ import {
   MapPin,
   MessageCircle,
   Menu,
-  Navigation2,
-  Radio,
   RefreshCcw,
   Search,
   Send,
@@ -723,24 +721,10 @@ function BottomNav({ current, onHome, onCover, onClaims, onProfile }) {
   );
 }
 
-function MiniStatusBar() {
-  return (
-    <div className="mini-status" aria-label="Phone status">
-      <strong>9:41</strong>
-      <span>
-        <Radio size={14} fill="currentColor" />
-        <Navigation2 size={14} fill="currentColor" />
-        <span className="battery-dot" />
-      </span>
-    </div>
-  );
-}
-
 function SplashScreen({ setScreen }) {
   return (
     <main className="screen no-nav splash-screen">
       <div className="splash-road" style={{ backgroundImage: `url(${safeRoadBackground})` }} />
-      <MiniStatusBar />
       <section className="splash-content">
         <div className="safe-shield-mark">
           <img src={safeLogo} alt="SAFE logo" />
@@ -759,7 +743,6 @@ function SplashScreen({ setScreen }) {
 function OnboardingShell({ body, children, highlight, onNext, setScreen, step, title }) {
   return (
     <main className="screen no-nav onboarding-screen">
-      <MiniStatusBar />
       <div className="skip-row">
         <button type="button" onClick={() => setScreen('signup')}>Skip</button>
       </div>
@@ -851,7 +834,6 @@ function LoginScreen({ setScreen, setSession, auth, refreshPassengerData }) {
   return (
     <main className="screen no-nav auth-screen">
       <div className="auth-bg" style={{ backgroundImage: `url(${safeRoadBackground})` }} />
-      <MiniStatusBar />
       <section className="auth-card">
         <img className="auth-logo" src={safeLogo} alt="SAFE logo" />
         <p className="eyebrow">Welcome back</p>
@@ -922,7 +904,6 @@ function SignupScreen({ setScreen, setSession, auth }) {
   return (
     <main className="screen no-nav auth-screen signup-screen">
       <div className="auth-bg" style={{ backgroundImage: `url(${safeRoadBackground})` }} />
-      <MiniStatusBar />
       <section className="auth-card">
         <img className="auth-logo" src={safeLogo} alt="SAFE logo" />
         <p className="eyebrow">Create your account</p>
