@@ -2,7 +2,18 @@
 
 Pilot / production-readiness guide for the SAFE monorepo.
 
-Last updated: responsive hardening phase (pre-staging).
+Last updated: staging deployment prep (main @ `34fcb8d`).
+
+## Staging deployment
+
+Pre-production staging setup (not production deploy):
+
+- [STAGING_DEPLOYMENT.md](./STAGING_DEPLOYMENT.md) — target plan, env templates, build commands, QR rewrite, admin security
+- [STAGING_SMOKE_TEST.md](./STAGING_SMOKE_TEST.md) — manual staging checklist (incl. real-device responsive checks)
+
+Env templates: `apps/backend/.env.staging.example`, `apps/mobile/.env.staging.example`, `apps/dashboard/.env.staging.example`
+
+Staging admin: `cd apps/backend && SAFE_ADMIN_EMAIL=... SAFE_ADMIN_PASSWORD=... SAFE_DISABLE_DEFAULT_ADMIN=true npm run create-staging-admin`
 
 ## Responsive QA coverage
 
