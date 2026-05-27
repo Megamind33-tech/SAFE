@@ -169,3 +169,7 @@ Mobile QA requires backend on `:8080`, mobile dev on `:5173`, and the mobile dev
 3. Managed database
 4. Production hosting + secrets
 5. Notification providers
+
+## Staging deployment
+
+See [STAGING_DEPLOYMENT.md](./STAGING_DEPLOYMENT.md) and [STAGING_SMOKE_TEST.md](./STAGING_SMOKE_TEST.md) for pre-production staging setup, env checklist, QR rewrite, and manual smoke tests.
