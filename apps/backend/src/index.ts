@@ -5,6 +5,7 @@ import { sharedAuthRouter } from './routes/sharedAuth.js';
 import { mobileRouter } from './routes/mobile.js';
 import { tripTrackingRouter } from './routes/tripTrackingMobile.js';
 import { dashboardRouter } from './routes/dashboard.js';
+import { webhooksRouter } from './routes/webhooks.js';
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/api/shared/auth', sharedAuthRouter);
+app.use('/api/shared/webhooks', webhooksRouter);
 app.use('/api/mobile', tripTrackingRouter);
 app.use('/api/mobile', mobileRouter);
 app.use('/api/dashboard', dashboardRouter);

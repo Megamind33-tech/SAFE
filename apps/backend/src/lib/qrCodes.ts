@@ -311,6 +311,21 @@ export async function verifyQrCode(rawCode: string, context: VerifyContext = {})
   };
 }
 
+export async function disableVehicleQr(qrId: string) {
+  return prisma.qRCode.update({
+    where: { id: qrId },
+    data: { status: 'disabled', isActive: false },
+  });
+}
+
+export async function regenerateVehicleQr(vehicleId: string, createdBy?: string) {
+  await prisma.qRCode.updateMany({
+    where: { vehicleId, status: 'active' },
+    data: { status: 'disabled', isActive: false },
+  });
+  return getOrCreateVehicleQr(vehicleId, createdBy);
+}
+
 export async function getOrCreateVehicleQr(vehicleId: string, createdBy?: string) {
   const vehicle = await prisma.vehicle.findUnique({
     where: { id: vehicleId },
