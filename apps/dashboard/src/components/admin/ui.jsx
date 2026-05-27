@@ -21,8 +21,8 @@ export function PageHeader({ title, description, breadcrumbs = [], actions }) {
         </nav>
       ) : null}
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-black tracking-tight text-safe-ink">{title}</h1>
+        <div className="min-w-0">
+          <h1 className="text-2xl md:text-3xl font-black tracking-tight text-safe-ink break-words">{title}</h1>
           {description ? <p className="mt-1 text-sm text-slate-500">{description}</p> : null}
         </div>
         {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
@@ -115,7 +115,7 @@ export function SearchInput({ value, onChange, placeholder = 'Search…' }) {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full md:w-72 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-safe-ink placeholder:text-slate-400 focus:outline-none focus:border-safe-green focus:ring-2 focus:ring-safe-green/20"
+      className="w-full min-w-0 md:w-72 md:max-w-sm rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-safe-ink placeholder:text-slate-400 focus:outline-none focus:border-safe-green focus:ring-2 focus:ring-safe-green/20"
     />
   );
 }
@@ -171,8 +171,8 @@ export function DataTable({ columns, rows, onRowClick, emptyTitle = 'No records'
     return <EmptyState title={emptyTitle} description="Nothing matches the current filters yet." />;
   }
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm">
+    <div className="max-w-full overflow-x-auto overscroll-x-contain">
+      <table className="w-full min-w-[640px] text-left text-sm">
         <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400">
           <tr>
             {columns.map((col) => (
@@ -204,7 +204,7 @@ export function DataTable({ columns, rows, onRowClick, emptyTitle = 'No records'
 
 export function DetailPanel({ title, children, onClose }) {
   return (
-    <aside className="rounded-2xl border border-slate-200 bg-white p-4 space-y-4 h-fit sticky top-16">
+    <aside className="rounded-2xl border border-slate-200 bg-white p-4 space-y-4 h-fit max-h-none overflow-visible xl:sticky xl:top-16 xl:max-h-[calc(100vh-5rem)] xl:overflow-y-auto">
       <div className="flex items-start justify-between gap-3">
         <div className="text-lg font-black text-safe-ink">{title}</div>
         {onClose ? (

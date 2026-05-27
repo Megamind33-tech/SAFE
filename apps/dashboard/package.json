@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview --port 5174 --host 127.0.0.1",
     "smoke": "node scripts/smoke-dashboard.mjs",
-    "capture": "node scripts/capture-dashboard.mjs"
+    "capture": "node scripts/capture-dashboard.mjs",
+    "responsive:capture": "node scripts/capture-responsive-dashboard.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

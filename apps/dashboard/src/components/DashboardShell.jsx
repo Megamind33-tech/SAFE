@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
@@ -7,11 +7,13 @@ import {
   Handshake,
   LifeBuoy,
   MapPinned,
+  Menu,
   QrCode,
   ShieldCheck,
   SlidersHorizontal,
   Users,
   WalletCards,
+  X,
 } from 'lucide-react';
 import { clearDashboardToken, loadDashboardToken } from '../api/dashboardApi.js';
 
@@ -30,10 +32,37 @@ const nav = [
   { to: '/customers', label: 'Drivers', icon: Users },
 ];
 
+function NavItems({ onNavigate, compact = false }) {
+  return (
+    <>
+      {nav.map(({ to, label, icon: Icon }) => (
+        <NavLink
+          key={to}
+          to={to}
+          end={to === '/'}
+          title={compact ? label : undefined}
+          onClick={onNavigate}
+          className={({ isActive }) =>
+            [
+              'flex items-center rounded-lg text-sm font-semibold transition-colors mb-0.5',
+              compact ? 'justify-center gap-0 px-2 py-2.5 xl:justify-start xl:gap-3 xl:px-3' : 'gap-3 px-3 py-2.5',
+              isActive ? 'bg-safe-ink text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100',
+            ].join(' ')
+          }
+        >
+          <Icon size={18} className="shrink-0" />
+          <span className={compact ? 'hidden xl:inline' : undefined}>{label}</span>
+        </NavLink>
+      ))}
+    </>
+  );
+}
+
 export default function DashboardShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const token = loadDashboardToken();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     if (!token && location.pathname !== '/login') {
@@ -41,56 +70,105 @@ export default function DashboardShell() {
     }
   }, [token, location.pathname, navigate]);
 
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return undefined;
+    const onKey = (event) => {
+      if (event.key === 'Escape') setMobileNavOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mobileNavOpen]);
+
   function handleLogout() {
     clearDashboardToken();
     navigate('/login', { replace: true });
   }
 
+  function closeMobileNav() {
+    setMobileNavOpen(false);
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="flex">
-        <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white">
-          <div className="px-4 py-4 border-b border-slate-100">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-safe-ink text-safe-cloud grid place-items-center shadow-sm">
-                <span className="text-safe-electric font-black tracking-wide">S</span>
+    <div className="min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden">
+      {mobileNavOpen ? (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-slate-900/40 md:hidden"
+            aria-label="Close navigation menu"
+            onClick={closeMobileNav}
+          />
+          <aside className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-slate-200 bg-white shadow-xl md:hidden">
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4">
+              <div className="flex items-center gap-3">
+                <div className="grid h-10 w-10 place-items-center rounded-xl bg-safe-ink text-safe-cloud shadow-sm">
+                  <span className="font-black tracking-wide text-safe-electric">S</span>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold tracking-wide text-safe-ink">SAFE</div>
+                  <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">Operations</div>
+                </div>
               </div>
-              <div>
+              <button
+                type="button"
+                onClick={closeMobileNav}
+                className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-safe-ink"
+                aria-label="Close menu"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <nav className="flex-1 overflow-y-auto px-2.5 py-3">
+              <NavItems onNavigate={closeMobileNav} />
+            </nav>
+          </aside>
+        </>
+      ) : null}
+
+      <div className="flex">
+        <aside className="hidden md:flex w-16 xl:w-64 shrink-0 flex-col border-r border-slate-200 bg-white">
+          <div className="border-b border-slate-100 px-3 py-4 xl:px-4">
+            <div className="flex items-center justify-center gap-3 xl:justify-start">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-safe-ink text-safe-cloud shadow-sm">
+                <span className="font-black tracking-wide text-safe-electric">S</span>
+              </div>
+              <div className="hidden xl:block">
                 <div className="text-sm font-semibold tracking-wide text-safe-ink">SAFE</div>
-                <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">Operations</div>
+                <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">Operations</div>
               </div>
             </div>
           </div>
 
-          <nav className="flex-1 px-2.5 py-3 overflow-y-auto">
-            {nav.map(({ to, label, icon: Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === '/'}
-                className={({ isActive }) =>
-                  [
-                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors mb-0.5',
-                    isActive ? 'bg-safe-ink text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100',
-                  ].join(' ')
-                }
-              >
-                <Icon size={18} className="shrink-0" />
-                {label}
-              </NavLink>
-            ))}
+          <nav className="flex-1 overflow-y-auto px-1.5 py-3 xl:px-2.5">
+            <NavItems compact />
           </nav>
         </aside>
 
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1 overflow-x-hidden">
           <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
-            <div className="px-4 md:px-6 h-14 flex items-center justify-between gap-4">
-              <div>
-                <div className="text-sm font-semibold text-safe-ink">SAFE Control Room</div>
-                <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Pilot operations dashboard</div>
+            <div className="flex h-14 items-center justify-between gap-3 px-4 md:px-6">
+              <div className="flex min-w-0 items-center gap-3">
+                <button
+                  type="button"
+                  className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-safe-ink md:hidden"
+                  aria-label="Open navigation menu"
+                  onClick={() => setMobileNavOpen(true)}
+                >
+                  <Menu size={20} />
+                </button>
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold text-safe-ink">SAFE Control Room</div>
+                  <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                    Pilot operations dashboard
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="hidden md:inline rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-800">
+              <div className="flex shrink-0 items-center gap-3">
+                <span className="hidden rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-800 md:inline">
                   Real data only
                 </span>
                 {token ? (
@@ -106,7 +184,7 @@ export default function DashboardShell() {
             </div>
           </header>
 
-          <main className="px-4 md:px-6 py-5">
+          <main className="px-4 py-5 md:px-6">
             <Outlet />
           </main>
         </div>

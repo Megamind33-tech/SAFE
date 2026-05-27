@@ -10,7 +10,7 @@
 .qr-screen__scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 16px var(--qr-pad-x) 120px;
+  padding: 16px var(--qr-pad-x) calc(150px + env(safe-area-inset-bottom, 0px));
 }
 
 .qr-header {
@@ -57,7 +57,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 1;
-  max-height: 320px;
+  max-height: min(320px, calc(100vw - (var(--qr-pad-x) * 2)));
   border-radius: 20px;
   overflow: hidden;
   background: #0f172a;
