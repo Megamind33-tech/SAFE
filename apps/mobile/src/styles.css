@@ -13,6 +13,8 @@
   --outline: #bdcabe;
   --shadow: 0 12px 28px rgba(27, 34, 31, 0.1);
   --soft-shadow: 0 6px 18px rgba(27, 34, 31, 0.08);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 * {
@@ -179,43 +181,6 @@ button {
   box-shadow: inset 0 0 0 1px rgba(255, 199, 0, 0.18), 0 8px 22px rgba(255, 199, 0, 0.12);
 }
 
-.mini-status {
-  position: relative;
-  z-index: 2;
-  min-height: 46px;
-  padding: 16px 24px 6px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.84rem;
-  font-weight: 800;
-}
-
-.mini-status span {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.battery-dot {
-  width: 22px;
-  height: 12px;
-  border: 2px solid currentColor;
-  border-radius: 4px;
-  position: relative;
-}
-
-.battery-dot::after {
-  content: "";
-  position: absolute;
-  right: 2px;
-  top: 2px;
-  bottom: 2px;
-  width: 10px;
-  border-radius: 2px;
-  background: currentColor;
-}
-
 .splash-screen {
   position: relative;
   display: flex;
@@ -223,6 +188,7 @@ button {
   color: #fff;
   background: #0a1128;
   overflow: hidden;
+  padding-top: var(--safe-top);
 }
 
 .splash-road {
@@ -295,7 +261,7 @@ button {
   z-index: 1;
   display: grid;
   gap: 13px;
-  padding: 0 30px 42px;
+  padding: 0 30px calc(42px + var(--safe-bottom));
 }
 
 .yellow-btn,
@@ -323,6 +289,7 @@ button {
   display: flex;
   flex-direction: column;
   background: #fff;
+  padding-top: var(--safe-top);
 }
 
 .skip-row {
@@ -518,7 +485,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 34px 32px 36px;
+  padding: 34px 32px calc(36px + var(--safe-bottom));
 }
 
 .progress-dots {
@@ -556,6 +523,8 @@ button {
   color: #fff;
   background: #071127;
   overflow: hidden;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
 }
 
 .auth-bg {
