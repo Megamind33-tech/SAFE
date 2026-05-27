@@ -6,6 +6,8 @@ import {
   FileText,
   Handshake,
   LifeBuoy,
+  MapPinned,
+  QrCode,
   ShieldCheck,
   SlidersHorizontal,
   Users,
@@ -20,8 +22,11 @@ const nav = [
   { to: '/covers', label: 'Covers', icon: ShieldCheck },
   { to: '/claims', label: 'Claims', icon: FileText },
   { to: '/payments', label: 'Payments', icon: WalletCards },
+  { to: '/live-trips', label: 'Live trips', icon: MapPinned },
+  { to: '/qr-scans', label: 'QR scans', icon: QrCode },
   { to: '/support', label: 'Support', icon: LifeBuoy },
-  { to: '/settings', label: 'Readiness', icon: SlidersHorizontal },
+  { to: '/users', label: 'Passengers', icon: Users },
+  { to: '/settings', label: 'Settings', icon: SlidersHorizontal },
   { to: '/customers', label: 'Drivers', icon: Users },
 ];
 
@@ -45,7 +50,7 @@ export default function DashboardShell() {
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="flex">
         <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white">
-          <div className="px-4 py-3">
+          <div className="px-4 py-4 border-b border-slate-100">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-safe-ink text-safe-cloud grid place-items-center shadow-sm">
                 <span className="text-safe-electric font-black tracking-wide">S</span>
@@ -57,7 +62,7 @@ export default function DashboardShell() {
             </div>
           </div>
 
-          <nav className="flex-1 px-2.5 pb-4">
+          <nav className="flex-1 px-2.5 py-3 overflow-y-auto">
             {nav.map(({ to, label, icon: Icon }) => (
               <NavLink
                 key={to}
@@ -65,7 +70,7 @@ export default function DashboardShell() {
                 end={to === '/'}
                 className={({ isActive }) =>
                   [
-                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors',
+                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors mb-0.5',
                     isActive ? 'bg-safe-ink text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100',
                   ].join(' ')
                 }
@@ -78,26 +83,30 @@ export default function DashboardShell() {
         </aside>
 
         <div className="flex-1 min-w-0">
-          <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur">
-            <div className="px-4 md:px-6 h-12 flex items-center justify-between gap-4">
-              <div className="text-sm font-semibold text-safe-ink">SAFE Control Room</div>
-              <div className="hidden md:flex items-center gap-3 text-xs font-semibold text-slate-500">
-                <span className="rounded-full bg-slate-100 px-3 py-1">Pilot readiness</span>
-                <span className="rounded-full bg-slate-100 px-3 py-1">{token ? 'Authenticated' : 'Guest'}</span>
+          <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
+            <div className="px-4 md:px-6 h-14 flex items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-semibold text-safe-ink">SAFE Control Room</div>
+                <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Pilot operations dashboard</div>
               </div>
-              {token ? (
-                <button type="button" onClick={handleLogout} className="text-xs font-bold text-slate-600 hover:text-safe-ink">
-                  Sign out
-                </button>
-              ) : (
-                <button type="button" onClick={() => navigate('/login')} className="text-xs font-bold text-slate-600 hover:text-safe-ink">
-                  Admin login
-                </button>
-              )}
+              <div className="flex items-center gap-3">
+                <span className="hidden md:inline rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-800">
+                  Real data only
+                </span>
+                {token ? (
+                  <button type="button" onClick={handleLogout} className="text-xs font-bold text-slate-600 hover:text-safe-ink">
+                    Sign out
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => navigate('/login')} className="text-xs font-bold text-slate-600 hover:text-safe-ink">
+                    Admin login
+                  </button>
+                )}
+              </div>
             </div>
           </header>
 
-          <main className="px-4 md:px-6 py-4">
+          <main className="px-4 md:px-6 py-5">
             <Outlet />
           </main>
         </div>

@@ -2,7 +2,69 @@
 
 Pilot / production-readiness guide for the SAFE monorepo.
 
-Last updated: 90% readiness stage.
+Last updated: admin dashboard completion stage.
+
+## Admin dashboard readiness
+
+### What staff can manage in pilot
+
+- **Overview** — real KPIs (covers, payments, claims, QR scans, trips, passengers) with activity panels
+- **Vehicles** — fleet list, search/filters, QR generate/regenerate/disable, suspend/activate, linked covers
+- **Partners** — operator fleet summary, real cover/scan counts (no fake earnings)
+- **Covers** — policy list with active/pending/expired/failed filters and detail drawer
+- **Payments** — gateway status, reconciliation notes, payment detail
+- **Claims** — full admin queue with timeline, metadata-only documents label, status actions
+- **Live trips** — active/stale/ended buckets from real trip tracking (stale ≠ live)
+- **QR scans** — global scan audit log with result counts
+- **Support** — report queue with status updates and persisted admin notes
+- **Passengers** — masked phone list and activity summary
+- **Settings** — configured/not-configured flags and production warnings (no secrets exposed)
+- **Drivers** — existing driver onboarding (unchanged)
+
+### Still blocked / not in dashboard
+
+- Partner commission / earnings payouts
+- Fraud analytics prototype pages (not routed)
+- Manual “mark paid” without backend webhook
+- Live map animation or fake fleet telemetry
+- Production deployment actions from dashboard
+
+### Safe for pilot when configured
+
+- Empty database shows clean empty states (zeros, not placeholders)
+- Dashboard uses backend APIs only — no fake stats
+- Production warnings visible on Settings when simulate flag, default JWT, or missing QR URL detected
+
+### Must configure before public launch
+
+- Rotate default admin credentials
+- Set `JWT_SECRET`, `CORS_ORIGINS`, `SAFE_QR_PUBLIC_BASE_URL`
+- Wire payment provider + webhook
+- Configure claims blob storage if upload enabled
+- Verify `/q/*` rewrite on production host
+
+### Dashboard QA capture
+
+```bash
+npm --workspace apps/dashboard run capture
+```
+
+Screenshots: login, overview, vehicles, QR, partners, covers, payments, claims, live trips, support, users, settings, empty/error states.
+
+### Dashboard API (completion stage)
+
+| Area | API |
+|------|-----|
+| Overview | `GET /api/dashboard/overview`, `GET /metrics`, `GET /readiness` |
+| Vehicles | `GET/POST/PATCH /vehicles`, QR + scans, `GET /vehicles/:id/covers` |
+| Partners | `GET /partners`, `GET /partners/:id` |
+| Covers | `GET /covers?status=&search=`, `GET /covers/:id` |
+| Payments | `GET /payments`, `GET /payments/:id`, `GET /payments/config` |
+| Claims | `GET/PATCH /claims/:id` |
+| Trips | `GET /trips?bucket=active|stale|ended` |
+| QR scans | `GET /qr/scans` |
+| Support | `GET/PATCH /support-reports/:id` (adminNote) |
+| Passengers | `GET /users`, `GET /users/:id` |
 
 ## Phase 1 — Readiness audit
 
@@ -93,6 +155,7 @@ npm run build:mobile
 npm run build:dashboard
 npm run qa:mobile
 npm --workspace apps/dashboard run smoke
+npm --workspace apps/dashboard run capture
 ```
 
 ## Remaining blockers

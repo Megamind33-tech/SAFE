@@ -17,6 +17,15 @@ async function request(path, { method = 'GET', token, body } = {}) {
   return data;
 }
 
+function qs(params) {
+  const q = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') q.set(k, String(v));
+  });
+  const s = q.toString();
+  return s ? `?${s}` : '';
+}
+
 export function saveDashboardToken(token) {
   if (token) localStorage.setItem('safe_dashboard_token', token);
 }
@@ -46,12 +55,32 @@ export async function dashboardMetrics(token) {
   return request('/api/dashboard/metrics', { token });
 }
 
-export async function dashboardVehicles(token) {
-  return request('/api/dashboard/vehicles', { token });
+export async function dashboardOverview(token) {
+  return request('/api/dashboard/overview', { token });
+}
+
+export async function dashboardReadiness(token) {
+  return request('/api/dashboard/readiness', { token });
+}
+
+export async function dashboardVehicles(token, params = {}) {
+  return request(`/api/dashboard/vehicles${qs(params)}`, { token });
 }
 
 export async function dashboardVehicle(token, vehicleId) {
   return request(`/api/dashboard/vehicles/${vehicleId}`, { token });
+}
+
+export async function createVehicle(token, body) {
+  return request('/api/dashboard/vehicles', { method: 'POST', token, body });
+}
+
+export async function updateVehicle(token, vehicleId, body) {
+  return request(`/api/dashboard/vehicles/${vehicleId}`, { method: 'PATCH', token, body });
+}
+
+export async function dashboardVehicleCovers(token, vehicleId) {
+  return request(`/api/dashboard/vehicles/${vehicleId}/covers`, { token });
 }
 
 export async function dashboardVehicleQr(token, vehicleId) {
@@ -74,6 +103,10 @@ export async function dashboardVehicleScans(token, vehicleId) {
   return request(`/api/dashboard/vehicles/${vehicleId}/qr/scans`, { token });
 }
 
+export async function dashboardQrScans(token, params = {}) {
+  return request(`/api/dashboard/qr/scans${qs(params)}`, { token });
+}
+
 export async function dashboardPartners(token) {
   return request('/api/dashboard/partners', { token });
 }
@@ -82,14 +115,24 @@ export async function dashboardPartner(token, partnerId) {
   return request(`/api/dashboard/partners/${partnerId}`, { token });
 }
 
-export async function dashboardCovers(token, status = 'all') {
-  const q = status && status !== 'all' ? `?status=${encodeURIComponent(status)}` : '';
-  return request(`/api/dashboard/covers${q}`, { token });
+export async function dashboardCovers(token, params = {}) {
+  const status = typeof params === 'string' ? params : params.status;
+  const rest = typeof params === 'string' ? {} : params;
+  return request(`/api/dashboard/covers${qs({ status, ...rest })}`, { token });
 }
 
-export async function dashboardPayments(token, status) {
-  const q = status ? `?status=${encodeURIComponent(status)}` : '';
-  return request(`/api/dashboard/payments${q}`, { token });
+export async function dashboardCover(token, coverId) {
+  return request(`/api/dashboard/covers/${coverId}`, { token });
+}
+
+export async function dashboardPayments(token, params = {}) {
+  const status = typeof params === 'string' ? params : params.status;
+  const rest = typeof params === 'string' ? {} : params;
+  return request(`/api/dashboard/payments${qs({ status, ...rest })}`, { token });
+}
+
+export async function dashboardPayment(token, paymentId) {
+  return request(`/api/dashboard/payments/${paymentId}`, { token });
 }
 
 export async function dashboardPaymentsConfig(token) {
@@ -97,8 +140,7 @@ export async function dashboardPaymentsConfig(token) {
 }
 
 export async function dashboardClaims(token, status) {
-  const q = status ? `?status=${encodeURIComponent(status)}` : '';
-  return request(`/api/dashboard/claims${q}`, { token });
+  return request(`/api/dashboard/claims${qs({ status })}`, { token });
 }
 
 export async function dashboardClaimDetail(token, id) {
@@ -118,12 +160,27 @@ export async function rejectClaim(token, id, reason) {
 }
 
 export async function dashboardSupportReports(token, status) {
-  const q = status ? `?status=${encodeURIComponent(status)}` : '';
-  return request(`/api/dashboard/support-reports${q}`, { token });
+  return request(`/api/dashboard/support-reports${qs({ status })}`, { token });
 }
 
 export async function updateSupportReport(token, id, body) {
   return request(`/api/dashboard/support-reports/${id}`, { method: 'PATCH', token, body });
+}
+
+export async function dashboardTrips(token, bucket) {
+  return request(`/api/dashboard/trips${qs({ bucket })}`, { token });
+}
+
+export async function dashboardTrip(token, tripId) {
+  return request(`/api/dashboard/trips/${tripId}`, { token });
+}
+
+export async function dashboardUsers(token, search) {
+  return request(`/api/dashboard/users${qs({ search })}`, { token });
+}
+
+export async function dashboardUser(token, userId) {
+  return request(`/api/dashboard/users/${userId}`, { token });
 }
 
 export async function dashboardDrivers(token) {

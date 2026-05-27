@@ -53,6 +53,8 @@ function fail(name, err) {
 
   for (const [name, path] of [
     ['metrics', '/api/dashboard/metrics'],
+    ['overview', '/api/dashboard/overview'],
+    ['readiness', '/api/dashboard/readiness'],
     ['vehicles', '/api/dashboard/vehicles'],
     ['partners', '/api/dashboard/partners'],
     ['covers', '/api/dashboard/covers'],
@@ -60,6 +62,9 @@ function fail(name, err) {
     ['payments config', '/api/dashboard/payments/config'],
     ['claims', '/api/dashboard/claims'],
     ['support reports', '/api/dashboard/support-reports'],
+    ['trips', '/api/dashboard/trips'],
+    ['qr scans', '/api/dashboard/qr/scans'],
+    ['users', '/api/dashboard/users'],
     ['webhook info', '/api/shared/webhooks/payment'],
   ]) {
     try {

@@ -122,6 +122,7 @@ model SupportReport {
   problemType String
   message     String
   status      String   @default("submitted")
+  adminNote   String?
 
   @@index([userId])
 }
@@ -261,6 +262,8 @@ model Vehicle {
   lastLng      Float?
   lastHeading  Float?
   locationAt   DateTime?
+
+  isSuspended  Boolean  @default(false)
 
   qrCodes   QRCode[]
   tripCovers TripCover[]

@@ -12,6 +12,7 @@ module.exports = {
           midnight: '#0B1D3A',
           electric: '#FFC700',
           cloud: '#F8FAFC',
+          green: '#059669',
         },
       },
     },

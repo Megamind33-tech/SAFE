@@ -8,6 +8,7 @@ export function serializeVehicleRow(vehicle: {
   id: string;
   plateNumber: string;
   busId: string | null;
+  isSuspended?: boolean;
   createdAt: Date;
   updatedAt: Date;
   lastLat: number | null;
@@ -27,6 +28,16 @@ export function serializeVehicleRow(vehicle: {
   _count?: { tripCovers: number; qrCodes?: number };
 }) {
   const activeQr = vehicle.qrCodes?.find((q) => q.status === 'active' && q.isActive) ?? vehicle.qrCodes?.[0] ?? null;
+  const qrExpired = activeQr?.expiresAt ? activeQr.expiresAt <= new Date() : false;
+  const qrDisabled = !activeQr || activeQr.status === 'disabled' || !activeQr.isActive;
+  let qrStatus: 'active' | 'disabled' | 'expired' | 'none' = 'none';
+  if (activeQr) {
+    if (qrExpired) qrStatus = 'expired';
+    else if (qrDisabled) qrStatus = 'disabled';
+    else qrStatus = 'active';
+  }
+
+  const fleetSuspended = Boolean(vehicle.isSuspended);
   return {
     id: vehicle.id,
     plateNumber: vehicle.plateNumber,
@@ -46,11 +57,14 @@ export function serializeVehicleRow(vehicle: {
           code: activeQr.code,
           status: activeQr.status,
           isActive: activeQr.isActive,
+          effectiveStatus: qrStatus,
           lastScannedAt: activeQr.lastScannedAt?.toISOString() ?? null,
           expiresAt: activeQr.expiresAt?.toISOString() ?? null,
         }
       : null,
-    operationalStatus: activeQr?.isActive && activeQr.status === 'active' ? 'active' : 'suspended',
+    qrStatus,
+    isSuspended: fleetSuspended,
+    operationalStatus: fleetSuspended ? 'suspended' : qrStatus === 'active' ? 'active' : 'inactive',
     coverCount: vehicle._count?.tripCovers ?? 0,
     locationAt: vehicle.locationAt?.toISOString() ?? null,
     createdAt: vehicle.createdAt.toISOString(),
@@ -160,6 +174,7 @@ export function serializeSupportReport(row: {
   problemType: string;
   message: string;
   status: string;
+  adminNote?: string | null;
   createdAt: Date;
   updatedAt: Date;
   user: { id: string; phone: string | null; email: string | null; passengerProfile: { fullName: string | null } | null };
@@ -169,15 +184,24 @@ export function serializeSupportReport(row: {
     problemType: row.problemType,
     message: row.message,
     status: row.status,
+    adminNote: row.adminNote ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     user: {
       id: row.user.id,
-      phone: row.user.phone,
+      phone: row.user.phone ? maskPhoneForDashboard(row.user.phone) : null,
       email: row.user.email,
       fullName: row.user.passengerProfile?.fullName ?? null,
     },
   };
+}
+
+function maskPhoneForDashboard(phone: string) {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length >= 10) {
+    return `${digits.slice(0, 3)} *** ${digits.slice(-4)}`;
+  }
+  return phone;
 }
 
 export function serializeScanLog(log: {
@@ -185,16 +209,35 @@ export function serializeScanLog(log: {
   result: string;
   scannedAt: Date;
   userAgent: string | null;
-  qrCode: { code: string; vehicleId: string | null } | null;
+  approximateLat: number | null;
+  approximateLng: number | null;
   userId: string | null;
+  qrCode: {
+    code: string;
+    vehicleId: string | null;
+    vehicle?: { id: string; plateNumber: string } | null;
+  } | null;
+  user?: { id: string; phone: string | null; passengerProfile: { fullName: string | null } | null } | null;
 }) {
   return {
     id: log.id,
     result: log.result,
     scannedAt: log.scannedAt.toISOString(),
     userAgent: log.userAgent,
+    location:
+      log.approximateLat != null && log.approximateLng != null
+        ? { lat: log.approximateLat, lng: log.approximateLng }
+        : null,
     qrCode: log.qrCode?.code ?? null,
-    vehicleId: log.qrCode?.vehicleId ?? null,
+    vehicleId: log.qrCode?.vehicleId ?? log.qrCode?.vehicle?.id ?? null,
+    vehiclePlate: log.qrCode?.vehicle?.plateNumber ?? null,
     userId: log.userId,
+    passenger: log.user
+      ? {
+          id: log.user.id,
+          fullName: log.user.passengerProfile?.fullName ?? null,
+          phone: log.user.phone ? maskPhoneForDashboard(log.user.phone) : null,
+        }
+      : null,
   };
 }

@@ -18,6 +18,13 @@ import {
 } from '../lib/dashboardSerializers.js';
 import { loadDashboardClaimDetail, updateClaimAdminStatus } from '../lib/claimAdmin.js';
 import { applyPaymentWebhookUpdate, paymentWebhookPlaceholderInfo } from '../lib/paymentWebhook.js';
+import {
+  buildReadinessReport,
+  loadDashboardMetrics,
+  loadOverviewPanels,
+  serializeDashboardTripRow,
+} from '../lib/dashboardAdmin.js';
+import { maskPhoneNumber } from '../lib/paymentMethods.js';
 import { env } from '../lib/env.js';
 import { CLAIMS_UPLOAD_ENABLED } from '../lib/claims.js';
 
@@ -27,46 +34,57 @@ dashboardRouter.use(requireAuth);
 dashboardRouter.use(requireRole(['admin', 'super_admin', 'transport_partner', 'insurance_partner']));
 
 dashboardRouter.get('/metrics', async (_req, res) => {
-  const [users, activeCovers, claimsPending, fraudFlags, purchases, scans, openSupport] = await Promise.all([
-    prisma.user.count(),
-    prisma.tripCover.count({
-      where: { status: 'active', endsAt: { gt: new Date() }, payment: { status: 'succeeded' } },
-    }),
-    prisma.claim.count({ where: { status: { in: ['submitted', 'under_review', 'needs_action'] } } }),
-    prisma.fraudFlag.count(),
-    prisma.tripCover.count({ where: { payment: { status: 'succeeded' } } }),
-    prisma.qrScanLog.count(),
-    prisma.supportReport.count({ where: { status: { in: ['submitted', 'open', 'in_progress'] } } }),
-  ]);
-
-  res.json({
-    metrics: {
-      users,
-      activeCovers,
-      claimsPending,
-      fraudFlags,
-      purchases,
-      scans,
-      openSupport,
-      paymentGatewayEnabled: env.paymentGatewayEnabled,
-      claimsUploadEnabled: CLAIMS_UPLOAD_ENABLED,
-    },
-  });
+  const metrics = await loadDashboardMetrics();
+  res.json({ metrics });
 });
 
-dashboardRouter.get('/vehicles', async (_req, res) => {
+dashboardRouter.get('/overview', async (_req, res) => {
+  const [metrics, panels] = await Promise.all([loadDashboardMetrics(), loadOverviewPanels()]);
+  res.json({ metrics, panels });
+});
+
+dashboardRouter.get('/readiness', async (_req, res) => {
+  res.json({ readiness: buildReadinessReport() });
+});
+
+dashboardRouter.get('/vehicles', async (req, res) => {
+  const search = String(req.query.search ?? '').trim();
+  const status = String(req.query.status ?? 'all');
+  const partnerId = req.query.partnerId ? String(req.query.partnerId) : undefined;
+  const qrStatus = String(req.query.qrStatus ?? 'all');
+
+  const where: Record<string, unknown> = {};
+  if (search) {
+    where.plateNumber = { contains: search };
+  }
+  if (partnerId) {
+    where.transportPartnerId = partnerId;
+  }
+  if (status === 'active') {
+    where.isSuspended = false;
+  } else if (status === 'suspended') {
+    where.isSuspended = true;
+  }
+
   const vehicles = await prisma.vehicle.findMany({
+    where,
     orderBy: { createdAt: 'desc' },
-    take: 100,
+    take: 200,
     include: {
       route: true,
       transportPartner: true,
       driver: true,
-      qrCodes: { where: { status: 'active' }, take: 1, orderBy: { createdAt: 'desc' } },
+      qrCodes: { orderBy: { createdAt: 'desc' }, take: 3 },
       _count: { select: { tripCovers: true } },
     },
   });
-  res.json({ vehicles: vehicles.map(serializeVehicleRow) });
+
+  let rows = vehicles.map(serializeVehicleRow);
+  if (qrStatus !== 'all') {
+    rows = rows.filter((v) => v.qrStatus === qrStatus);
+  }
+
+  res.json({ vehicles: rows });
 });
 
 dashboardRouter.get('/vehicles/:vehicleId', async (req, res) => {
@@ -85,6 +103,94 @@ dashboardRouter.get('/vehicles/:vehicleId', async (req, res) => {
     return;
   }
   res.json({ vehicle: serializeVehicleRow(vehicle) });
+});
+
+dashboardRouter.post('/vehicles', requireRole(['admin', 'super_admin', 'transport_partner']), async (req, res) => {
+  const schema = z.object({
+    plateNumber: z.string().min(3),
+    busId: z.string().optional(),
+    routeId: z.string().optional(),
+    transportPartnerId: z.string().optional(),
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+    return;
+  }
+
+  try {
+    const vehicle = await prisma.vehicle.create({
+      data: {
+        plateNumber: parsed.data.plateNumber.trim().toUpperCase(),
+        busId: parsed.data.busId?.trim() || parsed.data.plateNumber.replace(/\s+/g, '-'),
+        routeId: parsed.data.routeId,
+        transportPartnerId: parsed.data.transportPartnerId,
+      },
+      include: {
+        route: true,
+        transportPartner: true,
+        driver: true,
+        qrCodes: { take: 1, orderBy: { createdAt: 'desc' } },
+        _count: { select: { tripCovers: true } },
+      },
+    });
+    res.status(201).json({ vehicle: serializeVehicleRow(vehicle) });
+  } catch (err: unknown) {
+    if (err && typeof err === 'object' && 'code' in err && String((err as { code: string }).code) === 'P2002') {
+      res.status(409).json({ error: 'Vehicle with this plate already exists' });
+      return;
+    }
+    res.status(500).json({ error: 'Failed to create vehicle' });
+  }
+});
+
+dashboardRouter.patch('/vehicles/:vehicleId', requireRole(['admin', 'super_admin', 'transport_partner']), async (req, res) => {
+  const schema = z.object({
+    isSuspended: z.boolean().optional(),
+    routeId: z.string().nullable().optional(),
+    transportPartnerId: z.string().nullable().optional(),
+    driverId: z.string().nullable().optional(),
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+    return;
+  }
+
+  const vehicle = await prisma.vehicle.update({
+    where: { id: String(req.params.vehicleId) },
+    data: {
+      ...(parsed.data.isSuspended !== undefined ? { isSuspended: parsed.data.isSuspended } : {}),
+      ...(parsed.data.routeId !== undefined ? { routeId: parsed.data.routeId } : {}),
+      ...(parsed.data.transportPartnerId !== undefined
+        ? { transportPartnerId: parsed.data.transportPartnerId }
+        : {}),
+      ...(parsed.data.driverId !== undefined ? { driverId: parsed.data.driverId } : {}),
+    },
+    include: {
+      route: true,
+      transportPartner: true,
+      driver: true,
+      qrCodes: { take: 3, orderBy: { createdAt: 'desc' } },
+      _count: { select: { tripCovers: true } },
+    },
+  });
+  res.json({ vehicle: serializeVehicleRow(vehicle) });
+});
+
+dashboardRouter.get('/vehicles/:vehicleId/covers', async (req, res) => {
+  const covers = await prisma.tripCover.findMany({
+    where: { vehicleId: String(req.params.vehicleId) },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+    include: {
+      payment: true,
+      vehicle: true,
+      route: true,
+      passengerUser: { include: { passengerProfile: true } },
+    },
+  });
+  res.json({ covers: covers.map(serializeCoverRow) });
 });
 
 dashboardRouter.get('/vehicles/:vehicleId/qr', async (req, res) => {
@@ -178,10 +284,54 @@ dashboardRouter.get('/vehicles/:vehicleId/qr/scans', async (req, res) => {
     where: { qrCodeId: { in: qrIds } },
     orderBy: { scannedAt: 'desc' },
     take: 50,
-    include: { qrCode: { select: { code: true, vehicleId: true } } },
+    include: {
+      qrCode: { select: { code: true, vehicleId: true, vehicle: { select: { id: true, plateNumber: true } } } },
+    },
   });
 
   res.json({ scans: logs.map(serializeScanLog) });
+});
+
+dashboardRouter.get('/qr/scans', async (req, res) => {
+  const result = req.query.result ? String(req.query.result) : undefined;
+  const vehicleId = req.query.vehicleId ? String(req.query.vehicleId) : undefined;
+  const search = String(req.query.search ?? '').trim();
+
+  const where: Record<string, unknown> = {};
+  if (result) where.result = result;
+  if (vehicleId) where.qrCode = { vehicleId };
+
+  const logs = await prisma.qrScanLog.findMany({
+    where,
+    orderBy: { scannedAt: 'desc' },
+    take: 100,
+    include: {
+      qrCode: {
+        include: { vehicle: { select: { id: true, plateNumber: true } } },
+      },
+    },
+  });
+
+  let scans = logs.map(serializeScanLog);
+  if (search) {
+    const q = search.toLowerCase();
+    scans = scans.filter(
+      (s) =>
+        s.qrCode?.toLowerCase().includes(q) ||
+        s.vehiclePlate?.toLowerCase().includes(q) ||
+        s.result.toLowerCase().includes(q),
+    );
+  }
+
+  const counts = await prisma.qrScanLog.groupBy({
+    by: ['result'],
+    _count: { _all: true },
+  });
+
+  res.json({
+    scans,
+    resultCounts: Object.fromEntries(counts.map((c) => [c.result, c._count._all])),
+  });
 });
 
 dashboardRouter.patch('/vehicles/:id/location', requireRole(['admin', 'super_admin', 'transport_partner']), async (req, res) => {
@@ -271,6 +421,10 @@ dashboardRouter.get('/partners/:partnerId', async (req, res) => {
 
 dashboardRouter.get('/covers', async (req, res) => {
   const status = String(req.query.status ?? 'all');
+  const plan = req.query.plan ? String(req.query.plan) : undefined;
+  const search = String(req.query.search ?? '').trim();
+  const vehicleId = req.query.vehicleId ? String(req.query.vehicleId) : undefined;
+  const partnerId = req.query.partnerId ? String(req.query.partnerId) : undefined;
   const now = new Date();
   let where: Record<string, unknown> = {};
 
@@ -284,10 +438,21 @@ dashboardRouter.get('/covers', async (req, res) => {
     where = { payment: { status: 'failed' } };
   }
 
+  if (plan) where.plan = plan;
+  if (vehicleId) where.vehicleId = vehicleId;
+  if (partnerId) where.vehicle = { transportPartnerId: partnerId };
+  if (search) {
+    where.OR = [
+      { id: { contains: search } },
+      { passengerUser: { phone: { contains: search } } },
+      { passengerUser: { passengerProfile: { fullName: { contains: search } } } },
+    ];
+  }
+
   const covers = await prisma.tripCover.findMany({
     where,
     orderBy: { createdAt: 'desc' },
-    take: 100,
+    take: 200,
     include: {
       payment: true,
       vehicle: true,
@@ -318,10 +483,23 @@ dashboardRouter.get('/covers/:coverId', async (req, res) => {
 
 dashboardRouter.get('/payments', async (req, res) => {
   const status = req.query.status ? String(req.query.status) : undefined;
+  const search = String(req.query.search ?? '').trim();
+
+  const where: Record<string, unknown> = {};
+  if (status) where.status = status;
+  if (search) {
+    where.OR = [
+      { id: { contains: search } },
+      { reference: { contains: search } },
+      { tripCoverId: { contains: search } },
+      { tripCover: { passengerUser: { phone: { contains: search } } } },
+    ];
+  }
+
   const payments = await prisma.payment.findMany({
-    where: status ? { status: status as 'pending' | 'succeeded' | 'failed' } : undefined,
+    where: Object.keys(where).length ? where : undefined,
     orderBy: { createdAt: 'desc' },
-    take: 100,
+    take: 200,
     include: {
       tripCover: {
         include: {
@@ -344,6 +522,32 @@ dashboardRouter.get('/payments/config', async (_req, res) => {
     paymentSimulateSuccess: env.paymentSimulateSuccess,
     cardPaymentsEnabled: env.cardPaymentsEnabled,
     webhook: paymentWebhookPlaceholderInfo(),
+  });
+});
+
+dashboardRouter.get('/payments/:paymentId', async (req, res) => {
+  const payment = await prisma.payment.findUnique({
+    where: { id: String(req.params.paymentId) },
+    include: {
+      tripCover: {
+        include: {
+          passengerUser: { include: { passengerProfile: true } },
+          vehicle: true,
+          route: true,
+          payment: true,
+        },
+      },
+    },
+  });
+  if (!payment) {
+    res.status(404).json({ error: 'Payment not found' });
+    return;
+  }
+  res.json({
+    payment: {
+      ...serializePaymentRow(payment),
+      webhook: paymentWebhookPlaceholderInfo(),
+    },
   });
 });
 
@@ -441,18 +645,212 @@ dashboardRouter.get('/support-reports', async (req, res) => {
 });
 
 dashboardRouter.patch('/support-reports/:id', requireRole(['admin', 'super_admin']), async (req, res) => {
-  const schema = z.object({ status: z.enum(['open', 'in_progress', 'resolved', 'submitted']) });
+  const schema = z.object({
+    status: z.enum(['open', 'in_progress', 'resolved', 'submitted']).optional(),
+    adminNote: z.string().max(2000).optional(),
+  });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
     return;
   }
+  if (!parsed.data.status && parsed.data.adminNote === undefined) {
+    res.status(400).json({ error: 'Provide status and/or adminNote' });
+    return;
+  }
   const report = await prisma.supportReport.update({
     where: { id: String(req.params.id) },
-    data: { status: parsed.data.status },
+    data: {
+      ...(parsed.data.status ? { status: parsed.data.status } : {}),
+      ...(parsed.data.adminNote !== undefined ? { adminNote: parsed.data.adminNote } : {}),
+    },
     include: { user: { include: { passengerProfile: true } } },
   });
   res.json({ report: serializeSupportReport(report) });
+});
+
+dashboardRouter.get('/trips', async (req, res) => {
+  const bucket = String(req.query.bucket ?? 'all');
+
+  const trackings = await prisma.tripTracking.findMany({
+    orderBy: { updatedAt: 'desc' },
+    take: 200,
+    include: {
+      tripCover: {
+        include: {
+          passengerUser: { include: { passengerProfile: true } },
+          payment: true,
+          vehicle: { include: { route: true } },
+          route: true,
+        },
+      },
+    },
+  });
+
+  const rows = await Promise.all(trackings.map((t) => serializeDashboardTripRow(t)));
+  const filtered =
+    bucket === 'all'
+      ? rows
+      : rows.filter((r) => r.bucket === bucket);
+
+  res.json({
+    trips: filtered,
+    staleLocationNote: 'Trips with no location update in 5 minutes are marked stale, not live.',
+  });
+});
+
+dashboardRouter.get('/trips/:tripId', async (req, res) => {
+  const tracking = await prisma.tripTracking.findUnique({
+    where: { id: String(req.params.tripId) },
+    include: {
+      tripCover: {
+        include: {
+          passengerUser: { include: { passengerProfile: true } },
+          payment: true,
+          vehicle: { include: { route: true } },
+          route: true,
+        },
+      },
+    },
+  });
+  if (!tracking) {
+    res.status(404).json({ error: 'Trip not found' });
+    return;
+  }
+  res.json({ trip: await serializeDashboardTripRow(tracking) });
+});
+
+dashboardRouter.get('/users', async (req, res) => {
+  const search = String(req.query.search ?? '').trim();
+  const where: Record<string, unknown> = { role: 'passenger' };
+  if (search) {
+    where.OR = [
+      { phone: { contains: search } },
+      { email: { contains: search } },
+      { passengerProfile: { fullName: { contains: search } } },
+    ];
+  }
+
+  const users = await prisma.user.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    take: 200,
+    include: {
+      passengerProfile: true,
+      _count: {
+        select: {
+          passengerTripCovers: true,
+          passengerClaims: true,
+          savedPaymentMethods: true,
+          trustedContacts: true,
+          supportReports: true,
+        },
+      },
+    },
+  });
+
+  res.json({
+    users: users.map((u) => ({
+      id: u.id,
+      fullName: u.passengerProfile?.fullName ?? null,
+      phone: u.phone ? maskPhoneNumber(u.phone) : null,
+      email: u.email,
+      isActive: u.isActive,
+      createdAt: u.createdAt.toISOString(),
+      coverCount: u._count.passengerTripCovers,
+      claimCount: u._count.passengerClaims,
+      paymentMethodCount: u._count.savedPaymentMethods,
+      trustedContactCount: u._count.trustedContacts,
+      supportReportCount: u._count.supportReports,
+    })),
+  });
+});
+
+dashboardRouter.get('/users/:userId', async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: { id: String(req.params.userId) },
+    include: {
+      passengerProfile: true,
+      passengerTripCovers: {
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        include: { payment: true, vehicle: true, route: true },
+      },
+      passengerClaims: { orderBy: { createdAt: 'desc' }, take: 20 },
+      savedPaymentMethods: true,
+      trustedContacts: true,
+      supportReports: { orderBy: { createdAt: 'desc' }, take: 20 },
+      _count: {
+        select: {
+          passengerTripCovers: true,
+          passengerClaims: true,
+          savedPaymentMethods: true,
+          trustedContacts: true,
+          supportReports: true,
+        },
+      },
+    },
+  });
+  if (!user || user.role !== 'passenger') {
+    res.status(404).json({ error: 'Passenger not found' });
+    return;
+  }
+
+  const scanCount = await prisma.qrScanLog.count({ where: { userId: user.id } });
+
+  res.json({
+    user: {
+      id: user.id,
+      fullName: user.passengerProfile?.fullName ?? null,
+      phone: user.phone ? maskPhoneNumber(user.phone) : null,
+      email: user.email,
+      isActive: user.isActive,
+      createdAt: user.createdAt.toISOString(),
+      counts: {
+        covers: user._count.passengerTripCovers,
+        claims: user._count.passengerClaims,
+        paymentMethods: user._count.savedPaymentMethods,
+        trustedContacts: user._count.trustedContacts,
+        supportReports: user._count.supportReports,
+        qrScans: scanCount,
+      },
+      covers: user.passengerTripCovers.map(serializeCoverRow),
+      claims: user.passengerClaims.map((c) => ({
+        id: c.id,
+        reference: c.reference,
+        status: mapLegacyClaimStatus(c.status),
+        createdAt: c.createdAt.toISOString(),
+      })),
+      paymentMethods: user.savedPaymentMethods.map((m) => ({
+        id: m.id,
+        type: m.type,
+        label: m.label,
+        maskedValue: m.maskedValue,
+        isDefault: m.isDefault,
+      })),
+      trustedContacts: user.trustedContacts.map((c) => ({
+        id: c.id,
+        name: c.name,
+        maskedPhone: c.maskedPhone,
+        isPrimary: c.isPrimary,
+      })),
+      supportReports: user.supportReports.map((r) => ({
+        id: r.id,
+        problemType: r.problemType,
+        message: r.message,
+        status: r.status,
+        adminNote: r.adminNote ?? null,
+        createdAt: r.createdAt.toISOString(),
+        updatedAt: r.updatedAt.toISOString(),
+        user: {
+          id: user.id,
+          phone: user.phone ? maskPhoneNumber(user.phone) : null,
+          email: user.email,
+          fullName: user.passengerProfile?.fullName ?? null,
+        },
+      })),
+    },
+  });
 });
 
 dashboardRouter.get('/fraud/flags', async (_req, res) => {

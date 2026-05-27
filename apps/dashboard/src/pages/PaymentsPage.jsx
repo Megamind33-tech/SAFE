@@ -1,16 +1,38 @@
 import React, { useEffect, useState } from 'react';
-import { dashboardPayments, dashboardPaymentsConfig, loadDashboardToken } from '../api/dashboardApi.js';
+import { useSearchParams } from 'react-router-dom';
+import {
+  dashboardPayment,
+  dashboardPayments,
+  dashboardPaymentsConfig,
+  loadDashboardToken,
+} from '../api/dashboardApi.js';
+import {
+  Card,
+  DataTable,
+  DetailPanel,
+  EmptyState,
+  ErrorCard,
+  FilterTabs,
+  LoadingBlock,
+  PageHeader,
+  SearchInput,
+  StatusBadge,
+} from '../components/admin/ui.jsx';
+import { fmtDateTime } from '../lib/format.js';
 
-const FILTERS = ['', 'pending', 'succeeded', 'failed'];
-
-function fmt(iso) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
-}
+const FILTERS = [
+  { value: '', label: 'All' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'succeeded', label: 'Succeeded' },
+  { value: 'failed', label: 'Failed' },
+];
 
 export default function PaymentsPage() {
-  const [filter, setFilter] = useState('');
+  const [searchParams] = useSearchParams();
+  const [filter, setFilter] = useState(searchParams.get('status') || '');
+  const [search, setSearch] = useState('');
   const [payments, setPayments] = useState([]);
+  const [detail, setDetail] = useState(null);
   const [config, setConfig] = useState(null);
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(true);
@@ -21,7 +43,7 @@ export default function PaymentsPage() {
     if (!token) return;
     setLoading(true);
     Promise.all([
-      dashboardPayments(token, filter || undefined),
+      dashboardPayments(token, { status: filter || undefined, search }),
       dashboardPaymentsConfig(token),
     ])
       .then(([payRes, cfgRes]) => {
@@ -31,67 +53,70 @@ export default function PaymentsPage() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [token, filter]);
+  }, [token, filter, search]);
+
+  async function openPayment(id) {
+    if (!token) return;
+    const data = await dashboardPayment(token, id);
+    setDetail(data.payment);
+  }
+
+  const columns = [
+    { key: 'id', label: 'ID', render: (p) => <span className="font-mono text-xs">{p.id.slice(-8)}</span> },
+    { key: 'passenger', label: 'Passenger', render: (p) => p.passenger?.fullName || p.passenger?.phone || '—' },
+    { key: 'amount', label: 'Amount', render: (p) => <span className="font-bold">K{p.amount}</span> },
+    { key: 'method', label: 'Method', render: (p) => p.method },
+    { key: 'status', label: 'Status', render: (p) => <StatusBadge status={p.status} /> },
+    { key: 'vehicle', label: 'Vehicle', render: (p) => p.vehiclePlate ?? '—' },
+    { key: 'created', label: 'Created', render: (p) => <span className="text-xs text-slate-500">{fmtDateTime(p.createdAt)}</span> },
+  ];
 
   return (
     <div className="space-y-4 max-w-[1600px] mx-auto">
-      <h1 className="text-2xl font-black text-safe-ink">Payments</h1>
+      <PageHeader title="Payments" description="Payment truth comes from the backend gateway or webhook reconciliation." />
 
       {config ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm space-y-1">
+        <Card className="text-sm space-y-1">
           <div><strong>Gateway:</strong> {config.paymentGatewayEnabled ? 'Enabled' : 'Not connected'}</div>
           <div><strong>Simulate success:</strong> {config.paymentSimulateSuccess ? 'On (dev only)' : 'Off'}</div>
           <div className="text-xs text-slate-500">{config.webhook?.note}</div>
-          <div className="text-xs font-mono text-slate-600">Webhook: POST /api/shared/webhooks/payment</div>
-        </div>
+          <div className="text-xs font-mono">Webhook: POST /api/shared/webhooks/payment</div>
+        </Card>
       ) : null}
 
-      {note ? <div className="text-xs text-slate-500">{note}</div> : null}
-      {error ? <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
+      {note ? <p className="text-xs text-slate-500">{note}</p> : null}
+      {error ? <ErrorCard message={error} /> : null}
 
-      <div className="flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
-          <button
-            key={f || 'all'}
-            type="button"
-            onClick={() => setFilter(f)}
-            className={`rounded-xl px-3 py-2 text-xs font-black ${filter === f ? 'bg-safe-ink text-white' : 'bg-white border border-slate-200'}`}
-          >
-            {f || 'all'}
-          </button>
-        ))}
+      <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+        <SearchInput value={search} onChange={setSearch} placeholder="Search reference, policy, phone…" />
+        <FilterTabs value={filter} onChange={setFilter} options={FILTERS} />
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white overflow-x-auto">
-        {loading ? (
-          <div className="p-8 text-sm text-slate-500">Loading payments…</div>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <Card className="xl:col-span-2" padding={false}>
+          {loading ? <LoadingBlock /> : <DataTable columns={columns} rows={payments} onRowClick={(p) => openPayment(p.id)} emptyTitle="No payments found" />}
+        </Card>
+        {!detail ? (
+          <Card><EmptyState title="Payment detail" description="Select a payment to view linked cover and reconciliation info." /></Card>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-[10px] uppercase text-slate-400">
-              <tr>
-                <th className="px-4 py-3 text-left">ID</th>
-                <th className="px-4 py-3 text-left">Passenger</th>
-                <th className="px-4 py-3 text-left">Amount</th>
-                <th className="px-4 py-3 text-left">Method</th>
-                <th className="px-4 py-3 text-left">Status</th>
-                <th className="px-4 py-3 text-left">Vehicle</th>
-                <th className="px-4 py-3 text-left">Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payments.map((p) => (
-                <tr key={p.id} className="border-t border-slate-100">
-                  <td className="px-4 py-3 font-mono text-xs">{p.id.slice(-8)}</td>
-                  <td className="px-4 py-3">{p.passenger?.fullName || p.passenger?.phone || '—'}</td>
-                  <td className="px-4 py-3 font-bold">K{p.amount}</td>
-                  <td className="px-4 py-3">{p.method}</td>
-                  <td className="px-4 py-3 uppercase text-[10px] font-black">{p.status}</td>
-                  <td className="px-4 py-3">{p.vehiclePlate ?? '—'}</td>
-                  <td className="px-4 py-3 text-xs text-slate-500">{fmt(p.createdAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DetailPanel title={`Payment ${detail.id.slice(-8)}`} onClose={() => setDetail(null)}>
+            <div className="text-sm space-y-2">
+              <StatusBadge status={detail.status} />
+              <div>Amount: K{detail.amount} {detail.currency}</div>
+              <div>Method: {detail.method}</div>
+              <div>Reference: {detail.reference || '—'}</div>
+              <div>Cover: {detail.coverId}</div>
+              <div>Passenger: {detail.passenger?.fullName || detail.passenger?.phone || '—'}</div>
+              <div>Vehicle: {detail.vehiclePlate || '—'}</div>
+              <div>Created: {fmtDateTime(detail.createdAt)}</div>
+              <div>Updated: {fmtDateTime(detail.updatedAt)}</div>
+              {detail.webhook ? (
+                <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600">
+                  {detail.webhook.note}
+                </div>
+              ) : null}
+            </div>
+          </DetailPanel>
         )}
       </div>
     </div>
