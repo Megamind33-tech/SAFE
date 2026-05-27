@@ -34,6 +34,29 @@ const REQUIRED_SCREENSHOTS = [
   'qr-error-no-cache.png',
 ];
 
+const QA_CAPTURE_ENABLED = process.env.VITE_QR_QA_CAPTURE === 'true';
+
+function assertQrQaCaptureEnv() {
+  if (!QA_CAPTURE_ENABLED) {
+    throw new Error(
+      'capture-qr requires VITE_QR_QA_CAPTURE=true on the capture process and mobile dev server (restart dev:mobile with VITE_QR_QA_CAPTURE=true).'
+    );
+  }
+}
+
+async function assertQrQaHooksLive(page) {
+  await page.goto(`${BASE_URL}/?qr_qa_probe=${Date.now()}`, { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    sessionStorage.setItem('safe_qa_qr_mode', 'permission');
+  });
+  await page.goto(`${BASE_URL}/#qrScanner`, { waitUntil: 'networkidle' });
+  const visible = await page.getByText('Camera permission needed').isVisible().catch(() => false);
+  if (!visible) {
+    throw new Error(
+      'QR QA hooks are inactive in the mobile dev server. Restart with: VITE_QR_QA_CAPTURE=true npm run dev:mobile'
+    );
+  }
+}
 const QA_USERS = {
   noCover: { phone: '+260977300001', password: 'testpass123' },
   activeCover: { phone: '+260977300002', password: 'testpass123' },
@@ -131,6 +154,7 @@ async function setQaSession(page, { mode, code = '', result = null, token = '' }
 }
 
 async function main() {
+  assertQrQaCaptureEnv();
   assertLockedScreensUnchanged();
   await mkdir(OUTPUT_DIR, { recursive: true });
   await seedQrStates();
@@ -155,6 +179,7 @@ async function main() {
   const browser = await chromium.launch();
   const context = await browser.newContext();
   const page = await context.newPage();
+  await assertQrQaHooksLive(page);
 
   await loginViaUi(page, QA_USERS.noCover.phone, QA_USERS.noCover.password);
 

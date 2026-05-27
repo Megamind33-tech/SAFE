@@ -230,10 +230,18 @@ async function accidentFieldsFromCover(token) {
     }
   }
   const coverStart = new Date(elig.covers[0].coverPeriod.start);
-  coverStart.setUTCMinutes(coverStart.getUTCMinutes() + 15);
+  const incident = new Date(coverStart);
+  incident.setUTCMinutes(incident.getUTCMinutes() + 15);
+  const now = new Date();
+  if (incident > now) {
+    incident.setTime(now.getTime() - 30 * 60 * 1000);
+  }
+  if (incident < coverStart) {
+    incident.setTime(coverStart.getTime() + 60 * 1000);
+  }
   return {
-    accidentDate: coverStart.toISOString().slice(0, 10),
-    accidentTime: coverStart.toISOString().slice(11, 16),
+    accidentDate: incident.toISOString().slice(0, 10),
+    accidentTime: incident.toISOString().slice(11, 16),
     uploadEnabled: Boolean(elig.uploadEnabled),
   };
 }

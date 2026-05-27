@@ -158,6 +158,10 @@ npm --workspace apps/dashboard run smoke
 npm --workspace apps/dashboard run capture
 ```
 
+Mobile QA requires backend on `:8080`, mobile dev on `:5173`, and the mobile dev server started with `VITE_CLAIMS_QA_CAPTURE=true` and `VITE_QR_QA_CAPTURE=true` (QR/claims QA hooks are Vite build-time flags). For cover/home purchase seeds, enable `SAFE_PAYMENT_GATEWAY_ENABLED=true` and `SAFE_PAYMENT_SIMULATE_SUCCESS=true` in backend `.env`.
+
+`dashboard-empty-state.png` is captured only when the fleet table has zero vehicles; when seeded vehicles exist, vehicle detail/QR shots serve as the empty-fleet substitute.
+
 ## Remaining blockers
 
 1. Payment provider credentials

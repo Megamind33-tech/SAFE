@@ -26,21 +26,25 @@ async function ensureQaUser() {
 }
 
 async function ensureSucceededCover(userId) {
+  const now = new Date();
+  const startedAt = new Date(now);
+  startedAt.setHours(startedAt.getHours() - 3);
+  const endsAt = new Date(now);
+  endsAt.setHours(endsAt.getHours() + 4);
+
   let cover = await prisma.tripCover.findFirst({
     where: { passengerUserId: userId },
     orderBy: { createdAt: 'desc' },
     include: { payment: true },
   });
   if (!cover || cover.payment?.status !== 'succeeded') {
-    const now = new Date();
-    const endsAt = new Date(now);
-    endsAt.setHours(endsAt.getHours() + 4);
     cover = await prisma.tripCover.create({
       data: {
         passengerUserId: userId,
         plan: 'Plus Cover',
         status: 'active',
         amount: 500,
+        startedAt,
         endsAt,
         payment: {
           create: {
@@ -50,6 +54,12 @@ async function ensureSucceededCover(userId) {
           },
         },
       },
+      include: { payment: true },
+    });
+  } else if (cover.startedAt > startedAt) {
+    cover = await prisma.tripCover.update({
+      where: { id: cover.id },
+      data: { startedAt, endsAt },
       include: { payment: true },
     });
   }

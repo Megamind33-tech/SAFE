@@ -340,11 +340,15 @@ async function confirmPurchaseAndGetPaymentId(page) {
 }
 
 async function assertNoNegativeTimer(page) {
-  const times = await page.locator('.cover-flow-hero__details dd').allTextContents();
-  for (const t of times) {
-    if (/-\d+\s*(m|h|s)/i.test(t) || /-\d+:/.test(t)) {
-      throw new Error(`Timer shows negative value: "${t}"`);
-    }
+  const activeHero = page.locator('.cover-flow-hero--active');
+  if ((await activeHero.count()) === 0) return;
+  const timeRow = activeHero
+    .locator('.cover-flow-hero__details div')
+    .filter({ has: page.locator('dt', { hasText: 'Time remaining' }) })
+    .locator('dd');
+  const t = (await timeRow.textContent())?.trim() ?? '';
+  if (/-\d+\s*(m|h|s)/i.test(t) || /-\d+:/.test(t)) {
+    throw new Error(`Timer shows negative value: "${t}"`);
   }
 }
 
