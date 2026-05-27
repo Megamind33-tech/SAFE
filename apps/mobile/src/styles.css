@@ -2798,6 +2798,93 @@ button {
   }
 }
 
+/* Responsive layout — long IDs / references wrap without horizontal scroll */
+.home-hero__details dd,
+.cover-flow-hero__details dd,
+.cover-flow-review-card dl dd,
+.cover-flow-status-card dl dd,
+.claim-flow-review-row__value,
+.claim-detail-card__row,
+.claim-detail-card__ref,
+.claims-summary-card__ref,
+.claims-list-card__ref,
+.claims-list-card__row,
+.claims-status-card__id,
+.view-policy-screen__detail-value,
+.qr-verified-details dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cover-flow-hero__details dd,
+.cover-flow-review-card dl dd,
+.cover-flow-status-card dl dd,
+.claim-flow-review-row__value {
+  max-width: 58%;
+}
+
+.claims-status-card__top {
+  flex-wrap: wrap;
+}
+
+.claims-list-card,
+.claims-summary-card,
+.claims-empty-card,
+.claims-state-card,
+.claims-list-section {
+  width: var(--claims-content-width, 100%);
+  max-width: 100%;
+}
+
+.screen.live-trip-screen {
+  padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+  overflow-x: hidden;
+}
+
+.live-trip-screen__meta strong {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.live-trip-map--full {
+  margin: 0 clamp(12px, 4vw, 16px);
+  max-width: calc(100% - 24px);
+  box-sizing: border-box;
+}
+
+@media (max-width: 374px) {
+  .screen.cover-flow {
+    --cover-pad-x: 18px;
+  }
+
+  .cover-flow-intro__title {
+    font-size: 24px;
+    line-height: 28px;
+  }
+
+  .qr-screen {
+    --qr-pad-x: 18px;
+  }
+
+  .qr-intro__title {
+    font-size: 20px;
+  }
+
+  .live-trip-screen__header {
+    padding: 12px 12px 8px;
+  }
+
+  .live-trip-screen__meta {
+    margin: 12px 12px 0;
+  }
+
+  .live-trip-map--full {
+    margin: 0 12px;
+    max-width: calc(100% - 24px);
+  }
+}
+
 @media (max-width: 380px) {
   .home-screen:not(.premium-home) {
     padding-left: 18px;

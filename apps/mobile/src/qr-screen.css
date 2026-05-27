@@ -208,8 +208,6 @@
   font-size: 16px;
   font-weight: 700;
   color: #0f172a;
-  overflow-wrap: anywhere;
-  word-break: break-word;
 }
 
 .qr-actions {
@@ -249,14 +247,4 @@
 
 :has(.qr-screen) .bottom-nav {
   background: rgba(248, 250, 249, 0.96);
-}
-
-@media (max-width: 374px) {
-  .qr-screen {
-    --qr-pad-x: 18px;
-  }
-
-  .qr-intro__title {
-    font-size: 20px;
-  }
 }
