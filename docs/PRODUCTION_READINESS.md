@@ -15,6 +15,15 @@ Env templates: `apps/backend/.env.staging.example`, `apps/mobile/.env.staging.ex
 
 Staging admin: `cd apps/backend && SAFE_ADMIN_EMAIL=... SAFE_ADMIN_PASSWORD=... SAFE_DISABLE_DEFAULT_ADMIN=true npm run create-staging-admin`
 
+## Android device test build
+
+Capacitor wraps the mobile SPA for real-device testing (not Play Store release):
+
+- [ANDROID_TEST_BUILD.md](./ANDROID_TEST_BUILD.md) — setup, build APK, API URL, permissions, QR deep link notes
+- [ANDROID_DEVICE_TEST_CHECKLIST.md](./ANDROID_DEVICE_TEST_CHECKLIST.md) — 20-point manual device checklist
+
+Env template: `apps/mobile/.env.android.example` — use staging or LAN API; QA flags off.
+
 ## Responsive QA coverage
 
 Layout hardening pass — no visual redesign. Validates overflow, bottom-nav clearance, dashboard sidebar behavior, and contained table scroll.

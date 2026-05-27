@@ -4,10 +4,19 @@ dist/
 apps/*/node_modules/
 apps/*/dist/
 
+# Capacitor Android build artifacts (commit android/ project, ignore local builds)
+apps/mobile/android/.gradle/
+apps/mobile/android/app/build/
+apps/mobile/android/build/
+apps/mobile/android/local.properties
+apps/mobile/android/.idea/
+apps/mobile/android/capacitor-cordova-android-plugins/build/
+
 .env
 .env.*
 !.env.example
 !.env.staging.example
+!.env.android.example
 
 apps/backend/prisma/dev.db
 apps/backend/dev.db
