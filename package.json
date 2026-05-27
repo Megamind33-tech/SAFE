@@ -13,6 +13,11 @@
     "preview:dashboard": "npm --workspace apps/dashboard run preview",
     "dev:backend": "npm --workspace apps/backend run dev",
     "start:backend": "npm --workspace apps/backend run start",
-    "qa:mobile": "npm --workspace apps/mobile run home:capture && npm --workspace apps/mobile run cover:capture && npm --workspace apps/mobile run claims:capture && npm --workspace apps/mobile run help:capture && npm --workspace apps/mobile run notifications:capture && npm --workspace apps/mobile run live-trip:capture && npm --workspace apps/mobile run settings:capture && npm --workspace apps/mobile run payment-methods:capture && npm --workspace apps/mobile run trusted-contacts:capture && npm --workspace apps/mobile run qr:capture"
+    "qa:mobile": "npm --workspace apps/mobile run home:capture && npm --workspace apps/mobile run cover:capture && npm --workspace apps/mobile run claims:capture && npm --workspace apps/mobile run help:capture && npm --workspace apps/mobile run notifications:capture && npm --workspace apps/mobile run live-trip:capture && npm --workspace apps/mobile run settings:capture && npm --workspace apps/mobile run payment-methods:capture && npm --workspace apps/mobile run trusted-contacts:capture && npm --workspace apps/mobile run qr:capture",
+    "staging:init-env": "node scripts/staging/init-env-from-examples.mjs",
+    "staging:validate": "node scripts/staging/validate-env.mjs",
+    "staging:build": "node scripts/staging/build-staging.mjs",
+    "staging:smoke": "node scripts/staging/smoke-remote.mjs",
+    "staging:migrate": "cd apps/backend && npx prisma migrate deploy && npx prisma generate"
   }
 }
