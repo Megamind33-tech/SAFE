@@ -38,13 +38,41 @@ export function clearDashboardToken() {
   localStorage.removeItem('safe_dashboard_token');
 }
 
+const DASHBOARD_BLOCKED_ROLES = new Set([
+  'passenger',
+  'driver',
+  'transport_partner',
+  'insurance_partner',
+]);
+
 export async function dashboardLogin({ identifier, password }) {
   const data = await request('/api/shared/auth/login', { method: 'POST', body: { identifier, password } });
   const role = data?.user?.role;
-  if (role === 'passenger') {
-    throw new Error('This account is a passenger account. Use the mobile app.');
+  if (DASHBOARD_BLOCKED_ROLES.has(role)) {
+    if (role === 'transport_partner' || role === 'insurance_partner') {
+      throw new Error(
+        'Partner accounts cannot access the operations dashboard yet. Ask ops for a company staff login.',
+      );
+    }
+    throw new Error('This account cannot access the operations dashboard.');
   }
   return data;
+}
+
+export async function dashboardSession(token) {
+  return request('/api/dashboard/session', { token });
+}
+
+export async function dashboardStaff(token, params = {}) {
+  return request(`/api/dashboard/staff${qs(params)}`, { token });
+}
+
+export async function createStaffUser(token, body) {
+  return request('/api/dashboard/staff', { method: 'POST', token, body });
+}
+
+export async function updateStaffUser(token, userId, body) {
+  return request(`/api/dashboard/staff/${userId}`, { method: 'PATCH', token, body });
 }
 
 export async function dashboardMe(token) {

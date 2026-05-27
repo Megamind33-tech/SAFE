@@ -93,6 +93,14 @@ async function main() {
     },
   });
 
+  if (process.env.SAFE_SEED_DASHBOARD_STAFF === 'true') {
+    const { execSync } = await import('node:child_process');
+    const { fileURLToPath } = await import('node:url');
+    const path = await import('node:path');
+    const backendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+    execSync('npx tsx scripts/seedDashboardStaff.mjs', { cwd: backendRoot, stdio: 'inherit' });
+  }
+
   await prisma.qRCode.upsert({
     where: { code: 'SAFE-LSK-2481' },
     create: {

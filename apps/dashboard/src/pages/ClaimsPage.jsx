@@ -18,6 +18,7 @@ import {
   StatusBadge,
 } from '../components/admin/ui.jsx';
 import { fmtDateTime } from '../lib/format.js';
+import { useDashboardSession } from '../context/DashboardSessionContext.jsx';
 
 const STATUS_TABS = [
   { value: 'all', label: 'All' },
@@ -40,6 +41,15 @@ export default function ClaimsPage() {
   const [busy, setBusy] = useState(false);
   const [documentsMetadataOnly, setDocumentsMetadataOnly] = useState(true);
   const token = loadDashboardToken();
+  const { can } = useDashboardSession();
+
+  const statusActions = [
+    { status: 'under_review', permission: 'claims.update_status' },
+    { status: 'needs_action', permission: 'claims.update_status' },
+    { status: 'approved', permission: 'claims.approve' },
+    { status: 'rejected', permission: 'claims.reject' },
+    { status: 'paid', permission: 'claims.mark_paid' },
+  ].filter((a) => can(a.permission));
 
   async function loadClaims() {
     if (!token) return;
@@ -150,13 +160,23 @@ export default function ClaimsPage() {
                 ))}
               </ul>
             </div>
-            <div className="flex flex-wrap gap-2 pt-2">
-              {['under_review', 'needs_action', 'approved', 'rejected', 'paid'].map((s) => (
-                <button key={s} type="button" disabled={busy} onClick={() => patchStatus(s)} className="rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-black uppercase disabled:opacity-50">
-                  {s.replace('_', ' ')}
-                </button>
-              ))}
-            </div>
+            {statusActions.length ? (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {statusActions.map(({ status }) => (
+                  <button
+                    key={status}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => patchStatus(status)}
+                    className="rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-black uppercase disabled:opacity-50"
+                  >
+                    {status.replace('_', ' ')}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500 pt-2">Your role cannot change claim status.</p>
+            )}
           </DetailPanel>
         )}
       </div>

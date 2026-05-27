@@ -67,6 +67,21 @@ Dashboard responsive capture requires backend on `:8080` and dashboard dev on `:
 
 ## Admin dashboard readiness
 
+### Staff roles and RBAC
+
+Dashboard access uses **per-user staff roles** and backend-enforced permissions — not a single shared admin password for all operators.
+
+- Role and permission source: `apps/backend/src/lib/dashboardPermissions.ts`
+- Staff management: `GET/POST/PATCH /api/dashboard/staff` (requires `staff.manage`, super admin)
+- Session permissions: `GET /api/dashboard/session`
+- Full role table: [DASHBOARD_RBAC.md](./DASHBOARD_RBAC.md)
+
+**First admin (staging/production):** `SAFE_ADMIN_EMAIL` + `SAFE_ADMIN_PASSWORD` via `npm run create-staging-admin`; then `SAFE_DISABLE_DEFAULT_ADMIN=true`. Create additional staff in the dashboard — **do not run pilot with one shared login.**
+
+**QA staff seed (local only):** `SAFE_SEED_DASHBOARD_STAFF=true` when seeding backend.
+
+**External partner roles (`transport_partner`, `insurance_partner`):** blocked from dashboard API and login until per-partner row scoping exists. Use internal `partner_manager` staff accounts for ops work.
+
 ### What staff can manage in pilot
 
 - **Overview** — real KPIs (covers, payments, claims, QR scans, trips, passengers) with activity panels
@@ -81,6 +96,7 @@ Dashboard responsive capture requires backend on `:8080` and dashboard dev on `:
 - **Passengers** — masked phone list and activity summary
 - **Settings** — configured/not-configured flags and production warnings (no secrets exposed)
 - **Drivers** — existing driver onboarding (unchanged)
+- **Staff users** — list/create/edit roles (super admin / `staff.manage` only)
 
 ### Still blocked / not in dashboard
 
@@ -98,7 +114,7 @@ Dashboard responsive capture requires backend on `:8080` and dashboard dev on `:
 
 ### Must configure before public launch
 
-- Rotate default admin credentials
+- Rotate default admin credentials; assign individual staff roles (no shared super-admin password)
 - Set `JWT_SECRET`, `CORS_ORIGINS`, `SAFE_QR_PUBLIC_BASE_URL`
 - Wire payment provider + webhook
 - Configure claims blob storage if upload enabled

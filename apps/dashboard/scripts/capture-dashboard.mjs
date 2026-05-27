@@ -17,11 +17,11 @@ const FAKE_PATTERNS = [
   /placeholder stats/i,
 ];
 
-async function apiLogin() {
+async function apiLogin(identifier = 'admin@safe.local', password = 'admin1234') {
   const res = await fetch(`${API_BASE}/api/shared/auth/login`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ identifier: 'admin@safe.local', password: 'admin1234' }),
+    body: JSON.stringify({ identifier, password }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || 'Login failed');
@@ -102,6 +102,34 @@ async function capture(page, filename) {
   await page.goto(`${DASHBOARD_URL}/`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(800);
   await capture(page, 'dashboard-error-state.png');
+
+  // Staff users (super admin)
+  await page.goto(`${DASHBOARD_URL}/staff`, { waitUntil: 'networkidle' });
+  await capture(page, 'dashboard-staff-list.png');
+  await page.getByRole('button', { name: /add staff user/i }).click();
+  await page.waitForTimeout(400);
+  await capture(page, 'dashboard-staff-create.png');
+
+  // Access restricted — support agent on payments
+  const supportToken = await apiLogin('support@safe.local', 'staffqa123');
+  await context.clearCookies();
+  await page.evaluate((t) => localStorage.setItem('safe_dashboard_token', t), supportToken);
+  await page.goto(`${DASHBOARD_URL}/payments`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(600);
+  await capture(page, 'dashboard-access-restricted.png');
+
+  // Staff edit panel (back to admin)
+  const adminAgain = await apiLogin();
+  await page.evaluate((t) => localStorage.setItem('safe_dashboard_token', t), adminAgain);
+  await page.goto(`${DASHBOARD_URL}/staff`, { waitUntil: 'networkidle' });
+  const editBtn = page.getByRole('button', { name: /^edit$/i }).first();
+  if (await editBtn.count()) {
+    await editBtn.click();
+    await page.waitForTimeout(400);
+    await capture(page, 'dashboard-staff-edit-role.png');
+  } else {
+    await capture(page, 'dashboard-staff-edit-role.png');
+  }
 
   await browser.close();
   console.log('Dashboard capture complete');

@@ -3,7 +3,13 @@ import { z } from 'zod';
 import type { ClaimStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth, getAuthed } from '../middleware/requireAuth.js';
-import { requireRole } from '../middleware/requireRole.js';
+import {
+  requireDashboardAccess,
+  requireDashboardPermission,
+} from '../middleware/requireDashboardPermission.js';
+import { requireClaimMutationPermission } from '../middleware/requireClaimMutationPermission.js';
+import { listPermissionsForRole } from '../lib/dashboardPermissions.js';
+import { dashboardStaffRouter } from './dashboardStaff.js';
 import { hashPassword } from '../lib/auth.js';
 import { disableVehicleQr, getOrCreateVehicleQr, regenerateVehicleQr } from '../lib/qrCodes.js';
 import { generateQrPngDataUrl, generateQrSvg, serializeQrRecord } from '../lib/qrImage.js';
@@ -31,23 +37,48 @@ import { CLAIMS_UPLOAD_ENABLED } from '../lib/claims.js';
 export const dashboardRouter = Router();
 
 dashboardRouter.use(requireAuth);
-dashboardRouter.use(requireRole(['admin', 'super_admin', 'transport_partner', 'insurance_partner']));
+dashboardRouter.use(requireDashboardAccess());
 
-dashboardRouter.get('/metrics', async (_req, res) => {
+dashboardRouter.get('/session', async (req, res) => {
+  const authed = getAuthed(req);
+  const user = await prisma.user.findUnique({
+    where: { id: authed.user.id },
+    include: { passengerProfile: true },
+  });
+  if (!user) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+  res.json({
+    user: {
+      id: user.id,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      isActive: user.isActive,
+      fullName: user.passengerProfile?.fullName ?? null,
+    },
+    permissions: listPermissionsForRole(user.role),
+  });
+});
+
+dashboardRouter.use('/staff', dashboardStaffRouter);
+
+dashboardRouter.get('/metrics', requireDashboardPermission('overview.view'), async (_req, res) => {
   const metrics = await loadDashboardMetrics();
   res.json({ metrics });
 });
 
-dashboardRouter.get('/overview', async (_req, res) => {
+dashboardRouter.get('/overview', requireDashboardPermission('overview.view'), async (_req, res) => {
   const [metrics, panels] = await Promise.all([loadDashboardMetrics(), loadOverviewPanels()]);
   res.json({ metrics, panels });
 });
 
-dashboardRouter.get('/readiness', async (_req, res) => {
+dashboardRouter.get('/readiness', requireDashboardPermission('settings.view'), async (_req, res) => {
   res.json({ readiness: buildReadinessReport() });
 });
 
-dashboardRouter.get('/vehicles', async (req, res) => {
+dashboardRouter.get('/vehicles', requireDashboardPermission('vehicles.view'), async (req, res) => {
   const search = String(req.query.search ?? '').trim();
   const status = String(req.query.status ?? 'all');
   const partnerId = req.query.partnerId ? String(req.query.partnerId) : undefined;
@@ -87,7 +118,7 @@ dashboardRouter.get('/vehicles', async (req, res) => {
   res.json({ vehicles: rows });
 });
 
-dashboardRouter.get('/vehicles/:vehicleId', async (req, res) => {
+dashboardRouter.get('/vehicles/:vehicleId', requireDashboardPermission('vehicles.view'), async (req, res) => {
   const vehicle = await prisma.vehicle.findUnique({
     where: { id: String(req.params.vehicleId) },
     include: {
@@ -105,7 +136,7 @@ dashboardRouter.get('/vehicles/:vehicleId', async (req, res) => {
   res.json({ vehicle: serializeVehicleRow(vehicle) });
 });
 
-dashboardRouter.post('/vehicles', requireRole(['admin', 'super_admin', 'transport_partner']), async (req, res) => {
+dashboardRouter.post('/vehicles', requireDashboardPermission('vehicles.create'), async (req, res) => {
   const schema = z.object({
     plateNumber: z.string().min(3),
     busId: z.string().optional(),
@@ -144,7 +175,7 @@ dashboardRouter.post('/vehicles', requireRole(['admin', 'super_admin', 'transpor
   }
 });
 
-dashboardRouter.patch('/vehicles/:vehicleId', requireRole(['admin', 'super_admin', 'transport_partner']), async (req, res) => {
+dashboardRouter.patch('/vehicles/:vehicleId', requireDashboardPermission('vehicles.update'), async (req, res) => {
   const schema = z.object({
     isSuspended: z.boolean().optional(),
     routeId: z.string().nullable().optional(),
@@ -178,7 +209,7 @@ dashboardRouter.patch('/vehicles/:vehicleId', requireRole(['admin', 'super_admin
   res.json({ vehicle: serializeVehicleRow(vehicle) });
 });
 
-dashboardRouter.get('/vehicles/:vehicleId/covers', async (req, res) => {
+dashboardRouter.get('/vehicles/:vehicleId/covers', requireDashboardPermission('covers.view'), async (req, res) => {
   const covers = await prisma.tripCover.findMany({
     where: { vehicleId: String(req.params.vehicleId) },
     orderBy: { createdAt: 'desc' },
@@ -193,7 +224,7 @@ dashboardRouter.get('/vehicles/:vehicleId/covers', async (req, res) => {
   res.json({ covers: covers.map(serializeCoverRow) });
 });
 
-dashboardRouter.get('/vehicles/:vehicleId/qr', async (req, res) => {
+dashboardRouter.get('/vehicles/:vehicleId/qr', requireDashboardPermission('qr.view'), async (req, res) => {
   const vehicleId = String(req.params.vehicleId);
   const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
   if (!vehicle) {
@@ -211,7 +242,7 @@ dashboardRouter.get('/vehicles/:vehicleId/qr', async (req, res) => {
   });
 });
 
-dashboardRouter.post('/vehicles/:vehicleId/qr', requireRole(['admin', 'super_admin', 'transport_partner']), async (req, res) => {
+dashboardRouter.post('/vehicles/:vehicleId/qr', requireDashboardPermission('qr.generate'), async (req, res) => {
   const authed = getAuthed(req);
   const vehicleId = String(req.params.vehicleId);
   const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
@@ -230,7 +261,7 @@ dashboardRouter.post('/vehicles/:vehicleId/qr', requireRole(['admin', 'super_adm
   });
 });
 
-dashboardRouter.post('/vehicles/:vehicleId/qr/regenerate', requireRole(['admin', 'super_admin', 'transport_partner']), async (req, res) => {
+dashboardRouter.post('/vehicles/:vehicleId/qr/regenerate', requireDashboardPermission('qr.regenerate'), async (req, res) => {
   const authed = getAuthed(req);
   const vehicleId = String(req.params.vehicleId);
   const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
@@ -249,7 +280,7 @@ dashboardRouter.post('/vehicles/:vehicleId/qr/regenerate', requireRole(['admin',
   });
 });
 
-dashboardRouter.patch('/vehicles/:vehicleId/qr', requireRole(['admin', 'super_admin', 'transport_partner']), async (req, res) => {
+dashboardRouter.patch('/vehicles/:vehicleId/qr', requireDashboardPermission('qr.disable'), async (req, res) => {
   const schema = z.object({ qrId: z.string(), action: z.enum(['disable', 'enable']) });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
@@ -274,7 +305,7 @@ dashboardRouter.patch('/vehicles/:vehicleId/qr', requireRole(['admin', 'super_ad
   res.json({ qr: serializeQrRecord(updated) });
 });
 
-dashboardRouter.get('/vehicles/:vehicleId/qr/scans', async (req, res) => {
+dashboardRouter.get('/vehicles/:vehicleId/qr/scans', requireDashboardPermission('qr.scans.view'), async (req, res) => {
   const vehicleId = String(req.params.vehicleId);
   const qrIds = (
     await prisma.qRCode.findMany({ where: { vehicleId }, select: { id: true } })
@@ -292,7 +323,7 @@ dashboardRouter.get('/vehicles/:vehicleId/qr/scans', async (req, res) => {
   res.json({ scans: logs.map(serializeScanLog) });
 });
 
-dashboardRouter.get('/qr/scans', async (req, res) => {
+dashboardRouter.get('/qr/scans', requireDashboardPermission('qr.scans.view'), async (req, res) => {
   const result = req.query.result ? String(req.query.result) : undefined;
   const vehicleId = req.query.vehicleId ? String(req.query.vehicleId) : undefined;
   const search = String(req.query.search ?? '').trim();
@@ -334,7 +365,7 @@ dashboardRouter.get('/qr/scans', async (req, res) => {
   });
 });
 
-dashboardRouter.patch('/vehicles/:id/location', requireRole(['admin', 'super_admin', 'transport_partner']), async (req, res) => {
+dashboardRouter.patch('/vehicles/:id/location', requireDashboardPermission('vehicles.update'), async (req, res) => {
   const schema = z.object({
     lat: z.number(),
     lng: z.number(),
@@ -358,7 +389,7 @@ dashboardRouter.patch('/vehicles/:id/location', requireRole(['admin', 'super_adm
   res.json({ vehicle });
 });
 
-dashboardRouter.get('/partners', async (_req, res) => {
+dashboardRouter.get('/partners', requireDashboardPermission('partners.view'), async (_req, res) => {
   const partners = await prisma.transportPartner.findMany({
     orderBy: { name: 'asc' },
     include: { _count: { select: { vehicles: true, drivers: true, qrCodes: true } } },
@@ -366,7 +397,7 @@ dashboardRouter.get('/partners', async (_req, res) => {
   res.json({ partners: partners.map(serializePartnerRow) });
 });
 
-dashboardRouter.get('/partners/:partnerId', async (req, res) => {
+dashboardRouter.get('/partners/:partnerId', requireDashboardPermission('partners.view'), async (req, res) => {
   const partner = await prisma.transportPartner.findUnique({
     where: { id: String(req.params.partnerId) },
     include: {
@@ -419,7 +450,7 @@ dashboardRouter.get('/partners/:partnerId', async (req, res) => {
   });
 });
 
-dashboardRouter.get('/covers', async (req, res) => {
+dashboardRouter.get('/covers', requireDashboardPermission('covers.view'), async (req, res) => {
   const status = String(req.query.status ?? 'all');
   const plan = req.query.plan ? String(req.query.plan) : undefined;
   const search = String(req.query.search ?? '').trim();
@@ -464,7 +495,7 @@ dashboardRouter.get('/covers', async (req, res) => {
   res.json({ covers: covers.map(serializeCoverRow) });
 });
 
-dashboardRouter.get('/covers/:coverId', async (req, res) => {
+dashboardRouter.get('/covers/:coverId', requireDashboardPermission('covers.view'), async (req, res) => {
   const cover = await prisma.tripCover.findUnique({
     where: { id: String(req.params.coverId) },
     include: {
@@ -481,7 +512,7 @@ dashboardRouter.get('/covers/:coverId', async (req, res) => {
   res.json({ cover: serializeCoverRow(cover) });
 });
 
-dashboardRouter.get('/payments', async (req, res) => {
+dashboardRouter.get('/payments', requireDashboardPermission('payments.view'), async (req, res) => {
   const status = req.query.status ? String(req.query.status) : undefined;
   const search = String(req.query.search ?? '').trim();
 
@@ -516,7 +547,7 @@ dashboardRouter.get('/payments', async (req, res) => {
   });
 });
 
-dashboardRouter.get('/payments/config', async (_req, res) => {
+dashboardRouter.get('/payments/config', requireDashboardPermission('payments.view'), async (_req, res) => {
   res.json({
     paymentGatewayEnabled: env.paymentGatewayEnabled,
     paymentSimulateSuccess: env.paymentSimulateSuccess,
@@ -525,7 +556,7 @@ dashboardRouter.get('/payments/config', async (_req, res) => {
   });
 });
 
-dashboardRouter.get('/payments/:paymentId', async (req, res) => {
+dashboardRouter.get('/payments/:paymentId', requireDashboardPermission('payments.view'), async (req, res) => {
   const payment = await prisma.payment.findUnique({
     where: { id: String(req.params.paymentId) },
     include: {
@@ -551,7 +582,7 @@ dashboardRouter.get('/payments/:paymentId', async (req, res) => {
   });
 });
 
-dashboardRouter.get('/claims', async (req, res) => {
+dashboardRouter.get('/claims', requireDashboardPermission('claims.view'), async (req, res) => {
   const status = req.query.status ? String(req.query.status) : undefined;
   const claims = await prisma.claim.findMany({
     where: status ? { status: status as ClaimStatus } : undefined,
@@ -575,7 +606,7 @@ dashboardRouter.get('/claims', async (req, res) => {
   });
 });
 
-dashboardRouter.get('/claims/:id', async (req, res) => {
+dashboardRouter.get('/claims/:id', requireDashboardPermission('claims.view'), async (req, res) => {
   const claim = await loadDashboardClaimDetail(String(req.params.id));
   if (!claim) {
     res.status(404).json({ error: 'Claim not found' });
@@ -589,7 +620,7 @@ const claimStatusSchema = z.object({
   note: z.string().max(500).optional(),
 });
 
-dashboardRouter.patch('/claims/:id', requireRole(['admin', 'super_admin']), async (req, res) => {
+dashboardRouter.patch('/claims/:id', requireClaimMutationPermission(), async (req, res) => {
   const parsed = claimStatusSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
@@ -608,7 +639,7 @@ dashboardRouter.patch('/claims/:id', requireRole(['admin', 'super_admin']), asyn
   }
 });
 
-dashboardRouter.post('/claims/:id/approve', requireRole(['admin', 'super_admin']), async (req, res) => {
+dashboardRouter.post('/claims/:id/approve', requireClaimMutationPermission(), async (req, res) => {
   try {
     const claim = await updateClaimAdminStatus(String(req.params.id), {
       status: 'approved',
@@ -620,7 +651,7 @@ dashboardRouter.post('/claims/:id/approve', requireRole(['admin', 'super_admin']
   }
 });
 
-dashboardRouter.post('/claims/:id/reject', requireRole(['admin', 'super_admin']), async (req, res) => {
+dashboardRouter.post('/claims/:id/reject', requireClaimMutationPermission(), async (req, res) => {
   const note = typeof req.body?.reason === 'string' ? req.body.reason : 'Rejected via dashboard';
   try {
     const claim = await updateClaimAdminStatus(String(req.params.id), {
@@ -633,7 +664,7 @@ dashboardRouter.post('/claims/:id/reject', requireRole(['admin', 'super_admin'])
   }
 });
 
-dashboardRouter.get('/support-reports', async (req, res) => {
+dashboardRouter.get('/support-reports', requireDashboardPermission('support.view'), async (req, res) => {
   const status = req.query.status ? String(req.query.status) : undefined;
   const reports = await prisma.supportReport.findMany({
     where: status ? { status } : undefined,
@@ -644,7 +675,7 @@ dashboardRouter.get('/support-reports', async (req, res) => {
   res.json({ reports: reports.map(serializeSupportReport) });
 });
 
-dashboardRouter.patch('/support-reports/:id', requireRole(['admin', 'super_admin']), async (req, res) => {
+dashboardRouter.patch('/support-reports/:id', requireDashboardPermission('support.update'), async (req, res) => {
   const schema = z.object({
     status: z.enum(['open', 'in_progress', 'resolved', 'submitted']).optional(),
     adminNote: z.string().max(2000).optional(),
@@ -669,7 +700,7 @@ dashboardRouter.patch('/support-reports/:id', requireRole(['admin', 'super_admin
   res.json({ report: serializeSupportReport(report) });
 });
 
-dashboardRouter.get('/trips', async (req, res) => {
+dashboardRouter.get('/trips', requireDashboardPermission('trips.view'), async (req, res) => {
   const bucket = String(req.query.bucket ?? 'all');
 
   const trackings = await prisma.tripTracking.findMany({
@@ -699,7 +730,7 @@ dashboardRouter.get('/trips', async (req, res) => {
   });
 });
 
-dashboardRouter.get('/trips/:tripId', async (req, res) => {
+dashboardRouter.get('/trips/:tripId', requireDashboardPermission('trips.view'), async (req, res) => {
   const tracking = await prisma.tripTracking.findUnique({
     where: { id: String(req.params.tripId) },
     include: {
@@ -720,7 +751,7 @@ dashboardRouter.get('/trips/:tripId', async (req, res) => {
   res.json({ trip: await serializeDashboardTripRow(tracking) });
 });
 
-dashboardRouter.get('/users', async (req, res) => {
+dashboardRouter.get('/users', requireDashboardPermission('users.view'), async (req, res) => {
   const search = String(req.query.search ?? '').trim();
   const where: Record<string, unknown> = { role: 'passenger' };
   if (search) {
@@ -766,7 +797,7 @@ dashboardRouter.get('/users', async (req, res) => {
   });
 });
 
-dashboardRouter.get('/users/:userId', async (req, res) => {
+dashboardRouter.get('/users/:userId', requireDashboardPermission('users.sensitive_view'), async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: String(req.params.userId) },
     include: {
@@ -853,12 +884,12 @@ dashboardRouter.get('/users/:userId', async (req, res) => {
   });
 });
 
-dashboardRouter.get('/fraud/flags', async (_req, res) => {
+dashboardRouter.get('/fraud/flags', requireDashboardPermission('overview.view'), async (_req, res) => {
   const flags = await prisma.fraudFlag.findMany({ orderBy: { createdAt: 'desc' }, take: 50 });
   res.json({ flags });
 });
 
-dashboardRouter.get('/payouts', async (_req, res) => {
+dashboardRouter.get('/payouts', requireDashboardPermission('payments.view'), async (_req, res) => {
   const payouts = await prisma.payout.findMany({
     orderBy: { createdAt: 'desc' },
     take: 50,
@@ -867,7 +898,7 @@ dashboardRouter.get('/payouts', async (_req, res) => {
   res.json({ payouts });
 });
 
-dashboardRouter.get('/drivers', async (_req, res) => {
+dashboardRouter.get('/drivers', requireDashboardPermission('drivers.view'), async (_req, res) => {
   const drivers = await prisma.driverProfile.findMany({
     orderBy: { createdAt: 'desc' },
     include: {
@@ -878,7 +909,7 @@ dashboardRouter.get('/drivers', async (_req, res) => {
   res.json({ drivers });
 });
 
-dashboardRouter.post('/drivers', async (req, res) => {
+dashboardRouter.post('/drivers', requireDashboardPermission('drivers.create'), async (req, res) => {
   const { fullName, phone, email, password, licenseNumber, plateNumber } = req.body;
 
   if (!fullName || !phone || !password) {
