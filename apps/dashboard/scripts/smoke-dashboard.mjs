@@ -215,6 +215,25 @@ function fail(name, err) {
     fail('last super_admin cannot be deactivated', e);
   }
 
+  try {
+    const partner = await staffLogin('partner-external@safe.local', QA_PASS);
+    await apiRequest('/api/dashboard/metrics', { token: partner.token, expectStatus: 403 });
+    pass('transport_partner blocked from dashboard API (no global access)');
+  } catch (e) {
+    fail('transport_partner blocked from dashboard API', e);
+  }
+
+  try {
+    const partnerLogin = await apiRequest('/api/shared/auth/login', {
+      method: 'POST',
+      body: { identifier: 'partner-external@safe.local', password: QA_PASS },
+    });
+    await apiRequest('/api/dashboard/session', { token: partnerLogin.token, expectStatus: 403 });
+    pass('transport_partner blocked from dashboard session');
+  } catch (e) {
+    fail('transport_partner blocked from dashboard session', e);
+  }
+
   const failed = checks.filter((c) => !c.ok);
   console.log(`\nDashboard smoke: ${checks.length - failed.length}/${checks.length} passed`);
   if (failed.length) process.exit(1);

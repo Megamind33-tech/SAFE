@@ -13,10 +13,17 @@ Operations dashboard access is **not** a single shared admin login. Each staff m
 | `finance_officer` | Payments, covers, mark claim paid when approved |
 | `support_agent` | Support reports and passenger lookup (read-only claims) |
 | `fleet_manager` | Vehicles, QR, live trips |
-| `partner_manager` | Partners and QR scan performance |
+| `partner_manager` | Partners and QR scan performance (internal staff) |
 | `auditor` | Read-only across permitted pages |
-| `transport_partner` | Legacy partner login (fleet scope, no claims mutations) |
-| `insurance_partner` | Legacy read-only partner context |
+
+### External partner roles (blocked from dashboard)
+
+| Role | Dashboard access |
+|------|------------------|
+| `transport_partner` | **Blocked** — no global fleet/claims data until row-level partner scoping ships |
+| `insurance_partner` | **Blocked** — same |
+
+Partner organizations should receive **`partner_manager`** (or other internal staff) accounts created by a super admin — not legacy partner enum logins on the ops dashboard.
 
 ## Permission model
 

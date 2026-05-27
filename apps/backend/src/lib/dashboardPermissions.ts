@@ -40,7 +40,7 @@ export const DASHBOARD_PERMISSIONS = [
 
 export type DashboardPermission = (typeof DASHBOARD_PERMISSIONS)[number];
 
-/** Roles that may use the operations dashboard (not mobile passenger/driver). */
+/** Roles that may use the operations dashboard (company staff only). */
 export const DASHBOARD_ACCESS_ROLES = [
   'super_admin',
   'admin',
@@ -51,11 +51,15 @@ export const DASHBOARD_ACCESS_ROLES = [
   'fleet_manager',
   'partner_manager',
   'auditor',
-  'transport_partner',
-  'insurance_partner',
 ] as const;
 
 export type DashboardAccessRole = (typeof DASHBOARD_ACCESS_ROLES)[number];
+
+/**
+ * External partner enum values — no dashboard API access until row-level partner scoping exists.
+ * Use internal `partner_manager` staff role for company operators managing partners.
+ */
+export const DASHBOARD_BLOCKED_EXTERNAL_ROLES = ['transport_partner', 'insurance_partner'] as const;
 
 /** Company staff roles (shown on Staff Users page). */
 export const DASHBOARD_STAFF_ROLES = [
@@ -218,33 +222,7 @@ const ROLE_PERMISSIONS: Record<string, Set<DashboardPermission>> = {
 
   auditor: set(...VIEW_ONLY),
 
-  /** Legacy partner login — fleet + partner scope, no claims/payments mutations */
-  transport_partner: set(
-    'dashboard.view',
-    'overview.view',
-    'vehicles.view',
-    'vehicles.create',
-    'vehicles.update',
-    'vehicles.suspend',
-    'qr.view',
-    'qr.generate',
-    'qr.disable',
-    'qr.regenerate',
-    'qr.scans.view',
-    'partners.view',
-    'trips.view',
-  ),
-
-  /** Legacy insurance partner — read-only operational context */
-  insurance_partner: set(
-    'dashboard.view',
-    'overview.view',
-    'partners.view',
-    'covers.view',
-    'payments.view',
-    'claims.view',
-    'users.view',
-  ),
+  // transport_partner / insurance_partner: no permissions — blocked at requireDashboardAccess()
 };
 
 export function isDashboardAccessRole(role: string): role is DashboardAccessRole {

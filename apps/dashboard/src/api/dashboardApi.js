@@ -38,12 +38,22 @@ export function clearDashboardToken() {
   localStorage.removeItem('safe_dashboard_token');
 }
 
-const MOBILE_ONLY_ROLES = new Set(['passenger', 'driver']);
+const DASHBOARD_BLOCKED_ROLES = new Set([
+  'passenger',
+  'driver',
+  'transport_partner',
+  'insurance_partner',
+]);
 
 export async function dashboardLogin({ identifier, password }) {
   const data = await request('/api/shared/auth/login', { method: 'POST', body: { identifier, password } });
   const role = data?.user?.role;
-  if (MOBILE_ONLY_ROLES.has(role)) {
+  if (DASHBOARD_BLOCKED_ROLES.has(role)) {
+    if (role === 'transport_partner' || role === 'insurance_partner') {
+      throw new Error(
+        'Partner accounts cannot access the operations dashboard yet. Ask ops for a company staff login.',
+      );
+    }
     throw new Error('This account cannot access the operations dashboard.');
   }
   return data;

@@ -80,6 +80,8 @@ Dashboard access uses **per-user staff roles** and backend-enforced permissions 
 
 **QA staff seed (local only):** `SAFE_SEED_DASHBOARD_STAFF=true` when seeding backend.
 
+**External partner roles (`transport_partner`, `insurance_partner`):** blocked from dashboard API and login until per-partner row scoping exists. Use internal `partner_manager` staff accounts for ops work.
+
 ### What staff can manage in pilot
 
 - **Overview** — real KPIs (covers, payments, claims, QR scans, trips, passengers) with activity panels

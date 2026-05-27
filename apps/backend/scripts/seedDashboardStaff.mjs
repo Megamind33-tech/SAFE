@@ -16,6 +16,7 @@ const STAFF = [
   { email: 'finance@safe.local', role: 'finance_officer', fullName: 'QA Finance Officer' },
   { email: 'fleet@safe.local', role: 'fleet_manager', fullName: 'QA Fleet Manager' },
   { email: 'auditor@safe.local', role: 'auditor', fullName: 'QA Auditor' },
+  { email: 'partner-external@safe.local', role: 'transport_partner', fullName: 'QA External Partner' },
 ];
 
 async function main() {
