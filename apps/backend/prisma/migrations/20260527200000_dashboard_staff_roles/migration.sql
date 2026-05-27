@@ -1,0 +1,2 @@
+-- Extend Role enum for dashboard staff RBAC (SQLite stores enum values as TEXT)
+-- Prisma does not ALTER enum on SQLite; new values are accepted on insert.

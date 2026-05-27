@@ -11,49 +11,58 @@ import {
   QrCode,
   ShieldCheck,
   SlidersHorizontal,
+  UserCog,
   Users,
   WalletCards,
   X,
 } from 'lucide-react';
 import { clearDashboardToken, loadDashboardToken } from '../api/dashboardApi.js';
+import { useDashboardSession } from '../context/DashboardSessionContext.jsx';
+import { NAV_ITEMS } from '../lib/dashboardPermissions.js';
+import { hasPermission } from '../lib/dashboardPermissions.js';
 
-const nav = [
-  { to: '/', label: 'Overview', icon: BarChart3 },
-  { to: '/vehicles', label: 'Vehicles', icon: Bus },
-  { to: '/partners', label: 'Partners', icon: Handshake },
-  { to: '/covers', label: 'Covers', icon: ShieldCheck },
-  { to: '/claims', label: 'Claims', icon: FileText },
-  { to: '/payments', label: 'Payments', icon: WalletCards },
-  { to: '/live-trips', label: 'Live trips', icon: MapPinned },
-  { to: '/qr-scans', label: 'QR scans', icon: QrCode },
-  { to: '/support', label: 'Support', icon: LifeBuoy },
-  { to: '/users', label: 'Passengers', icon: Users },
-  { to: '/settings', label: 'Settings', icon: SlidersHorizontal },
-  { to: '/customers', label: 'Drivers', icon: Users },
-];
+const ICONS = {
+  Overview: BarChart3,
+  Vehicles: Bus,
+  Partners: Handshake,
+  Covers: ShieldCheck,
+  Claims: FileText,
+  Payments: WalletCards,
+  'Live trips': MapPinned,
+  'QR scans': QrCode,
+  Support: LifeBuoy,
+  Passengers: Users,
+  'Staff users': UserCog,
+  Settings: SlidersHorizontal,
+  Drivers: Users,
+};
 
-function NavItems({ onNavigate, compact = false }) {
+function NavItems({ onNavigate, compact = false, permissions }) {
+  const visible = NAV_ITEMS.filter((item) => hasPermission(permissions, item.permission));
   return (
     <>
-      {nav.map(({ to, label, icon: Icon }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={to === '/'}
-          title={compact ? label : undefined}
-          onClick={onNavigate}
-          className={({ isActive }) =>
-            [
-              'flex items-center rounded-lg text-sm font-semibold transition-colors mb-0.5',
-              compact ? 'justify-center gap-0 px-2 py-2.5 xl:justify-start xl:gap-3 xl:px-3' : 'gap-3 px-3 py-2.5',
-              isActive ? 'bg-safe-ink text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100',
-            ].join(' ')
-          }
-        >
-          <Icon size={18} className="shrink-0" />
-          <span className={compact ? 'hidden xl:inline' : undefined}>{label}</span>
-        </NavLink>
-      ))}
+      {visible.map(({ to, label, permission }) => {
+        const Icon = ICONS[label] || Users;
+        return (
+          <NavLink
+            key={to}
+            to={to}
+            end={to === '/'}
+            title={compact ? label : undefined}
+            onClick={onNavigate}
+            className={({ isActive }) =>
+              [
+                'flex items-center rounded-lg text-sm font-semibold transition-colors mb-0.5',
+                compact ? 'justify-center gap-0 px-2 py-2.5 xl:justify-start xl:gap-3 xl:px-3' : 'gap-3 px-3 py-2.5',
+                isActive ? 'bg-safe-ink text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100',
+              ].join(' ')
+            }
+          >
+            <Icon size={18} className="shrink-0" />
+            <span className={compact ? 'hidden xl:inline' : undefined}>{label}</span>
+          </NavLink>
+        );
+      })}
     </>
   );
 }
@@ -62,6 +71,7 @@ export default function DashboardShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const token = loadDashboardToken();
+  const { user, permissions, loading } = useDashboardSession();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
@@ -123,7 +133,7 @@ export default function DashboardShell() {
               </button>
             </div>
             <nav className="flex-1 overflow-y-auto px-2.5 py-3">
-              <NavItems onNavigate={closeMobileNav} />
+              {!loading ? <NavItems onNavigate={closeMobileNav} permissions={permissions} /> : null}
             </nav>
           </aside>
         </>
@@ -144,7 +154,7 @@ export default function DashboardShell() {
           </div>
 
           <nav className="flex-1 overflow-y-auto px-1.5 py-3 xl:px-2.5">
-            <NavItems compact />
+            {!loading ? <NavItems compact permissions={permissions} /> : null}
           </nav>
         </aside>
 
@@ -163,7 +173,7 @@ export default function DashboardShell() {
                 <div className="min-w-0">
                   <div className="truncate text-sm font-semibold text-safe-ink">SAFE Control Room</div>
                   <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                    Pilot operations dashboard
+                    {user?.role ? `${user.role.replace(/_/g, ' ')}` : 'Pilot operations dashboard'}
                   </div>
                 </div>
               </div>
