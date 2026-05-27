@@ -539,3 +539,23 @@
   color: #b45309;
   font-weight: 600;
 }
+
+.cover-flow-hero__details dd,
+.cover-flow-review-card dl dd,
+.cover-flow-status-card dl dd {
+  min-width: 0;
+  max-width: 58%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 374px) {
+  .screen.cover-flow {
+    --cover-pad-x: 18px;
+  }
+
+  .cover-flow-intro__title {
+    font-size: 24px;
+    line-height: 28px;
+  }
+}

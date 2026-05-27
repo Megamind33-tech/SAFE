@@ -27,6 +27,13 @@
   margin: 10px 0 0;
   font-size: 14px;
   color: rgba(16, 24, 32, 0.72);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.claim-detail-card__ref {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .claim-detail-section {

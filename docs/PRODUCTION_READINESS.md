@@ -2,7 +2,48 @@
 
 Pilot / production-readiness guide for the SAFE monorepo.
 
-Last updated: admin dashboard completion stage.
+Last updated: responsive hardening phase (pre-staging).
+
+## Responsive QA coverage
+
+Layout hardening pass — no visual redesign. Validates overflow, bottom-nav clearance, dashboard sidebar behavior, and contained table scroll.
+
+### Supported viewport ranges
+
+| Surface | Widths tested |
+|---------|----------------|
+| Mobile app | 360px, 390px (reference), 430px |
+| Dashboard tablet | 768px, 1024px |
+| Dashboard desktop | 1280px, 1366px, 1440px |
+
+Mobile uses a centered phone frame capped at 430px; 360px is the minimum supported passenger width.
+
+### Responsive capture commands
+
+```bash
+npm --workspace apps/mobile run responsive:capture
+npm --workspace apps/dashboard run responsive:capture
+```
+
+Mobile responsive capture requires backend on `:8080` and mobile dev on `:5173`.
+
+Dashboard responsive capture requires backend on `:8080` and dashboard dev on `:5174`.
+
+### Assertions (fail-fast)
+
+- No page-level horizontal overflow (mobile or dashboard)
+- Primary CTAs remain above bottom nav (mobile)
+- QR scanner frame fits viewport
+- Dashboard tables scroll inside `overflow-x-auto` wrappers only
+- Tablet sidebar is icon-compact (`768px–1279px`); full labels at `1280px+`
+- Mobile dashboard exposes hamburger navigation below `768px`
+
+### Known layout limitations
+
+- Dashboard wide tables (6+ columns) use horizontal scroll inside the table container on tablet — not card view
+- Mobile desktop preview (`min-width: 520px`) uses a fixed 884px-tall phone frame for QA; real devices use full viewport height
+- Detail panels on dashboard stack below tables below `1280px` (not overlay drawers)
+- Settings sheets on mobile may use generous bottom clearance (existing design); content remains scrollable
 
 ## Admin dashboard readiness
 
@@ -156,6 +197,8 @@ npm run build:dashboard
 npm run qa:mobile
 npm --workspace apps/dashboard run smoke
 npm --workspace apps/dashboard run capture
+npm --workspace apps/mobile run responsive:capture
+npm --workspace apps/dashboard run responsive:capture
 ```
 
 Mobile QA requires backend on `:8080`, mobile dev on `:5173`, and the mobile dev server started with `VITE_CLAIMS_QA_CAPTURE=true` and `VITE_QR_QA_CAPTURE=true` (QR/claims QA hooks are Vite build-time flags). For cover/home purchase seeds, enable `SAFE_PAYMENT_GATEWAY_ENABLED=true` and `SAFE_PAYMENT_SIMULATE_SUCCESS=true` in backend `.env`.

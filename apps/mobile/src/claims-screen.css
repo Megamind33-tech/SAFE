@@ -394,3 +394,24 @@
     --claims-content-width: calc(100vw - 36px);
   }
 }
+
+.claims-summary-card__ref,
+.claims-list-card__ref,
+.claims-list-card__row,
+.claims-status-card__id {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.claims-status-card__top {
+  flex-wrap: wrap;
+}
+
+.claims-list-card,
+.claims-summary-card,
+.claims-empty-card,
+.claims-state-card,
+.claims-list-section {
+  width: var(--claims-content-width);
+  max-width: 100%;
+}

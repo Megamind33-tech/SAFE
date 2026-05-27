@@ -205,6 +205,34 @@
 
 .live-trip-screen__meta strong {
   color: #0f172a;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.screen.live-trip-screen {
+  padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+  overflow-x: hidden;
+}
+
+.live-trip-map--full {
+  margin: 0 clamp(12px, 4vw, 16px);
+  max-width: calc(100% - 24px);
+  box-sizing: border-box;
+}
+
+@media (max-width: 374px) {
+  .live-trip-screen__header {
+    padding: 12px 12px 8px;
+  }
+
+  .live-trip-screen__meta {
+    margin: 12px 12px 0;
+  }
+
+  .live-trip-map--full {
+    margin: 0 12px;
+    max-width: calc(100% - 24px);
+  }
 }
 
 .view-policy-map-section {

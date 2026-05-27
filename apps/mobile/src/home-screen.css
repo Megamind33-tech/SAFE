@@ -187,6 +187,9 @@
   font-weight: 800;
   color: #101820;
   text-align: right;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .home-hero__actions {

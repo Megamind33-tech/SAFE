@@ -16,7 +16,8 @@
     "settings:capture": "node scripts/capture-settings.mjs",
     "payment-methods:capture": "node scripts/capture-payment-methods.mjs",
     "trusted-contacts:capture": "node scripts/capture-trusted-contacts.mjs",
-    "qr:capture": "VITE_QR_QA_CAPTURE=true node scripts/capture-qr.mjs"
+    "qr:capture": "VITE_QR_QA_CAPTURE=true node scripts/capture-qr.mjs",
+    "responsive:capture": "node scripts/capture-responsive.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

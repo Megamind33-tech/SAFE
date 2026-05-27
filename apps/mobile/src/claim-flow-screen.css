@@ -691,6 +691,10 @@ button.claim-flow-upload-option:disabled {
   font-weight: 900;
   color: #101820;
   text-align: right;
+  min-width: 0;
+  max-width: 58%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .claim-flow-review-card {
