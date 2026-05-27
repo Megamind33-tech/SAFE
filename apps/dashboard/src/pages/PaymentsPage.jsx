@@ -1,141 +1,99 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { dashboardPayments, dashboardPaymentsConfig, loadDashboardToken } from '../api/dashboardApi.js';
+
+const FILTERS = ['', 'pending', 'succeeded', 'failed'];
+
+function fmt(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+}
 
 export default function PaymentsPage() {
+  const [filter, setFilter] = useState('');
+  const [payments, setPayments] = useState([]);
+  const [config, setConfig] = useState(null);
+  const [note, setNote] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const token = loadDashboardToken();
+
+  useEffect(() => {
+    if (!token) return;
+    setLoading(true);
+    Promise.all([
+      dashboardPayments(token, filter || undefined),
+      dashboardPaymentsConfig(token),
+    ])
+      .then(([payRes, cfgRes]) => {
+        setPayments(payRes.payments || []);
+        setNote(payRes.reconciliationNote || '');
+        setConfig(cfgRes);
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [token, filter]);
+
   return (
-    <div className="space-y-6">
-      <div>
-        <div className="text-2xl md:text-3xl font-black tracking-tight text-safe-ink">Billing & Plans</div>
-        <div className="mt-1 text-sm font-semibold text-slate-500">Subscriptions, invoices, payment history, and plan changes.</div>
+    <div className="space-y-4 max-w-[1600px] mx-auto">
+      <h1 className="text-2xl font-black text-safe-ink">Payments</h1>
+
+      {config ? (
+        <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm space-y-1">
+          <div><strong>Gateway:</strong> {config.paymentGatewayEnabled ? 'Enabled' : 'Not connected'}</div>
+          <div><strong>Simulate success:</strong> {config.paymentSimulateSuccess ? 'On (dev only)' : 'Off'}</div>
+          <div className="text-xs text-slate-500">{config.webhook?.note}</div>
+          <div className="text-xs font-mono text-slate-600">Webhook: POST /api/shared/webhooks/payment</div>
+        </div>
+      ) : null}
+
+      {note ? <div className="text-xs text-slate-500">{note}</div> : null}
+      {error ? <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
+
+      <div className="flex flex-wrap gap-2">
+        {FILTERS.map((f) => (
+          <button
+            key={f || 'all'}
+            type="button"
+            onClick={() => setFilter(f)}
+            className={`rounded-xl px-3 py-2 text-xs font-black ${filter === f ? 'bg-safe-ink text-white' : 'bg-white border border-slate-200'}`}
+          >
+            {f || 'all'}
+          </button>
+        ))}
       </div>
 
-      <section className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <div className="xl:col-span-2 rounded-2xl border border-slate-200 bg-safe-ink p-5 text-white shadow-[0_10px_30px_rgba(2,6,23,0.14)] relative overflow-hidden">
-          <div className="absolute -right-10 -top-10 h-44 w-44 rounded-full bg-safe-electric/20 blur-2xl" />
-          <div className="relative">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-[11px] font-black uppercase tracking-widest text-white/70">Current Plan</div>
-                <div className="mt-2 text-2xl font-black tracking-tight">Fleet Pro</div>
-              </div>
-              <span className="rounded-full bg-white/10 border border-white/15 px-3 py-1 text-[11px] font-black uppercase tracking-widest">
-                Active
-              </span>
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <div className="text-xs font-semibold text-white/70">Next billing date</div>
-                <div className="mt-1 text-sm font-black">15 Nov 2023</div>
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-white/70">Billing cycle</div>
-                <div className="mt-1 text-sm font-black">Monthly</div>
-              </div>
-            </div>
-
-            <div className="mt-6 border-t border-white/15 pt-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-              <div>
-                <div className="text-3xl font-black tracking-tight">
-                  ZMW 4,500<span className="text-sm font-semibold text-white/70">/mo</span>
-                </div>
-                <div className="mt-1 text-xs font-semibold text-white/70">Approx. $215 USD</div>
-              </div>
-              <button type="button" className="rounded-xl bg-safe-electric px-4 py-2.5 text-xs font-black text-safe-ink shadow-sm">
-                Manage
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(2,6,23,0.04)]">
-          <div className="flex items-center justify-between">
-            <div className="text-lg font-black tracking-tight text-safe-ink">Payment History</div>
-            <button type="button" className="text-xs font-black text-safe-ink hover:underline">
-              View All
-            </button>
-          </div>
-
-          <div className="mt-4 divide-y divide-slate-200 rounded-2xl border border-slate-200 overflow-hidden">
-            {[
-              { title: 'Fleet Pro - Monthly', date: '15 Oct 2023', amount: 'ZMW 4,500', status: 'Paid', icon: 'credit_card' },
-              { title: 'Fleet Pro - Monthly', date: '15 Sep 2023', amount: 'ZMW 4,500', status: 'Paid', icon: 'account_balance' },
-              { title: 'Fleet Pro - Monthly', date: '15 Aug 2023', amount: 'ZMW 4,500', status: 'Paid', icon: 'credit_card' },
-            ].map((tx) => (
-              <div key={tx.date} className="p-4 bg-white hover:bg-slate-50 transition-colors flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-10 w-10 rounded-xl bg-slate-50 border border-slate-200 grid place-items-center text-safe-ink shrink-0">
-                    <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
-                      {tx.icon}
-                    </span>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-black text-safe-ink">{tx.title}</div>
-                    <div className="truncate text-xs font-semibold text-slate-500">{tx.date}</div>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <div className="text-sm font-black text-safe-ink">{tx.amount}</div>
-                  <span className="mt-1 inline-block rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700">
-                    {tx.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(2,6,23,0.04)]">
-        <div className="text-lg font-black tracking-tight text-safe-ink">Available Plans</div>
-        <div className="mt-1 text-sm font-semibold text-slate-500">Switch plans for fleet size, features, and custom integrations.</div>
-
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <div className="text-lg font-black text-safe-ink">Starter</div>
-            <div className="mt-1 text-sm font-semibold text-slate-500">For small fleets up to 5 vehicles.</div>
-            <div className="mt-4 text-2xl font-black text-safe-ink">
-              ZMW 1,200<span className="text-sm font-semibold text-slate-500">/mo</span>
-            </div>
-            <div className="mt-4 space-y-2 text-sm font-semibold text-slate-700">
-              {['Basic Tracking', 'Standard Reports'].map((f) => (
-                <div key={f} className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-emerald-600 text-[18px]" aria-hidden="true">
-                    check_circle
-                  </span>
-                  {f}
-                </div>
+      <div className="rounded-2xl border border-slate-200 bg-white overflow-x-auto">
+        {loading ? (
+          <div className="p-8 text-sm text-slate-500">Loading payments…</div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-[10px] uppercase text-slate-400">
+              <tr>
+                <th className="px-4 py-3 text-left">ID</th>
+                <th className="px-4 py-3 text-left">Passenger</th>
+                <th className="px-4 py-3 text-left">Amount</th>
+                <th className="px-4 py-3 text-left">Method</th>
+                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">Vehicle</th>
+                <th className="px-4 py-3 text-left">Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {payments.map((p) => (
+                <tr key={p.id} className="border-t border-slate-100">
+                  <td className="px-4 py-3 font-mono text-xs">{p.id.slice(-8)}</td>
+                  <td className="px-4 py-3">{p.passenger?.fullName || p.passenger?.phone || '—'}</td>
+                  <td className="px-4 py-3 font-bold">K{p.amount}</td>
+                  <td className="px-4 py-3">{p.method}</td>
+                  <td className="px-4 py-3 uppercase text-[10px] font-black">{p.status}</td>
+                  <td className="px-4 py-3">{p.vehiclePlate ?? '—'}</td>
+                  <td className="px-4 py-3 text-xs text-slate-500">{fmt(p.createdAt)}</td>
+                </tr>
               ))}
-            </div>
-            <button type="button" className="mt-5 w-full rounded-xl border border-safe-ink text-safe-ink px-4 py-2.5 text-xs font-black hover:bg-safe-ink/5">
-              Downgrade
-            </button>
-          </div>
-
-          <div className="rounded-2xl border-2 border-safe-electric bg-white p-4 relative overflow-hidden">
-            <div className="absolute top-3 right-3 rounded-full bg-safe-electric px-3 py-1 text-[10px] font-black uppercase tracking-widest text-safe-ink">
-              Recommended
-            </div>
-            <div className="text-lg font-black text-safe-ink">Enterprise</div>
-            <div className="mt-1 text-sm font-semibold text-slate-500">Unlimited vehicles, advanced analytics.</div>
-            <div className="mt-4 text-2xl font-black text-safe-ink">
-              ZMW 12,000<span className="text-sm font-semibold text-slate-500">/mo</span>
-            </div>
-            <div className="mt-4 space-y-2 text-sm font-semibold text-slate-700">
-              {['AI Routing', 'Dedicated Account Manager', 'Custom Integrations'].map((f) => (
-                <div key={f} className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-emerald-600 text-[18px]" aria-hidden="true">
-                    check_circle
-                  </span>
-                  {f}
-                </div>
-              ))}
-            </div>
-            <button type="button" className="mt-5 w-full rounded-xl bg-safe-ink px-4 py-2.5 text-xs font-black text-white hover:bg-safe-midnight">
-              Upgrade Plan
-            </button>
-          </div>
-        </div>
-      </section>
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }

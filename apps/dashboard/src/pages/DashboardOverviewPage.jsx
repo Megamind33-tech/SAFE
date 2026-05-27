@@ -51,9 +51,9 @@ export default function DashboardOverviewPage() {
   }, []);
 
   // Compute conversion rates
-  const scansCount = metrics?.scans ?? 48;
-  const purchasesCount = metrics?.purchases ?? 34;
-  const conversionRate = scansCount > 0 ? ((purchasesCount / scansCount) * 100).toFixed(1) : '70.8';
+  const scansCount = metrics?.scans ?? 0;
+  const purchasesCount = metrics?.purchases ?? 0;
+  const conversionRate = scansCount > 0 ? ((purchasesCount / scansCount) * 100).toFixed(1) : '0.0';
 
   return (
     <div className="space-y-4">
@@ -200,7 +200,7 @@ export default function DashboardOverviewPage() {
                 <Activity size={14} className="text-emerald-400" />
                 Matero ➔ Town Line
               </strong>
-              <small className="text-[10px] font-semibold text-slate-400 mt-0.5">3 minibuses active</small>
+              <small className="text-[10px] font-semibold text-slate-400 mt-0.5">Live vehicle counts require trip tracking feed</small>
             </div>
           </div>
         </div>

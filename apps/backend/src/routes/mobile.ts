@@ -132,6 +132,10 @@ mobileRouter.post('/vehicle/verify', async (req, res) => {
   }
 
   if (!vehicle) {
+    if (!env.allowDevVehicleAutoCreate) {
+      res.status(404).json({ error: 'Vehicle not found. Scan the vehicle QR code or verify with a registered plate.' });
+      return;
+    }
     const route = await prisma.route.create({
       data: { origin: origin ?? 'Matero', destination: destination ?? 'Town' },
     });

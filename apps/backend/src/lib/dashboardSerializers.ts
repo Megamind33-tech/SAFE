@@ -1,0 +1,200 @@
+import { shortenPolicyId, formatPlanName, serializeActiveCover } from './coverPurchase.js';
+import { serializeClaimDetail, serializeClaimListItem, mapLegacyClaimStatus } from './claims.js';
+import { serializeQrRecord } from './qrImage.js';
+
+export { serializeClaimDetail, serializeClaimListItem, mapLegacyClaimStatus };
+
+export function serializeVehicleRow(vehicle: {
+  id: string;
+  plateNumber: string;
+  busId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  lastLat: number | null;
+  lastLng: number | null;
+  locationAt: Date | null;
+  route: { id: string; origin: string; destination: string } | null;
+  transportPartner?: { id: string; name: string } | null;
+  driver?: { id: string; fullName: string | null } | null;
+  qrCodes?: Array<{
+    id: string;
+    code: string;
+    status: string;
+    isActive: boolean;
+    lastScannedAt: Date | null;
+    expiresAt: Date | null;
+  }>;
+  _count?: { tripCovers: number; qrCodes?: number };
+}) {
+  const activeQr = vehicle.qrCodes?.find((q) => q.status === 'active' && q.isActive) ?? vehicle.qrCodes?.[0] ?? null;
+  return {
+    id: vehicle.id,
+    plateNumber: vehicle.plateNumber,
+    busId: vehicle.busId,
+    route: vehicle.route
+      ? { id: vehicle.route.id, origin: vehicle.route.origin, destination: vehicle.route.destination }
+      : null,
+    partner: vehicle.transportPartner
+      ? { id: vehicle.transportPartner.id, name: vehicle.transportPartner.name }
+      : null,
+    driver: vehicle.driver
+      ? { id: vehicle.driver.id, fullName: vehicle.driver.fullName }
+      : null,
+    qr: activeQr
+      ? {
+          id: activeQr.id,
+          code: activeQr.code,
+          status: activeQr.status,
+          isActive: activeQr.isActive,
+          lastScannedAt: activeQr.lastScannedAt?.toISOString() ?? null,
+          expiresAt: activeQr.expiresAt?.toISOString() ?? null,
+        }
+      : null,
+    operationalStatus: activeQr?.isActive && activeQr.status === 'active' ? 'active' : 'suspended',
+    coverCount: vehicle._count?.tripCovers ?? 0,
+    locationAt: vehicle.locationAt?.toISOString() ?? null,
+    createdAt: vehicle.createdAt.toISOString(),
+  };
+}
+
+export function serializeCoverRow(cover: {
+  id: string;
+  plan: string;
+  status: string;
+  amount: number;
+  currency: string;
+  startedAt: Date;
+  endsAt: Date;
+  createdAt: Date;
+  payment?: { id: string; status: string; method: string; amount: number; currency: string; reference: string | null; createdAt: Date } | null;
+  passengerUser?: { id: string; phone: string | null; passengerProfile: { fullName: string | null } | null };
+  vehicle?: { id: string; plateNumber: string; busId: string | null } | null;
+  route?: { origin: string; destination: string } | null;
+}) {
+  const serialized = serializeActiveCover(cover as Parameters<typeof serializeActiveCover>[0]);
+  return {
+    id: cover.id,
+    policyId: serialized?.policyId ?? shortenPolicyId(cover.id, cover.createdAt),
+    planId: cover.plan,
+    planName: formatPlanName(cover.plan),
+    status: serialized?.status ?? cover.status,
+    paymentStatus: cover.payment?.status ?? null,
+    amount: cover.amount,
+    currency: cover.currency,
+    startsAt: cover.startedAt.toISOString(),
+    endsAt: cover.endsAt.toISOString(),
+    passenger: cover.passengerUser
+      ? {
+          id: cover.passengerUser.id,
+          phone: cover.passengerUser.phone,
+          fullName: cover.passengerUser.passengerProfile?.fullName ?? null,
+        }
+      : null,
+    vehicle: cover.vehicle
+      ? { id: cover.vehicle.id, plateNumber: cover.vehicle.plateNumber, busId: cover.vehicle.busId }
+      : null,
+    route: cover.route
+      ? { origin: cover.route.origin, destination: cover.route.destination }
+      : serialized?.route ?? null,
+    paymentId: cover.payment?.id ?? null,
+    createdAt: cover.createdAt.toISOString(),
+  };
+}
+
+export function serializePaymentRow(payment: {
+  id: string;
+  status: string;
+  method: string;
+  amount: number;
+  currency: string;
+  reference: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  tripCover: {
+    id: string;
+    plan: string;
+    status: string;
+    passengerUser: { id: string; phone: string | null; passengerProfile: { fullName: string | null } | null };
+    vehicle: { plateNumber: string } | null;
+  };
+}) {
+  return {
+    id: payment.id,
+    status: payment.status,
+    method: payment.method,
+    amount: payment.amount,
+    currency: payment.currency,
+    reference: payment.reference,
+    coverId: payment.tripCover.id,
+    plan: payment.tripCover.plan,
+    coverStatus: payment.tripCover.status,
+    passenger: {
+      id: payment.tripCover.passengerUser.id,
+      phone: payment.tripCover.passengerUser.phone,
+      fullName: payment.tripCover.passengerUser.passengerProfile?.fullName ?? null,
+    },
+    vehiclePlate: payment.tripCover.vehicle?.plateNumber ?? null,
+    createdAt: payment.createdAt.toISOString(),
+    updatedAt: payment.updatedAt.toISOString(),
+  };
+}
+
+export function serializePartnerRow(partner: {
+  id: string;
+  name: string;
+  createdAt: Date;
+  _count?: { vehicles: number; drivers: number; qrCodes: number };
+}) {
+  return {
+    id: partner.id,
+    name: partner.name,
+    vehicleCount: partner._count?.vehicles ?? 0,
+    driverCount: partner._count?.drivers ?? 0,
+    qrCodeCount: partner._count?.qrCodes ?? 0,
+    createdAt: partner.createdAt.toISOString(),
+  };
+}
+
+export function serializeSupportReport(row: {
+  id: string;
+  problemType: string;
+  message: string;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  user: { id: string; phone: string | null; email: string | null; passengerProfile: { fullName: string | null } | null };
+}) {
+  return {
+    id: row.id,
+    problemType: row.problemType,
+    message: row.message,
+    status: row.status,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    user: {
+      id: row.user.id,
+      phone: row.user.phone,
+      email: row.user.email,
+      fullName: row.user.passengerProfile?.fullName ?? null,
+    },
+  };
+}
+
+export function serializeScanLog(log: {
+  id: string;
+  result: string;
+  scannedAt: Date;
+  userAgent: string | null;
+  qrCode: { code: string; vehicleId: string | null } | null;
+  userId: string | null;
+}) {
+  return {
+    id: log.id,
+    result: log.result,
+    scannedAt: log.scannedAt.toISOString(),
+    userAgent: log.userAgent,
+    qrCode: log.qrCode?.code ?? null,
+    vehicleId: log.qrCode?.vehicleId ?? null,
+    userId: log.userId,
+  };
+}

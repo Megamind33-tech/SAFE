@@ -19,6 +19,19 @@ function appEnvFromNode() {
   return 'local';
 }
 
+const appEnv = appEnvFromNode();
+const isProduction = appEnv === 'production';
+
+if (isProduction && process.env.SAFE_PAYMENT_SIMULATE_SUCCESS === 'true') {
+  console.error(
+    '[safe-backend] SAFE_PAYMENT_SIMULATE_SUCCESS=true is forbidden in production. Forcing false.',
+  );
+}
+
+if (isProduction && (process.env.JWT_SECRET ?? 'dev-secret-change-me') === 'dev-secret-change-me') {
+  console.warn('[safe-backend] JWT_SECRET is still the dev default in production.');
+}
+
 export const env = {
   port: Number.parseInt(process.env.PORT ?? '8080', 10),
   jwtSecret: process.env.JWT_SECRET ?? 'dev-secret-change-me',
@@ -33,12 +46,17 @@ export const env = {
   emergencyPhone: process.env.SAFE_EMERGENCY_PHONE?.trim() || null,
   supportHours: process.env.SAFE_SUPPORT_HOURS?.trim() || null,
   claimsGuideVersion: process.env.SAFE_CLAIMS_GUIDE_VERSION?.trim() || '1',
-  appEnv: appEnvFromNode(),
+  appEnv,
+  isProduction,
   appVersion: process.env.SAFE_APP_VERSION ?? '1.0.0',
   dataExportEnabled: process.env.SAFE_DATA_EXPORT_ENABLED === 'true',
   accountDeletionEnabled: process.env.SAFE_ACCOUNT_DELETION_ENABLED === 'true',
   paymentGatewayEnabled: process.env.SAFE_PAYMENT_GATEWAY_ENABLED === 'true',
-  paymentSimulateSuccess: process.env.SAFE_PAYMENT_SIMULATE_SUCCESS === 'true',
+  paymentSimulateSuccess: isProduction
+    ? false
+    : process.env.SAFE_PAYMENT_SIMULATE_SUCCESS === 'true',
+  allowDevVehicleAutoCreate:
+    !isProduction && process.env.SAFE_ALLOW_DEV_VEHICLE_AUTO_CREATE !== 'false',
   cardPaymentsEnabled: process.env.SAFE_CARD_PAYMENTS_ENABLED === 'true',
   allowCoverStacking: process.env.SAFE_ALLOW_COVER_STACKING === 'true',
   allowCoverExtension: process.env.SAFE_ALLOW_COVER_EXTENSION === 'true',
