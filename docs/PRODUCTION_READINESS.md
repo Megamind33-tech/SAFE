@@ -8,6 +8,7 @@ Last updated: staging deployment prep (main @ `34fcb8d`).
 
 Pre-production staging setup (not production deploy):
 
+- [STAGING_EXECUTION.md](./STAGING_EXECUTION.md) — step-by-step staging deploy commands
 - [STAGING_DEPLOYMENT.md](./STAGING_DEPLOYMENT.md) — target plan, env templates, build commands, QR rewrite, admin security
 - [STAGING_SMOKE_TEST.md](./STAGING_SMOKE_TEST.md) — manual staging checklist (incl. real-device responsive checks)
 

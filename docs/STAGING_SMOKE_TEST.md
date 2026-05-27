@@ -37,6 +37,21 @@ npm --workspace apps/mobile run responsive:capture
 
 `npm run qa:mobile` is for **local dev only** — not run on staging servers.
 
+### Automated post-deploy (staging URLs)
+
+After deploy, from any machine with network access to staging:
+
+```bash
+export STAGING_API_URL="https://api.staging.example"
+export STAGING_MOBILE_URL="https://app.staging.example"
+export STAGING_DASHBOARD_URL="https://admin.staging.example"
+export STAGING_ADMIN_EMAIL="ops-admin@staging.example"
+export STAGING_ADMIN_PASSWORD="<from-secrets-manager>"
+npm run staging:smoke
+```
+
+See [STAGING_EXECUTION.md](./STAGING_EXECUTION.md).
+
 ---
 
 ## Manual staging checklist

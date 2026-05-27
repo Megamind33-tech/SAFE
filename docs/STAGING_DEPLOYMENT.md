@@ -2,7 +2,9 @@
 
 Prepare SAFE for a **staging** environment (pre-production smoke testing and real-device validation). This is not production deployment.
 
-Last updated: staging deployment prep (main @ `34fcb8d`).
+Last updated: staging execution toolkit on `main`.
+
+**Execution runbook:** [STAGING_EXECUTION.md](./STAGING_EXECUTION.md) — step-by-step commands (`staging:validate`, `staging:build`, `staging:smoke`).
 
 ---
 
@@ -319,7 +321,18 @@ npm --workspace apps/dashboard run smoke
 | JWT secret | Unique staging secret | Unique production secret |
 | Database | Isolated staging DB | Production DB |
 
-See also: [STAGING_SMOKE_TEST.md](./STAGING_SMOKE_TEST.md), [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md).
+### Automated post-deploy smoke
+
+```bash
+export STAGING_API_URL="https://api.staging.example"
+export STAGING_MOBILE_URL="https://app.staging.example"
+export STAGING_DASHBOARD_URL="https://admin.staging.example"
+export STAGING_ADMIN_EMAIL="ops-admin@staging.example"
+export STAGING_ADMIN_PASSWORD="<from-secrets>"
+npm run staging:smoke
+```
+
+See also: [STAGING_EXECUTION.md](./STAGING_EXECUTION.md), [STAGING_SMOKE_TEST.md](./STAGING_SMOKE_TEST.md), [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md).
 
 ---
 

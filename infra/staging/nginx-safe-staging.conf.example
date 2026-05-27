@@ -1,0 +1,59 @@
+# SAFE staging — mobile app host (HTTPS required)
+# Replace app.staging.example and paths before use.
+
+server {
+  listen 443 ssl http2;
+  server_name app.staging.example;
+
+  ssl_certificate     /etc/ssl/certs/staging-app.pem;
+  ssl_certificate_key /etc/ssl/private/staging-app.key;
+
+  root /var/www/safe-mobile/dist;
+  index index.html;
+
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+
+  # Vehicle QR public URLs: https://app.staging.example/q/{code}
+  location /q/ {
+    try_files $uri $uri/ /index.html;
+  }
+
+  add_header X-Frame-Options "SAMEORIGIN" always;
+  add_header X-Content-Type-Options "nosniff" always;
+}
+
+# API host — reverse proxy to Node backend
+server {
+  listen 443 ssl http2;
+  server_name api.staging.example;
+
+  ssl_certificate     /etc/ssl/certs/staging-api.pem;
+  ssl_certificate_key /etc/ssl/private/staging-api.key;
+
+  location / {
+    proxy_pass http://127.0.0.1:8080;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}
+
+# Dashboard host
+server {
+  listen 443 ssl http2;
+  server_name admin.staging.example;
+
+  ssl_certificate     /etc/ssl/certs/staging-admin.pem;
+  ssl_certificate_key /etc/ssl/private/staging-admin.key;
+
+  root /var/www/safe-dashboard/dist;
+  index index.html;
+
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+}
