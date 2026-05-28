@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  CircleUserRound,
-  FileText,
-  HelpCircle,
-  Shield,
-  ShieldCheck,
-  QrCode,
-  Siren,
-  Users,
-} from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import HomeCoverHero from '../components/HomeCoverHero.jsx';
 import HomeMapPreview from '../components/HomeMapPreview.jsx';
 import safeLogo from '../assets/real/safe_logo_clean.png';
+import safeAppIcon from '../assets/SAFE_app_icon_master_3D_1024.png';
 import networkErrorArt from '../assets/pack/empty-states/network-error.png';
+import noClaimsArt from '../assets/pack/empty-states/no-claims.png';
+import iconBuyCover from '../assets/pack/icons/cover-plus.svg';
+import iconVerify from '../assets/pack/icons/qr-scan.svg';
+import iconClaim from '../assets/pack/icons/claim-accident.svg';
+import iconHelp from '../assets/pack/icons/claim-support.svg';
+import iconContacts from '../assets/pack/icons/nav-account.svg';
+import iconClaimDoc from '../assets/pack/icons/claim-document.svg';
+import iconActivity from '../assets/pack/icons/receipt.svg';
 import {
   fetchHomeSummary,
   formatActivityWhen,
@@ -24,20 +24,22 @@ import {
 } from '../services/home.js';
 import { resolveUserName } from '../utils/activeCover.js';
 
-const SAFE_GREEN = '#007A3D';
-const ICON_SIZE = 20;
-const ICON_STROKE = 2;
-
-function QuickActionCard({ title, subtitle, Icon, onClick }) {
+function QuickActionCard({ title, subtitle, iconSrc, onClick }) {
   return (
     <button type="button" className="home-quick-card" onClick={onClick}>
       <span className="home-quick-card__icon" aria-hidden="true">
-        <Icon size={ICON_SIZE} strokeWidth={ICON_STROKE} color={SAFE_GREEN} />
+        <img src={iconSrc} alt="" />
       </span>
       <span className="home-quick-card__title">{title}</span>
       <span className="home-quick-card__subtitle">{subtitle}</span>
     </button>
   );
+}
+
+function liveTripStatusLabel(activeTrip) {
+  if (!activeTrip?.id) return 'No active trip';
+  if (activeTrip?.status === 'active') return 'Trip in progress';
+  return 'Trip update';
 }
 
 export default function HomeScreen({
@@ -64,6 +66,7 @@ export default function HomeScreen({
   const latestClaim = summary?.latestClaim ?? null;
   const recentActivity = summary?.recentActivity ?? [];
   const activeTrip = summary?.activeTrip ?? null;
+  const tripStatusLabel = liveTripStatusLabel(activeTrip);
 
   const loadSummary = useCallback(async () => {
     if (!token) {
@@ -152,23 +155,23 @@ export default function HomeScreen({
           </p>
         ) : null}
 
-        <header className="home-header">
-          <div className="home-header__brand">
-            <img className="home-header__logo" src={safeLogo} alt="SAFE" draggable={false} />
-            <div className="home-header__text">
-              <h1 className="home-header__greeting">{greeting}</h1>
-              <p className="home-header__sub">Your SAFE cover status is below.</p>
-            </div>
-          </div>
+        <header className="home-topbar">
+          <img className="home-topbar__logo" src={safeLogo} alt="SAFE" draggable={false} />
           <button
             type="button"
-            className="home-header__avatar"
+            className="home-topbar__avatar"
             aria-label="Open profile"
             onClick={() => setScreen('profile')}
           >
-            <CircleUserRound size={22} strokeWidth={2} color="#101820" aria-hidden="true" />
+            <img src={safeAppIcon} alt="" aria-hidden="true" />
+            <span className="home-topbar__avatar-dot" aria-hidden="true" />
           </button>
         </header>
+
+        <div className="home-greeting-block">
+          <h1 className="home-greeting-block__title">{greeting}</h1>
+          <p className="home-greeting-block__sub">Your SAFE cover status is below.</p>
+        </div>
 
         <HomeCoverHero
           cover={displayCover}
@@ -183,130 +186,130 @@ export default function HomeScreen({
         />
 
         <section className="home-section" aria-label="Quick actions">
-          <div className="home-quick-grid">
+          <div className="home-section__head">
+            <h2 className="home-section__title">Quick actions</h2>
+            <button type="button" className="home-section__link" onClick={() => setScreen('helpSafety')}>
+              See all
+              <ChevronRight size={16} aria-hidden="true" />
+            </button>
+          </div>
+          <div className="home-quick-scroll">
             <QuickActionCard
               title="Buy cover"
               subtitle="Protect your next trip."
-              Icon={Shield}
+              iconSrc={iconBuyCover}
               onClick={() => setScreen('choose')}
             />
             <QuickActionCard
               title="Verify"
               subtitle="Scan QR or enter code."
-              Icon={QrCode}
+              iconSrc={iconVerify}
               onClick={() => (session?.token ? setScreen('qrScanner') : setScreen('login'))}
             />
             <QuickActionCard
               title="Start claim"
-              subtitle="Report an accident or request help."
-              Icon={Siren}
+              subtitle="Report an accident."
+              iconSrc={iconClaim}
               onClick={() => openClaimFlow(1)}
             />
             <QuickActionCard
               title="Help & Safety"
               subtitle="Accident steps and support."
-              Icon={HelpCircle}
+              iconSrc={iconHelp}
               onClick={() => setScreen('helpSafety')}
             />
             <QuickActionCard
               title="Contacts"
               subtitle="Trusted contacts."
-              Icon={Users}
+              iconSrc={iconContacts}
               onClick={() => setScreen('trustedContacts')}
             />
           </div>
         </section>
 
         <section className="home-section" aria-labelledby="home-live-trip-title">
-          <h2 id="home-live-trip-title" className="home-section__title">
-            Live trip
-          </h2>
-          <HomeMapPreview summaryTrip={activeTrip} onEnableLocation={requestLocation} />
+          <div className="home-section__head">
+            <h2 id="home-live-trip-title" className="home-section__title">
+              Live trip
+            </h2>
+            <span
+              className={`home-trip-pill ${activeTrip?.id ? 'home-trip-pill--live' : ''}`}
+              role="status"
+            >
+              <i aria-hidden="true" />
+              {tripStatusLabel}
+            </span>
+          </div>
+          <HomeMapPreview
+            summaryTrip={activeTrip}
+            onEnableLocation={requestLocation}
+            onStartCover={() => setScreen('choose')}
+          />
         </section>
 
-        <section className="home-section" aria-labelledby="home-claims-title">
-          <h2 id="home-claims-title" className="home-section__title">
-            Claims
-          </h2>
-          {latestClaim ? (
-            <article className="home-claim-card">
-              <div className="home-claim-card__top">
-                <span className="home-claim-card__status">{formatClaimStatus(latestClaim.status)}</span>
-                <time className="home-claim-card__time" dateTime={latestClaim.updatedAt}>
-                  {formatActivityWhen(latestClaim.updatedAt)}
-                </time>
-              </div>
-              {latestClaim.reference ? (
-                <p className="home-claim-card__ref">Ref {latestClaim.reference}</p>
-              ) : null}
-              <button
-                type="button"
-                className="home-btn home-btn--text"
-                onClick={() => setScreen('claim')}
-              >
-                View claim
-              </button>
-            </article>
-          ) : (
-            <div className="home-empty-card">
-              <p className="home-empty-card__title">No active claim</p>
-              <p className="home-empty-card__text">
-                If something happened, start a claim and upload your documents.
-              </p>
-              <button
-                type="button"
-                className="home-btn home-btn--primary home-btn--compact"
-                onClick={() => openClaimFlow(1)}
-              >
-                Start claim
-              </button>
+        <section className="home-dual-row" aria-label="Claims and activity">
+          <article className="home-mini-card home-mini-card--claims">
+            <div className="home-mini-card__icon-wrap home-mini-card__icon-wrap--alert">
+              <img src={iconClaimDoc} alt="" aria-hidden="true" />
             </div>
-          )}
-        </section>
+            {latestClaim ? (
+              <>
+                <h3 className="home-mini-card__title">{formatClaimStatus(latestClaim.status)}</h3>
+                {latestClaim.reference ? (
+                  <p className="home-mini-card__meta">Ref {latestClaim.reference}</p>
+                ) : null}
+                <button
+                  type="button"
+                  className="home-mini-card__btn home-mini-card__btn--light"
+                  onClick={() => setScreen('claim')}
+                >
+                  View claim
+                  <ChevronRight size={16} aria-hidden="true" />
+                </button>
+              </>
+            ) : (
+              <>
+                <h3 className="home-mini-card__title">No active claim</h3>
+                <p className="home-mini-card__meta">Start a claim if something happened on your trip.</p>
+                <button
+                  type="button"
+                  className="home-mini-card__btn home-mini-card__btn--claim"
+                  onClick={() => openClaimFlow(1)}
+                >
+                  Start claim
+                  <ChevronRight size={16} aria-hidden="true" />
+                </button>
+                <img className="home-mini-card__bg-art" src={noClaimsArt} alt="" aria-hidden="true" />
+              </>
+            )}
+          </article>
 
-        <section className="home-section" aria-labelledby="home-activity-title">
-          <h2 id="home-activity-title" className="home-section__title">
-            Recent activity
-          </h2>
-          {recentActivity.length > 0 ? (
-            <ul className="home-activity-list">
-              {recentActivity.map((item) => (
-                <li key={item.id} className="home-activity-item">
-                  <div>
+          <article className="home-mini-card home-mini-card--activity">
+            <div className="home-mini-card__icon-wrap">
+              <img src={iconActivity} alt="" aria-hidden="true" />
+            </div>
+            <h3 className="home-mini-card__title">Recent activity</h3>
+            {recentActivity.length > 0 ? (
+              <ul className="home-mini-activity">
+                {recentActivity.slice(0, 2).map((item) => (
+                  <li key={item.id}>
                     <strong>{item.title}</strong>
-                    {item.subtitle ? <span>{item.subtitle}</span> : null}
-                  </div>
-                  <time dateTime={item.createdAt}>{formatActivityWhen(item.createdAt)}</time>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="home-empty-card home-empty-card--muted">
-              <p className="home-empty-card__title">No recent activity yet.</p>
-            </div>
-          )}
-          <button
-            type="button"
-            className="home-btn home-btn--text home-activity-history"
-            onClick={() => openHistory('home')}
-          >
-            View cover history
-          </button>
-        </section>
-
-        <section className="home-safety-note" aria-label="Safety note">
-          <ShieldCheck size={22} color={SAFE_GREEN} aria-hidden="true" />
-          <p>
-            SAFE helps you prepare documents, contact support, and submit claims when something
-            happens.
-          </p>
-          <button
-            type="button"
-            className="home-btn home-btn--secondary home-btn--compact"
-            onClick={() => setScreen('helpSafety')}
-          >
-            Open Help & Safety
-          </button>
+                    <time dateTime={item.createdAt}>{formatActivityWhen(item.createdAt)}</time>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="home-mini-card__meta">No recent activity yet.</p>
+            )}
+            <button
+              type="button"
+              className="home-mini-card__text-link"
+              onClick={() => openHistory('home')}
+            >
+              View cover history
+              <ChevronRight size={14} aria-hidden="true" />
+            </button>
+          </article>
         </section>
       </div>
     </main>

@@ -1,11 +1,50 @@
 import { useCallback, useEffect, useState } from 'react';
-import { MapPin, Navigation2 } from 'lucide-react';
+import { MapContainer, TileLayer } from 'react-leaflet';
+import { ChevronRight, Navigation2 } from 'lucide-react';
 import LiveRouteMap from './LiveRouteMap.jsx';
 import { activeTrip as fetchActiveTrip, loadToken, tripLocation } from '../api/safeApi.js';
 import busStopArt from '../assets/transport/safe_and_calm_bus_stop_vignette_transparent.png';
-import mapFallbackArt from '../assets/pack/backgrounds/home-map-fallback.png';
 
-function HomeSummaryMapPreview({ summaryTrip, onEnableLocation }) {
+/** Default map center from seeded Lusaka route data — not a fake static map image. */
+const HOME_IDLE_MAP_CENTER = [-15.395, 28.281];
+
+function HomeIdleMapPreview({ onStartCover, onEnableLocation }) {
+  return (
+    <div className="home-map-preview home-map-preview--idle">
+      <MapContainer
+        center={HOME_IDLE_MAP_CENTER}
+        zoom={12}
+        className="home-map-preview__canvas home-map-preview__canvas--idle"
+        scrollWheelZoom={false}
+        zoomControl={false}
+        attributionControl={false}
+      >
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      </MapContainer>
+
+      <aside className="home-map-preview__overlay-card">
+        <img className="home-map-preview__overlay-art" src={busStopArt} alt="" aria-hidden="true" />
+        <strong>No active trip</strong>
+        <p>Start cover when you begin your journey.</p>
+        <button type="button" className="home-map-preview__overlay-cta" onClick={onStartCover}>
+          Start cover
+          <ChevronRight size={16} aria-hidden="true" />
+        </button>
+      </aside>
+
+      <button
+        type="button"
+        className="home-map-preview__loc-btn"
+        aria-label="Enable location"
+        onClick={onEnableLocation}
+      >
+        <Navigation2 size={18} strokeWidth={2.25} aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
+function HomeSummaryMapPreview({ summaryTrip, onEnableLocation, onStartCover }) {
   const [trip, setTrip] = useState(summaryTrip?.mapTrip ?? null);
   const [loading, setLoading] = useState(Boolean(summaryTrip?.id && !summaryTrip?.mapTrip));
   const [error, setError] = useState('');
@@ -79,55 +118,20 @@ function HomeSummaryMapPreview({ summaryTrip, onEnableLocation }) {
       (trip.route?.start && trip.route?.destination) ||
       trip.vehicleLocation);
 
-  if (!summaryTrip?.id && !trip) {
-    return (
-      <div className="home-map-preview home-map-preview--empty">
-        <img className="home-map-preview__art" src={busStopArt} alt="" aria-hidden="true" />
-        <strong>No active trip</strong>
-        <p>Start cover when you begin your journey.</p>
-      </div>
-    );
+  if (!summaryTrip?.id && !trip && !loading) {
+    return <HomeIdleMapPreview onStartCover={onStartCover} onEnableLocation={onEnableLocation} />;
   }
 
-  if (trackingUnavailable && !trip) {
-    return (
-      <div className="home-map-preview home-map-preview--empty">
-        <img className="home-map-preview__art" src={mapFallbackArt} alt="" aria-hidden="true" />
-        <p>Live trip map will appear when trip tracking is connected.</p>
-      </div>
-    );
+  if (trackingUnavailable && !trip && !loading) {
+    return <HomeIdleMapPreview onStartCover={onStartCover} onEnableLocation={onEnableLocation} />;
   }
 
-  if (locationNeeded && !hasMapData) {
-    return (
-      <div className="home-map-preview home-map-preview--empty">
-        <img className="home-map-preview__art" src={mapFallbackArt} alt="" aria-hidden="true" />
-        <p>Location needed for live trip view.</p>
-        <button type="button" className="home-btn home-btn--secondary" onClick={onEnableLocation}>
-          Enable location
-        </button>
-      </div>
-    );
-  }
-
-  if (!hasMapData && !loading && trip) {
-    return (
-      <div className="home-map-preview home-map-preview--empty">
-        <img className="home-map-preview__art" src={busStopArt} alt="" aria-hidden="true" />
-        <strong>Awaiting route</strong>
-        <p>Live trip map will appear when trip tracking is connected.</p>
-      </div>
-    );
+  if (locationNeeded && !hasMapData && !loading) {
+    return <HomeIdleMapPreview onStartCover={onStartCover} onEnableLocation={onEnableLocation} />;
   }
 
   if (!hasMapData && !loading) {
-    return (
-      <div className="home-map-preview home-map-preview--empty">
-        <img className="home-map-preview__art" src={busStopArt} alt="" aria-hidden="true" />
-        <strong>No active trip</strong>
-        <p>Start cover when you begin your journey.</p>
-      </div>
-    );
+    return <HomeIdleMapPreview onStartCover={onStartCover} onEnableLocation={onEnableLocation} />;
   }
 
   const lastUpdated = trip?.vehicleLocation?.updatedAt || summaryTrip?.lastUpdatedAt;
@@ -140,12 +144,11 @@ function HomeSummaryMapPreview({ summaryTrip, onEnableLocation }) {
         </p>
       ) : null}
       <div className="home-map-preview__map">
-        <LiveRouteMap trip={trip} loading={loading} error={error} onRetry={refreshTrip} />
+        <LiveRouteMap trip={trip} loading={loading} error={error} onRetry={refreshTrip} compact />
       </div>
     </div>
   );
 }
-
 
 function HomeMapLiveRoutePreview({
   trip,
@@ -165,7 +168,7 @@ function HomeMapLiveRoutePreview({
   requireDeviceLocation = false,
 }) {
   return (
-    <section className="home-map-preview" aria-label="Live trip map">
+    <section className="home-map-preview home-map-preview--live" aria-label="Live trip map">
       <LiveRouteMap
         trip={trip}
         activeCover={activeCover}
