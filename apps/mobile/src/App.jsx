@@ -982,148 +982,18 @@ function TripRows() {
   );
 }
 
-/** @deprecated Unreachable legacy fake cover purchase UI — use coverPlans flow. */
-function ChooseCoverScreen_LEGACY({ selectedPlan, setSelectedPlan, setScreen, scannedVehicle }) {
-  return (
-    <main className="screen padded">
-      <TopBar onBack={() => setScreen('home')} />
-      <section className="page-heading">
-        <h1>Choose your cover</h1>
-        {scannedVehicle && (
-          <div className="mt-3.5 inline-flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 border border-slate-700 rounded-full select-none">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[11px] font-black text-slate-300">
-              Verified Minibus: <strong className="text-white">{scannedVehicle.vehicle?.plateNumber}</strong> ({scannedVehicle.route ? `${scannedVehicle.route.origin} ➔ ${scannedVehicle.route.destination}` : 'Lusaka'})
-            </span>
-          </div>
-        )}
-      </section>
-
-      <section className="plan-list">
-        {coverPlans.map((plan) => (
-          <button
-            className={`plan-card ${selectedPlan === plan.id ? 'selected' : ''}`}
-            key={plan.id}
-            type="button"
-            onClick={() => setSelectedPlan(plan.id)}
-          >
-            <span className={`plan-shield ${plan.tone}`}>
-              <ShieldCheck size={38} />
-            </span>
-            <span className="plan-main">
-              <span className="plan-label">{plan.name}</span>
-              <strong>{plan.price}</strong>
-              <span>{plan.summary}</span>
-              <span className="chips">
-                <span>{plan.payout}</span>
-                <span><Clock3 size={14} /> Valid 4h</span>
-              </span>
-            </span>
-            <span className="checkmark">{selectedPlan === plan.id ? <Check size={18} /> : <ChevronRight size={18} />}</span>
-          </button>
-        ))}
-      </section>
-
-      <button className="primary-btn sticky-cta" type="button" onClick={() => setScreen('payment')}>
-        <span>Continue to payment</span>
-        <ArrowRight size={18} />
-      </button>
-    </main>
-  );
-}
-
-/** @deprecated Unreachable legacy fake payment UI — use coverPay/coverStatus. */
-function PaymentScreen_LEGACY({ activePlan, paymentMethod, selectedPlan, session, setPaymentMethod, setScreen, scannedVehicle, refreshPassengerData }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-
-  return (
-    <main className="screen padded payment-screen">
-      <div className="soft-visual" style={{ backgroundImage: `linear-gradient(180deg, rgba(248,249,250,.2), rgba(248,249,250,.9)), url(${bgImage})` }} />
-      <TopBar onBack={() => setScreen('coverPlans')} />
-      <section className="page-heading with-lock">
-        <div>
-          <h1>Pay securely</h1>
-        </div>
-        <Lock size={28} />
-      </section>
-
-      <section className="summary-card">
-        <h2>Trip summary</h2>
-        <div className="summary-row"><Bus size={18} /><span>Route</span><strong>{scannedVehicle?.route ? `${scannedVehicle.route.origin} to ${scannedVehicle.route.destination}` : trip.route}</strong></div>
-        <div className="summary-row"><FileText size={18} /><span>Vehicle</span><strong>{scannedVehicle?.vehicle?.plateNumber || trip.vehicle}</strong></div>
-        <div className="summary-row"><ShieldCheck size={18} /><span>Cover plan</span><strong>{activePlan.name} ({activePlan.price})</strong></div>
-        <div className="summary-row"><Clock3 size={18} /><span>Validity</span><strong>4 hours</strong></div>
-      </section>
-
-      <section className="payment-methods">
-        <h2>Choose payment method</h2>
-        {paymentMethods.map((method) => {
-          const selected = paymentMethod === method.id;
-          return (
-            <button className={`method-card ${selected ? 'selected' : ''}`} key={method.id} type="button" onClick={() => setPaymentMethod(method.id)}>
-              <PaymentBrandIcon
-                type={method.brandType}
-                dual={method.dual}
-                className="method-card__brand"
-              />
-              <span>
-                <strong>{method.name}</strong>
-                <small>{method.detail}</small>
-              </span>
-              <span className="radio-dot">{selected && <Check size={14} />}</span>
-            </button>
-          );
-        })}
-      </section>
-
-      <section className="payment-dock">
-        <div><span>Total</span><strong>{activePlan.price}</strong></div>
-        <button
-          className="primary-btn"
-          type="button"
-          disabled={busy || !paymentMethod}
-          onClick={async () => {
-            setError('');
-            if (!session?.token) {
-              setScreen('login');
-              return;
-            }
-            setBusy(true);
-            try {
-              await buyCover(session.token, {
-                plan: selectedPlan === 'basic' ? 'basic' : 'plus',
-                plateNumber: scannedVehicle?.vehicle?.plateNumber || 'LSK 2481',
-                paymentMethod,
-              });
-              await refreshPassengerData(session.token);
-              setScreen('active');
-            } catch (e) {
-              setError(e?.message || 'Payment failed');
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <Lock size={18} />
-          <span>{busy ? 'Confirming…' : 'Confirm payment'}</span>
-        </button>
-      </section>
-
-      {error ? <p className="payment-error">{error}</p> : null}
-    </main>
-  );
-}
-
-
-
-function ChatScreen({ setScreen }) {
+function ChatScreen({ setScreen, session }) {
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([
+  
+  const userName = session?.user?.fullName
+    ? session.user.fullName.trim().split(/\s+/)[0]
+    : 'there';
+
+  const [messages, setMessages] = useState(() => [
     {
       id: 1,
       from: 'safe',
-      text: 'Hi Moses. SAFE support is here. What do you need help with today?',
+      text: `Hi ${userName}. SAFE support is here. What do you need help with today?`,
       time: 'Now',
     },
     {
@@ -1135,7 +1005,7 @@ function ChatScreen({ setScreen }) {
     {
       id: 3,
       from: 'safe',
-      text: 'No problem. Your current Plus Cover protects this Matero to Town trip for 4 hours and supports accident claims.',
+      text: 'No problem. Your active cover protects your current minibus trip and supports accident claims.',
       time: 'Now',
     },
   ]);

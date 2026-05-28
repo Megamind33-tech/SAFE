@@ -62,10 +62,12 @@ export default function QRScannerScreen({
         }
         setInvalidState(result);
       } catch (err) {
-        if (!readCachedQrVerify()) {
-          setInvalidState({ status: 'invalid', reason: 'invalid' });
+        const msg = err?.message || '';
+        const isNetwork = /fetch|network|connection|load failed|offline/i.test(msg);
+        if (isNetwork) {
+          setError('Network connection failed. Please check your connection and try again.');
         } else {
-          setError(err.message || 'This QR code could not be verified.');
+          setInvalidState({ status: 'invalid', reason: msg || 'invalid' });
         }
       } finally {
         setBusy(false);

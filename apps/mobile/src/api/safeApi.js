@@ -1,21 +1,43 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8080';
 
-export async function request(path, { method = 'GET', token, body } = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers: {
-      'content-type': 'application/json',
-      ...(token ? { authorization: `Bearer ${token}` } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const message = data?.error || `Request failed (${res.status})`;
-    throw new Error(message);
+function sanitizeErrorMessage(msg) {
+  const raw = String(msg || '').trim();
+  if (!raw) return 'An unexpected error occurred. Please try again.';
+  if (/prisma|sqlite|constraint|foreign key|unique|database|query|sql|table/i.test(raw)) {
+    return 'We encountered a temporary database issue. Please try again in a moment.';
   }
-  return data;
+  if (/request failed \(500\)/i.test(raw)) {
+    return 'Our server encountered an unexpected issue. We are looking into it.';
+  }
+  if (/failed to fetch|network|load failed|networkerror|offline/i.test(raw)) {
+    return 'Connection failed. Please check your internet and try again.';
+  }
+  if (/^[A-Z_]+_ERROR|stack|at \/|line [0-9]/i.test(raw)) {
+    return 'An unexpected system error occurred. Please try again.';
+  }
+  return raw;
+}
+
+export async function request(path, { method = 'GET', token, body } = {}) {
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers: {
+        'content-type': 'application/json',
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const rawError = data?.error || `Request failed (${res.status})`;
+      throw new Error(sanitizeErrorMessage(rawError));
+    }
+    return data;
+  } catch (err) {
+    throw new Error(sanitizeErrorMessage(err.message));
+  }
 }
 
 export function saveToken(token) {

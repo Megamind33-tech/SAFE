@@ -7,6 +7,39 @@ import {
   readCachedCoverScreen,
 } from '../services/cover.js';
 
+const DEV_FALLBACK_PLANS = [
+  {
+    id: 'dev-basic',
+    name: 'Basic Trip Cover (Dev Fallback)',
+    price: 3,
+    currency: 'ZMW',
+    durationMinutes: 240,
+    benefits: ['Up to K3,000 emergency payout', 'Valid for one trip window', 'Dev testing fallback'],
+    isPopular: false,
+    isAvailable: true,
+  },
+  {
+    id: 'dev-plus',
+    name: 'Plus Trip Cover (Dev Fallback)',
+    price: 5,
+    currency: 'ZMW',
+    durationMinutes: 240,
+    benefits: ['Up to K5,000 emergency payout', 'Accident and disability support', 'Dev testing fallback'],
+    isPopular: true,
+    isAvailable: true,
+  },
+  {
+    id: 'dev-daily',
+    name: 'Daily Cover (Dev Fallback)',
+    price: 12,
+    currency: 'ZMW',
+    durationMinutes: 1440,
+    benefits: ['Covers trips through the day', 'Up to K5,000 payout tier', 'Dev testing fallback'],
+    isPopular: false,
+    isAvailable: true,
+  }
+];
+
 export default function CoverPlanSelectScreen({
   session,
   setScreen,
@@ -17,25 +50,79 @@ export default function CoverPlanSelectScreen({
 }) {
   const cached = readCachedCoverScreen();
   const [plans, setPlans] = useState(cached?.plans ?? []);
-  const [loading, setLoading] = useState(() => !cached?.plans?.length);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isUsingDevFallback, setIsUsingDevFallback] = useState(false);
+  const [retryTrigger, setRetryTrigger] = useState(0);
 
   useEffect(() => {
     const token = session?.token;
-    if (!token) return;
-    if (cached?.plans?.length) {
-      setPlans(cached.plans);
+    
+    if (!session?.ready) {
+      setLoading(true);
+      return;
+    }
+
+    if (!token) {
       setLoading(false);
       return;
     }
-    fetchCoverPlans(token)
+
+    if (!plans || plans.length === 0) {
+      setLoading(true);
+    }
+    setError('');
+    setIsUsingDevFallback(false);
+
+    let active = true;
+    let timeoutId;
+
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error('timeout'));
+      }, 7000);
+    });
+
+    Promise.race([
+      fetchCoverPlans(token),
+      timeoutPromise
+    ])
       .then((res) => {
+        if (!active) return;
         setPlans(res.plans ?? []);
         setError('');
       })
-      .catch(() => setError('Couldn’t load cover plans'))
-      .finally(() => setLoading(false));
-  }, [session?.token, cached?.plans?.length]);
+      .catch((err) => {
+        if (!active) return;
+        
+        let friendlyError = 'We couldn’t load the cover plans. Please check your connection and try again.';
+        if (err?.message === 'timeout') {
+          friendlyError = 'Connection timed out. The server took too long to respond. Please try again.';
+        }
+
+        if (import.meta.env.DEV) {
+          setPlans(DEV_FALLBACK_PLANS);
+          setIsUsingDevFallback(true);
+          setError('');
+        } else {
+          setError(friendlyError);
+        }
+      })
+      .finally(() => {
+        clearTimeout(timeoutId);
+        if (active) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+      clearTimeout(timeoutId);
+    };
+  }, [session?.token, session?.ready, retryTrigger]);
+
+  const waitingForSession = !session?.ready;
+  const notAuthenticated = session?.ready && !session?.token;
 
   const availablePlans = plans.filter((p) => p.isAvailable);
 
@@ -65,22 +152,59 @@ export default function CoverPlanSelectScreen({
           ) : null}
         </section>
 
-        {loading ? <p className="cover-flow__loading">Loading plans…</p> : null}
-        {error ? (
-          <section className="cover-flow-error-card" aria-live="assertive">
-            <h2>{error}</h2>
-            <p>Check your connection and try again.</p>
+        {waitingForSession ? (
+          <div className="cover-flow__loading-container" style={{ textAlign: 'center', padding: '40px 0' }}>
+            <p className="cover-flow__loading">Connecting to SAFE...</p>
+          </div>
+        ) : null}
+
+        {notAuthenticated ? (
+          <section className="cover-flow-empty-card">
+            <h2>Log in to buy cover</h2>
+            <p>You need to be logged in to view and purchase SAFE cover plans.</p>
+            <button
+              type="button"
+              className="cover-flow-btn cover-flow-btn--primary cover-flow-btn--wide"
+              onClick={() => setScreen('login')}
+            >
+              Log In
+            </button>
           </section>
         ) : null}
 
-        {!loading && !error && availablePlans.length === 0 ? (
+        {!waitingForSession && !notAuthenticated && loading ? (
+          <p className="cover-flow__loading">Loading plans…</p>
+        ) : null}
+
+        {!waitingForSession && !notAuthenticated && error ? (
+          <section className="cover-flow-error-card" aria-live="assertive">
+            <h2>{error}</h2>
+            <p>Check your connection and try again.</p>
+            <button
+              type="button"
+              className="cover-flow-btn cover-flow-btn--secondary cover-flow-btn--wide"
+              style={{ marginTop: '16px' }}
+              onClick={() => setRetryTrigger((prev) => prev + 1)}
+            >
+              Try Again
+            </button>
+          </section>
+        ) : null}
+
+        {!waitingForSession && !notAuthenticated && import.meta.env.DEV && isUsingDevFallback ? (
+          <div className="cover-flow-sync-warning" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#b91c1c' }}>
+            ⚠️ Dev Fallback: Server offline or unreachable. Displaying local test plans.
+          </div>
+        ) : null}
+
+        {!waitingForSession && !notAuthenticated && !loading && !error && availablePlans.length === 0 ? (
           <section className="cover-flow-empty-card">
             <h2>No cover plans available</h2>
             <p>Please try again later.</p>
           </section>
         ) : null}
 
-        {!loading && !error && availablePlans.length > 0 ? (
+        {!waitingForSession && !notAuthenticated && !loading && !error && availablePlans.length > 0 ? (
           <div className="cover-flow-plan-list" role="list">
             {availablePlans.map((plan) => {
               const selected = selectedPlanId === plan.id;
@@ -123,7 +247,7 @@ export default function CoverPlanSelectScreen({
           </div>
         ) : null}
 
-        {availablePlans.length > 0 ? (
+        {!waitingForSession && !notAuthenticated && availablePlans.length > 0 ? (
           <button
             type="button"
             className="cover-flow-btn cover-flow-btn--primary cover-flow-btn--wide"
