@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Lock, Plus, RefreshCcw, X } from 'lucide-react';
 import BottomScrollSpacer from '../components/BottomScrollSpacer.jsx';
 import PaymentLogo from '../components/PaymentLogo.jsx';
+import { getPaymentBrandAsset, resolvePaymentProviderKey } from '../assets/paymentAssets.ts';
 import {
   addMobileMoneyMethod,
   findExistingMobileMoneyMethod,
@@ -355,6 +356,9 @@ export default function PaymentMethodsScreen({
               const isDefault = method.isDefault;
               const isBusy = busyId === method.id;
               const iconType = method.provider === 'visa' ? 'visa' : method.provider === 'mastercard' ? 'mastercard' : method.provider;
+              const providerKey =
+                resolvePaymentProviderKey(method.provider) ?? (method.type === 'card' ? 'visa_mastercard' : method.provider);
+              const tile = getPaymentBrandAsset(providerKey, 'tile');
 
               const maskedLine =
                 method.type === 'mobile_money'
@@ -366,6 +370,11 @@ export default function PaymentMethodsScreen({
                   <article
                     key={method.id}
                     className="payment-method-card payment-method-card--default"
+                    style={
+                      tile
+                        ? { backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.88)), url(${tile})` }
+                        : undefined
+                    }
                   >
                     <PaymentLogo provider={iconType} className="payment-method-card__logo" />
                     <div className="payment-method-card__body">
@@ -383,6 +392,11 @@ export default function PaymentMethodsScreen({
                 <article
                   key={method.id}
                   className={`payment-method-card${method.provider === 'visa_mastercard' ? ' payment-method-card--coming-soon' : ''}`}
+                  style={
+                    tile
+                      ? { backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.88)), url(${tile})` }
+                      : undefined
+                  }
                 >
                   {method.provider === 'visa_mastercard' ? (
                     <PaymentLogo provider="visa_mastercard" dual disabled />
@@ -459,6 +473,12 @@ export default function PaymentMethodsScreen({
                       key={option.provider}
                       className="payment-methods-sheet__option payment-methods-sheet__option--cards payment-methods-sheet__option--disabled"
                       aria-disabled="true"
+                      style={(() => {
+                        const tile = getPaymentBrandAsset(option.provider, 'tile');
+                        return tile
+                          ? { backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.88)), url(${tile})` }
+                          : undefined;
+                      })()}
                     >
                       <PaymentLogo provider={option.provider} dual disabled />
                       <span className="payment-methods-sheet__option-text">
@@ -475,6 +495,12 @@ export default function PaymentMethodsScreen({
                       key={option.provider}
                       type="button"
                       className="payment-methods-sheet__option"
+                      style={(() => {
+                        const tile = getPaymentBrandAsset(option.provider, 'tile');
+                        return tile
+                          ? { backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.88)), url(${tile})` }
+                          : undefined;
+                      })()}
                       onClick={() => handleSelectProvider(option.provider)}
                     >
                       <PaymentLogo provider={option.provider} />

@@ -1,4 +1,4 @@
-/* SAFE Claim Flow — Step 1: Describe Incident */
+﻿/* SAFE Claim Flow — Step 1: Describe Incident */
 
 .claim-flow-screen.claim-flow-screen--describe {
   --cf-pad-x: 22px;
@@ -165,6 +165,173 @@
   font-size: 14px;
   line-height: 20px;
   color: rgba(16, 24, 32, 0.62);
+}
+
+/* ClaimFlowScreen.jsx panels (cover -> accident -> documents -> review) */
+.claim-flow-panel {
+  width: var(--cf-content-width);
+  max-width: 100%;
+  margin-top: 22px;
+  padding: 18px;
+  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 122, 61, 0.08);
+  box-shadow: 0 12px 26px rgba(0, 45, 28, 0.07);
+}
+
+.claim-flow-panel__title {
+  margin: 0 0 14px;
+  font-size: 18px;
+  line-height: 22px;
+  font-weight: 900;
+  color: #101820;
+}
+
+.claim-flow-screen__error {
+  width: var(--cf-content-width);
+  max-width: 100%;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  color: #991b1b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.claims-upload-notice {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(255, 198, 18, 0.12);
+  border: 1px solid rgba(255, 198, 18, 0.22);
+  color: rgba(16, 24, 32, 0.74);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.claim-eligibility-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.claim-eligibility-card {
+  width: 100%;
+  border: 1px solid rgba(16, 24, 32, 0.08);
+  border-radius: 20px;
+  padding: 14px;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(0, 45, 28, 0.06);
+  display: grid;
+  gap: 6px;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.claim-eligibility-card:active {
+  transform: scale(0.995);
+}
+
+.claim-eligibility-card--selected {
+  border-color: rgba(0, 122, 61, 0.32);
+  box-shadow: 0 12px 26px rgba(0, 122, 61, 0.1);
+}
+
+.claim-eligibility-card__plan {
+  font-size: 15px;
+  font-weight: 900;
+  color: #101820;
+}
+
+.claim-eligibility-card__policy {
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(16, 24, 32, 0.62);
+}
+
+.claim-eligibility-card__period,
+.claim-eligibility-card__payment {
+  font-size: 12px;
+  color: rgba(16, 24, 32, 0.56);
+}
+
+.claims-duplicate-card {
+  width: var(--cf-content-width);
+  max-width: 100%;
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 22px;
+  background: rgba(255, 198, 18, 0.12);
+  border: 1px solid rgba(255, 198, 18, 0.22);
+}
+
+.claims-duplicate-card__title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 900;
+  color: #101820;
+}
+
+.claims-duplicate-card__body {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 17px;
+  color: rgba(16, 24, 32, 0.62);
+}
+
+.claims-duplicate-card__note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(16, 24, 32, 0.72);
+}
+
+.claim-review-list {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.claim-review-list div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(16, 24, 32, 0.06);
+}
+
+.claim-review-list div:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.claim-review-list dt {
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(16, 24, 32, 0.56);
+}
+
+.claim-review-list dd {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: #101820;
+  text-align: right;
+  max-width: 60%;
+  overflow-wrap: anywhere;
+}
+
+.claim-review-terms {
+  margin: 14px 0 0;
+  font-size: 12px;
+  line-height: 17px;
+  color: rgba(16, 24, 32, 0.56);
 }
 
 /* Narrative card */
@@ -1227,10 +1394,19 @@ button.claim-flow-upload-option:disabled {
 }
 
 .claim-doc-row__label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 14px;
   line-height: 18px;
   font-weight: 800;
   color: #101820;
+}
+
+.claim-doc-row__type-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .claim-doc-row__hint {
@@ -1279,5 +1455,3 @@ button.claim-flow-upload-option:disabled {
   clip: rect(0, 0, 0, 0);
   border: 0;
 }
-
-

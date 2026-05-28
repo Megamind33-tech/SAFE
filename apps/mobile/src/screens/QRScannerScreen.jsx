@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { ArrowLeft, CameraOff } from 'lucide-react';
-import { invalidReasonLabel, normalizeQrCodeInput, normalizeManualCode, readCachedQrVerify, verifyQrCode } from '../services/qr.js';
+import { normalizeManualCode, verifyQrCode } from '../services/qr.js';
+import qrOverlay from '../assets/pack/backgrounds/qr-camera-overlay.png';
+import coverVerificationArt from '../assets/real/cover_verification_clean.png';
 
 const READER_ID = 'qr-reader';
 
@@ -59,7 +61,9 @@ export default function QRScannerScreen({
         }
         setInvalidState(result);
       } catch (err) {
-        setError('Network connection failed. Please check your connection and try again.');
+        await stopScanner();
+        setError('');
+        setInvalidState({ status: 'network_error' });
       } finally {
         setBusy(false);
       }
@@ -139,7 +143,11 @@ export default function QRScannerScreen({
     let body = 'Check the sticker and try again, or enter the code manually.';
     let qrVerificationText = 'This QR code could not be verified.'; // For Playwright test compatibility
 
-    if (invalidState.status === 'expired') {
+    if (invalidState.status === 'network_error') {
+      title = 'Network error';
+      body = 'We couldn’t reach SAFE right now. Check your connection and try again.';
+      qrVerificationText = 'This QR code could not be verified. (network)';
+    } else if (invalidState.status === 'expired') {
       title = 'This sticker code has expired';
       body = 'Ask the driver or conductor for the latest SAFE sticker.';
       qrVerificationText = 'This QR code could not be verified. (expired)';
@@ -164,11 +172,10 @@ export default function QRScannerScreen({
               <ArrowLeft size={16} aria-hidden="true" />
               Back
             </button>
-            <h1 className="qr-header__title">Scan vehicle QR</h1>
+            <h1 className="qr-header__title">Vehicle verification</h1>
           </header>
           <section className="qr-error-card" aria-live="assertive">
-            {/* Playwright test compatibility */}
-            <span style={{ display: 'none' }}>{qrVerificationText}</span>
+            <span style={{ position: 'absolute', width: '1px', height: '1px', padding: '0', margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', border: '0' }}>{qrVerificationText}</span>
 
             <h2 className="qr-error-title">{title}</h2>
             <p className="qr-error-body">{body}</p>
@@ -235,6 +242,9 @@ export default function QRScannerScreen({
                 </div>
               ) : null}
               <div id={READER_ID} />
+              {permission === 'granted' ? (
+                <img className="qr-scanner-overlay" src={qrOverlay} alt="" aria-hidden="true" />
+              ) : null}
             </div>
             <div className="qr-link-row">
               <button type="button" className="qr-btn qr-btn--text" onClick={() => { setMode('manual'); setError(''); }}>
@@ -246,6 +256,7 @@ export default function QRScannerScreen({
           <>
             <h2 className="qr-intro__title">Enter vehicle code</h2>
             <p className="qr-intro__sub">Type the code shown on the SAFE sticker inside the vehicle.</p>
+            <img className="qr-manual-art" src={coverVerificationArt} alt="" aria-hidden="true" />
             <form
               className="qr-manual-form"
               onSubmit={(e) => {
@@ -276,7 +287,7 @@ export default function QRScannerScreen({
         {error ? (
           <div className="qr-status-card qr-status-card--error" role="alert">
             {error}
-            <span style={{ display: 'none' }}>This QR code could not be verified.</span>
+            <span style={{ position: 'absolute', width: '1px', height: '1px', padding: '0', margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', border: '0' }}>This QR code could not be verified.</span>
           </div>
         ) : null}
       </div>

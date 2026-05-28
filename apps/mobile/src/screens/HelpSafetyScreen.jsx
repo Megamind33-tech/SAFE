@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import BottomScrollSpacer from '../components/BottomScrollSpacer.jsx';
 import { formatContactMeta, getContactInitials } from '../services/trustedContacts.js';
+import roadToSecurityArt from '../assets/transport/mint_green_road_to_security_and_peace_transparent.png';
 import {
   createSupportReport,
   getHelpSafetyConfig,
@@ -300,6 +301,7 @@ export default function HelpSafetyScreen({
         ) : null}
 
         <section className="help-safety-emergency-card" aria-label="In an accident">
+          <img className="help-safety-emergency-card__art" src={roadToSecurityArt} alt="" aria-hidden="true" />
           <div className="help-safety-emergency-card__icon" aria-hidden="true">
             <AlertTriangle size={28} strokeWidth={2.25} color="#c62828" />
           </div>

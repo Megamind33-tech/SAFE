@@ -1,52 +1,78 @@
 /**
- * SAFE payment brand asset map — single source of truth for Payment Methods UI.
+ * SAFE payment brand asset map — single source of truth for payment UI.
  *
- * Trimmed from safe_payment_assets *_icon_288px.png (no tile PNGs).
+ * Uses the provided Drive payment brand pack (SVG marks + PNG tiles/icons).
  */
-import airtelMoney from './payment/airtel-money-trimmed.png';
-import mtnMoMo from './payment/mtn-momo-trimmed.png';
-import visa from './payment/visa-trimmed.png';
-import mastercard from './payment/mastercard-trimmed.png';
+import airtelSvg from './payment-methods/svg/airtel_money.svg';
+import mtnSvg from './payment-methods/svg/mtn_momo.svg';
+import visaMastercardSvg from './payment-methods/svg/visa_mastercard.svg';
 
-export const paymentAssets = {
-  airtelMoney,
-  mtnMoMo,
-  visa,
-  mastercard,
+import airtelIcon112 from './payment-methods/png/airtel_money_icon_112px.png';
+import mtnIcon112 from './payment-methods/png/mtn_momo_icon_112px.png';
+import visaMastercardIcon112 from './payment-methods/png/visa_mastercard_icon_112px.png';
+
+import airtelTile from './payment-methods/png/airtel_money_tile_640x480.png';
+import mtnTile from './payment-methods/png/mtn_momo_tile_640x480.png';
+import visaMastercardTile from './payment-methods/png/visa_mastercard_tile_640x480.png';
+
+export type PaymentProviderKey = 'airtel' | 'mtn' | 'visa_mastercard';
+export type PaymentBrandAssetVariant = 'svg' | 'icon' | 'tile';
+
+export const paymentBrandAssets = {
+  airtel: {
+    svg: airtelSvg,
+    icon: airtelIcon112,
+    tile: airtelTile,
+    label: 'Airtel Money',
+  },
+  mtn: {
+    svg: mtnSvg,
+    icon: mtnIcon112,
+    tile: mtnTile,
+    label: 'MTN Mobile Money',
+  },
+  visa_mastercard: {
+    svg: visaMastercardSvg,
+    icon: visaMastercardIcon112,
+    tile: visaMastercardTile,
+    label: 'Visa / Mastercard',
+  },
 } as const;
 
-export type PaymentAssetKey = keyof typeof paymentAssets;
-
-export function resolvePaymentAssetKey(value: string): 'airtel' | 'mtn' | 'visa' | 'mastercard' | 'dual_cards' {
-  if (value === 'airtel' || value === 'airtel_money' || value === 'airtelMoney') return 'airtel';
-  if (
-    value === 'mtn' ||
-    value === 'mtn_mobile_money' ||
-    value === 'mtn_momo' ||
-    value === 'mtnMoMo' ||
-    value === 'mtnMobileMoney'
-  ) {
-    return 'mtn';
-  }
-  if (value === 'visa') return 'visa';
-  if (value === 'mastercard') return 'mastercard';
-  if (value === 'visa_mastercard' || value === 'card') return 'dual_cards';
-  return 'airtel';
+export function resolvePaymentProviderKey(value: string): PaymentProviderKey | null {
+  const v = String(value || '').toLowerCase();
+  if (v === 'airtel' || v === 'airtel_money' || v === 'airtelmoney') return 'airtel';
+  if (v === 'mtn' || v === 'mtn_mobile_money' || v === 'mtn_momo' || v === 'mtnmomo') return 'mtn';
+  if (v === 'visa_mastercard' || v === 'card') return 'visa_mastercard';
+  if (v === 'visa' || v === 'mastercard') return 'visa_mastercard';
+  return null;
 }
 
-export function getPaymentAsset(key: string): string | null {
-  const resolved = resolvePaymentAssetKey(key);
-  if (resolved === 'dual_cards') return null;
-  if (resolved === 'airtel') return paymentAssets.airtelMoney;
-  if (resolved === 'mtn') return paymentAssets.mtnMoMo;
-  return paymentAssets[resolved] ?? null;
+export function getPaymentBrandAsset(provider: string, variant: PaymentBrandAssetVariant): string | null {
+  const key = resolvePaymentProviderKey(provider);
+  if (!key) return null;
+  return paymentBrandAssets[key][variant] ?? null;
+}
+
+export function getPaymentBrandLabel(provider: string): string {
+  const key = resolvePaymentProviderKey(provider);
+  return key ? paymentBrandAssets[key].label : 'Payment method';
 }
 
 export function getMissingPaymentBrandAssets(): string[] {
   const missing: string[] = [];
-  if (!paymentAssets.airtelMoney) missing.push('Airtel Money');
-  if (!paymentAssets.mtnMoMo) missing.push('MTN Mobile Money');
-  if (!paymentAssets.visa) missing.push('Visa');
-  if (!paymentAssets.mastercard) missing.push('Mastercard');
+  if (!paymentBrandAssets.airtel.svg || !paymentBrandAssets.airtel.icon || !paymentBrandAssets.airtel.tile) {
+    missing.push('Airtel Money');
+  }
+  if (!paymentBrandAssets.mtn.svg || !paymentBrandAssets.mtn.icon || !paymentBrandAssets.mtn.tile) {
+    missing.push('MTN Mobile Money');
+  }
+  if (
+    !paymentBrandAssets.visa_mastercard.svg ||
+    !paymentBrandAssets.visa_mastercard.icon ||
+    !paymentBrandAssets.visa_mastercard.tile
+  ) {
+    missing.push('Visa / Mastercard');
+  }
   return missing;
 }

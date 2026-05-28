@@ -3,7 +3,7 @@
  */
 import PaymentLogo from './PaymentLogo.jsx';
 
-export { resolvePaymentAssetKey as toPaymentBrandType } from '../assets/paymentAssets.ts';
+export { resolvePaymentProviderKey as toPaymentBrandType } from '../assets/paymentAssets.ts';
 
 /**
  * @param {Parameters<typeof PaymentLogo>[0]} props

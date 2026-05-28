@@ -5,11 +5,9 @@ import {
   ArrowRight,
   BadgeCheck,
   Bell,
-  Bus,
   Check,
   CheckCircle2,
   ChevronRight,
-  CircleUserRound,
   Clock3,
   CreditCard,
   FileText,
@@ -35,10 +33,13 @@ import {
   WalletCards,
 } from 'lucide-react';
 import zambiaScene from './assets/zambia-commute-scene.svg';
-import safeLogo from './assets/SAFE_app_icon_master_3D_1024.png';
 import safeRoadBackground from './assets/safe-road-background.png';
-import shareTrackMap from './assets/share-track-map.png';
-import lusakaNightAerial from './assets/lusaka-night-aerial.png';
+import safeLogoClean from './assets/real/safe_logo_clean.png';
+import heroContainerMobile from './assets/hero/safe_hero_container_mobile_transparent.png';
+import heroContainerLarge from './assets/hero/safe_hero_container_transparent.png';
+import busHeroCity from './assets/real/bus_hero_city_clean.png';
+import coverVerificationArt from './assets/real/cover_verification_clean.png';
+import roadToSecurityArt from './assets/transport/mint_green_road_to_security_and_peace_transparent.png';
 import HomeScreen from './screens/HomeScreen.jsx';
 import CoverScreen from './screens/CoverScreen.jsx';
 import CoverPlanSelectScreen from './screens/CoverPlanSelectScreen.jsx';
@@ -68,6 +69,7 @@ import {
 } from './utils/activeCover.js';
 import navHomeIcon from './assets/pack/icons/nav-home.svg';
 import navCoverIcon from './assets/pack/icons/nav-cover-active.svg';
+import navVerifyIcon from './assets/pack/icons/qr-scan.svg';
 import navClaimsIcon from './assets/pack/icons/nav-claims.svg';
 import navAccountIcon from './assets/pack/icons/nav-account.svg';
 import { writeCachedClaims } from './services/claims.js';
@@ -92,42 +94,8 @@ import { verifyQrCode } from './services/qr.js';
 
 const bgImage = zambiaScene;
 
-const trip = {
-  route: 'Matero to Town',
-  vehicle: 'LSK 2481',
-  departure: '09:40 AM',
-  policy: 'SAFE-2026-0518-2943',
-  validUntil: '13:42',
-};
-
-const coverPlans = [
-  {
-    id: 'basic',
-    name: 'Basic Cover',
-    price: 'K3',
-    summary: 'Emergency accident cash support',
-    payout: 'Up to K3,000',
-    tone: 'silver',
-  },
-  {
-    id: 'plus',
-    name: 'Plus Cover',
-    price: 'K5',
-    summary: 'Higher payout plus accident and disability support',
-    payout: 'Up to K5,000',
-    tone: 'green',
-  },
-];
-
-const paymentMethods = [
-  { id: 'airtel', name: 'Airtel Money', detail: 'Pay with Airtel Money', brandType: 'airtel' },
-  { id: 'mtn', name: 'MTN Mobile Money', detail: 'Pay with MTN MoMo', brandType: 'mtn' },
-  { id: 'card', name: 'Visa / Mastercard', detail: 'Card payment', brandType: 'visa_mastercard', dual: true },
-];
-
 function App() {
   const [screen, setScreen] = useState('splash');
-  const [selectedPlan, setSelectedPlan] = useState('plus');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [historyReturn, setHistoryReturn] = useState('active');
   const [viewPolicyReturn, setViewPolicyReturn] = useState('active');
@@ -373,11 +341,6 @@ function App() {
     return () => clearInterval(interval);
   }, [activeCoverState?.endsAt]);
 
-  const activePlan = useMemo(
-    () => coverPlans.find((plan) => plan.id === selectedPlan) ?? coverPlans[1],
-    [selectedPlan]
-  );
-
   const activeCover = useMemo(
     () => resolveActiveCover(activeCoverState, coversHistory),
     [activeCoverState, coversHistory]
@@ -397,6 +360,13 @@ function App() {
 
   const goHome = () => setScreen('home');
   const goCover = () => setScreen('active');
+  const goVerify = () => {
+    if (!session?.token) {
+      setScreen('login');
+      return;
+    }
+    setScreen('qrScanner');
+  };
   const goClaims = () => setScreen('claim');
   const goProfile = () => setScreen('profile');
   const openHistory = (returnTo = 'active') => {
@@ -427,7 +397,6 @@ function App() {
   const showBottomNav = !['splash', 'onboarding1', 'onboarding2', 'onboarding3', 'login', 'signup', 'chat', 'offline'].includes(screen);
 
   const screenProps = {
-    activePlan,
     historyReturn,
     openHistory,
     openCoverHistoryDetail,
@@ -441,10 +410,8 @@ function App() {
     claimFlowOpts,
     selectedClaimId,
     paymentMethod,
-    selectedPlan,
     setPaymentMethod,
     setScreen,
-    setSelectedPlan,
     session,
     setSession,
     auth: {
@@ -520,6 +487,7 @@ function App() {
             setScreen={setScreen}
             selectedPlan={coverFlow.selectedPlan}
             paymentMethod={coverFlow.selectedPaymentMethod}
+            scannedVehicle={scannedVehicle}
             onPaymentMethodResolved={(method) =>
               setCoverFlow((f) => ({ ...f, selectedPaymentMethod: method }))
             }
@@ -636,7 +604,16 @@ function App() {
         )}
         {screen === 'chat' && <ChatScreen {...screenProps} />}
         {screen === 'offline' && <OfflineScreen {...screenProps} />}
-        {showBottomNav && <BottomNav current={navState(screen)} onHome={goHome} onCover={goCover} onClaims={goClaims} onProfile={goProfile} />}
+        {showBottomNav && (
+          <BottomNav
+            current={navState(screen)}
+            onHome={goHome}
+            onCover={goCover}
+            onVerify={goVerify}
+            onClaims={goClaims}
+            onProfile={goProfile}
+          />
+        )}
       </div>
     </div>
   );
@@ -645,8 +622,8 @@ function App() {
 function navState(screen) {
   if (screen === 'home') return 'home';
   if (['choose', 'payment', 'active', 'viewPolicy', 'coverPlans', 'coverReview', 'coverPay', 'coverStatus'].includes(screen)) return 'cover';
+  if (['qrScanner', 'vehicleVerified'].includes(screen)) return 'verify';
   if (['claim', 'claimFlow', 'claimDetail'].includes(screen)) return 'claims';
-  if (['qrScanner', 'vehicleVerified'].includes(screen)) return 'profile';
   if (['history', 'coverHistoryDetail', 'profile', 'profilePayments', 'trustedContacts', 'settings', 'notifications', 'helpSafety'].includes(screen)) {
     return 'profile';
   }
@@ -673,10 +650,11 @@ function TopBar({ onBack, title, action }) {
   );
 }
 
-function BottomNav({ current, onHome, onCover, onClaims, onProfile }) {
+function BottomNav({ current, onHome, onCover, onVerify, onClaims, onProfile }) {
   const items = [
     { id: 'home', label: 'Home', icon: navHomeIcon, onClick: onHome },
     { id: 'cover', label: 'Cover', icon: navCoverIcon, onClick: onCover },
+    { id: 'verify', label: 'Verify', icon: navVerifyIcon, onClick: onVerify },
     { id: 'claims', label: 'Claims', icon: navClaimsIcon, onClick: onClaims },
     { id: 'profile', label: 'Profile', icon: navAccountIcon, onClick: onProfile },
   ];
@@ -695,25 +673,7 @@ function BottomNav({ current, onHome, onCover, onClaims, onProfile }) {
         const active = current === item.id;
         return (
           <button className={`nav-item ${active ? 'active' : ''}`} key={item.id} type="button" onClick={item.onClick}>
-            {item.id === 'claims' && active ? (
-              <FileText
-                className="nav-item-icon nav-item-icon--claims-active"
-                size={22}
-                strokeWidth={2}
-                color="#FFC612"
-                aria-hidden="true"
-              />
-            ) : item.id === 'profile' && active ? (
-              <CircleUserRound
-                className="nav-item-icon nav-item-icon--profile-active"
-                size={22}
-                strokeWidth={2}
-                color="#FFC612"
-                aria-hidden="true"
-              />
-            ) : (
-              <img className="nav-item-icon" src={item.icon} alt="" aria-hidden="true" />
-            )}
+            <img className="nav-item-icon" src={item.icon} alt="" aria-hidden="true" />
             <span>{item.label}</span>
           </button>
         );
@@ -725,17 +685,21 @@ function BottomNav({ current, onHome, onCover, onClaims, onProfile }) {
 function SplashScreen({ setScreen }) {
   return (
     <main className="screen no-nav splash-screen">
-      <div className="splash-road" style={{ backgroundImage: `url(${safeRoadBackground})` }} />
+      <div className="splash-road" style={{ backgroundImage: `url(${safeRoadBackground})` }} aria-hidden="true" />
+      <img className="splash-hero-container" src={heroContainerMobile} alt="" aria-hidden="true" />
       <section className="splash-content">
-        <div className="safe-shield-mark">
-          <img src={safeLogo} alt="SAFE logo" />
-        </div>
-        <h1>SAFE</h1>
-        <p><span>You ride.</span> We protect.</p>
+        <img className="splash-logo" src={safeLogoClean} alt="SAFE" />
+        <p className="splash-tagline">
+          Cover your commuter trip in minutes.
+        </p>
       </section>
       <section className="splash-actions">
-        <button className="yellow-btn" type="button" onClick={() => setScreen('onboarding1')}>Get Started</button>
-        <button className="ghost-btn" type="button" onClick={() => setScreen('login')}>Log In</button>
+        <button className="yellow-btn" type="button" onClick={() => setScreen('onboarding1')}>
+          Get Started
+        </button>
+        <button className="ghost-btn" type="button" onClick={() => setScreen('login')}>
+          Log In
+        </button>
       </section>
     </main>
   );
@@ -769,18 +733,16 @@ function OnboardingShell({ body, children, highlight, onNext, setScreen, step, t
 function OnboardingOne({ setScreen }) {
   return (
     <OnboardingShell
-      body="We're here to make every journey safer and more secure for you."
-      highlight="Every Ride"
+      body="Buy cover before you start your journey, and keep your proof ready."
+      highlight="in minutes"
       onNext={() => setScreen('onboarding2')}
       setScreen={setScreen}
       step={1}
-      title="Safety First,"
+      title="Cover your trip"
     >
-      <div className="illustration-circle driver">
-        <div className="driver-wheel" />
-        <div className="driver-face" />
-        <div className="driver-body" />
-        <div className="shield-badge"><ShieldCheck size={33} /></div>
+      <div className="onboarding-asset-frame">
+        <img className="onboarding-hero-container" src={heroContainerLarge} alt="" aria-hidden="true" />
+        <img className="onboarding-asset" src={busHeroCity} alt="" aria-hidden="true" />
       </div>
     </OnboardingShell>
   );
@@ -789,21 +751,16 @@ function OnboardingOne({ setScreen }) {
 function OnboardingTwo({ setScreen }) {
   return (
     <OnboardingShell
-      body="Real-time monitoring and instant alerts for your peace of mind."
-      highlight="Always On"
+      body="Show proof to a conductor or marshal using a QR scan or manual vehicle code."
+      highlight="QR or manual"
       onNext={() => setScreen('onboarding3')}
       setScreen={setScreen}
       step={2}
-      title="Smart Protection"
+      title="Verify fast"
     >
-      <div className="illustration-circle smart">
-        <div className="city-bars"><span /><span /><span /><span /><span /></div>
-        <div className="phone-illustration">
-          <ShieldCheck size={46} />
-          <small />
-          <small />
-        </div>
-        <div className="check-badge"><Check size={26} /></div>
+      <div className="onboarding-asset-frame">
+        <img className="onboarding-hero-container" src={heroContainerLarge} alt="" aria-hidden="true" />
+        <img className="onboarding-asset onboarding-asset--verification" src={coverVerificationArt} alt="" aria-hidden="true" />
       </div>
     </OnboardingShell>
   );
@@ -812,15 +769,16 @@ function OnboardingTwo({ setScreen }) {
 function OnboardingThree({ setScreen }) {
   return (
     <OnboardingShell
-      body="Share your trip and let your loved ones follow your journey in real time."
-      highlight="Stay Connected."
+      body="If something happens, start a claim and get guided emergency steps quickly."
+      highlight="ready when needed"
       onNext={() => setScreen('signup')}
       setScreen={setScreen}
       step={3}
-      title="Share. Track."
+      title="Emergency & claims"
     >
-      <div className="illustration-circle map">
-        <img className="real-map-illustration" src={shareTrackMap} alt="Secure route tracking map" />
+      <div className="onboarding-asset-frame">
+        <img className="onboarding-hero-container" src={heroContainerLarge} alt="" aria-hidden="true" />
+        <img className="onboarding-asset" src={roadToSecurityArt} alt="" aria-hidden="true" />
       </div>
     </OnboardingShell>
   );
@@ -836,7 +794,8 @@ function LoginScreen({ setScreen, setSession, auth, refreshPassengerData }) {
     <main className="screen no-nav auth-screen">
       <div className="auth-bg" style={{ backgroundImage: `url(${safeRoadBackground})` }} />
       <section className="auth-card">
-        <img className="auth-logo" src={safeLogo} alt="SAFE logo" />
+        <img className="auth-hero-container" src={heroContainerMobile} alt="" aria-hidden="true" />
+        <img className="auth-logo" src={safeLogoClean} alt="SAFE" />
         <p className="eyebrow">Welcome back</p>
         <h1>Log in to SAFE</h1>
 
@@ -906,7 +865,8 @@ function SignupScreen({ setScreen, setSession, auth }) {
     <main className="screen no-nav auth-screen signup-screen">
       <div className="auth-bg" style={{ backgroundImage: `url(${safeRoadBackground})` }} />
       <section className="auth-card">
-        <img className="auth-logo" src={safeLogo} alt="SAFE logo" />
+        <img className="auth-hero-container" src={heroContainerMobile} alt="" aria-hidden="true" />
+        <img className="auth-logo" src={safeLogoClean} alt="SAFE" />
         <p className="eyebrow">Create your account</p>
         <h1>Join SAFE</h1>
 
@@ -958,28 +918,6 @@ function SignupScreen({ setScreen, setSession, auth }) {
         <p className="auth-switch">Already have an account? <button type="button" onClick={() => setScreen('login')}>Log in</button></p>
       </section>
     </main>
-  );
-}
-
-function TripRows() {
-  return (
-    <div className="trip-rows">
-      <div className="trip-row">
-        <span className="row-icon"><MapPin size={18} /></span>
-        <span>Route</span>
-        <strong>{trip.route}</strong>
-      </div>
-      <div className="trip-row">
-        <span className="row-icon"><Bus size={18} /></span>
-        <span>Minibus ID</span>
-        <strong>{trip.vehicle}</strong>
-      </div>
-      <div className="trip-row">
-        <span className="row-icon"><Clock3 size={18} /></span>
-        <span>Departure</span>
-        <strong>{trip.departure}</strong>
-      </div>
-    </div>
   );
 }
 

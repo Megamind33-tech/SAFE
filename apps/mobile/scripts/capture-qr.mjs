@@ -4,6 +4,7 @@
 import { chromium } from 'playwright';
 import { execSync } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
+import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 const BASE_URL = process.env.MOBILE_URL || 'http://127.0.0.1:5173';
@@ -284,10 +285,8 @@ async function main() {
 
   for (const name of REQUIRED_SCREENSHOTS) {
     const full = path.join(OUTPUT_DIR, name);
-    try {
-      execSync(`test -s "${full}"`);
-    } catch {
-      throw new Error(`Missing screenshot: ${name}`);
+    if (!existsSync(full) || statSync(full).size === 0) {
+      throw new Error(`Missing or empty screenshot: ${name}`);
     }
   }
 

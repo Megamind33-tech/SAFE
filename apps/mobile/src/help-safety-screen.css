@@ -1,4 +1,4 @@
-/* SAFE Help & Safety — accident and support guidance (390px master) */
+﻿/* SAFE Help & Safety — accident and support guidance (390px master) */
 
 .help-safety-screen.help-safety-screen-board {
   --hs-pad-x: 24px;
@@ -140,9 +140,23 @@
   margin: 28px auto 0;
   padding: 20px 18px;
   border-radius: 26px;
+  position: relative;
+  overflow: hidden;
   background: #ffffff;
   border: 1px solid rgba(198, 40, 40, 0.12);
   box-shadow: 0 14px 30px rgba(0, 45, 28, 0.08);
+}
+
+.help-safety-emergency-card__art {
+  position: absolute;
+  top: -20px;
+  right: -46px;
+  width: 240px;
+  height: auto;
+  opacity: 0.22;
+  pointer-events: none;
+  z-index: 0;
+  filter: drop-shadow(0 22px 40px rgba(0, 0, 0, 0.12));
 }
 
 .help-safety-emergency-card__icon {
@@ -150,6 +164,8 @@
   height: 48px;
   border-radius: 16px;
   background: rgba(198, 40, 40, 0.08);
+  position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
   margin-bottom: 12px;
@@ -157,6 +173,8 @@
 
 .help-safety-emergency-card__title {
   margin: 0;
+  position: relative;
+  z-index: 1;
   font-size: 24px;
   line-height: 1.15;
   font-weight: 900;
@@ -165,6 +183,8 @@
 
 .help-safety-emergency-card__body {
   margin: 10px 0 0;
+  position: relative;
+  z-index: 1;
   font-size: 17px;
   line-height: 1.4;
   color: rgba(16, 24, 32, 0.68);
@@ -175,6 +195,8 @@
   flex-direction: column;
   gap: 10px;
   margin-top: 18px;
+  position: relative;
+  z-index: 1;
 }
 
 .help-safety-emergency-card__btn {

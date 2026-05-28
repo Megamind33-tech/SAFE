@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Calendar, Clock, UploadCloud, X, FileCheck } from 'lucide-react';
+import claimDocumentIcon from '../assets/pack/icons/claim-document.svg';
+import policeReportIcon from '../assets/pack/icons/police-report.svg';
+import claimMedicalIcon from '../assets/pack/icons/claim-medical.svg';
+import claimUploadPhotoIcon from '../assets/pack/icons/claim-upload-photo.svg';
 import {
   createClaimDraft,
   getClaimDuplicateCheck,
@@ -210,47 +214,77 @@ export default function ClaimFlowScreen({
     ['submitted', 'under_review'].includes(String(submittedClaim.status))
   ) {
     return (
-      <main className="screen claim-flow-screen claim-submitted-screen">
-        <header className="claim-flow-screen__header">
-          <span className="claim-flow-screen__header-spacer" aria-hidden="true" />
-          <h1 className="claim-flow-screen__header-title">Claim submitted</h1>
-          <span className="claim-flow-screen__header-spacer" aria-hidden="true" />
-        </header>
-        <article className="claim-submitted-card" aria-live="polite">
-          <h2 className="claim-submitted-card__title">Claim submitted</h2>
-          <p className="claim-submitted-card__body">
-            SAFE has received your claim and will review your details and documents.
-          </p>
-          <p className="claim-submitted-card__meta">
-            Reference: <strong>{submittedClaim.reference}</strong>
-          </p>
-          <p className="claim-submitted-card__meta">
-            Status: {claimStatusLabel(submittedClaim.status)}
-          </p>
-          <p className="claim-submitted-card__meta">
-            Submitted: {new Date(submittedClaim.updatedAt || submittedClaim.createdAt).toLocaleString('en-GB')}
-          </p>
-          <button
-            type="button"
-            className="claims-btn claims-btn--primary"
-            onClick={() => openClaimDetail?.(submittedClaim.id)}
-          >
-            View claim
-          </button>
-          <button
-            type="button"
-            className="claims-btn claims-btn--secondary"
-            onClick={() => setScreen('claim')}
-          >
-            Done
-          </button>
-        </article>
+      <main className="screen claim-flow-screen claim-flow-screen--submitted">
+        <div className="claim-flow-submitted-scroll" aria-live="polite">
+          <header className="claim-submitted-header">
+            <button
+              type="button"
+              className="claim-submitted-header__back"
+              aria-label="Back to claims"
+              onClick={() => setScreen('claim')}
+            >
+              <ArrowLeft size={20} strokeWidth={2.25} />
+            </button>
+            <h1 className="claim-submitted-header__title">Claim submitted</h1>
+            <span className="claim-submitted-header__spacer" aria-hidden="true" />
+          </header>
+
+          <section className="claim-submitted-hero" aria-label="Claim submitted">
+            <div className="claim-submitted-hero__icon" aria-hidden="true">
+              <img src={claimDocumentIcon} alt="" />
+            </div>
+            <h2 className="claim-submitted-hero__title">Claim submitted</h2>
+            <p className="claim-submitted-hero__subtitle">
+              SAFE has received your claim and will review your details and documents.
+            </p>
+          </section>
+
+          <section className="claim-submitted-reference" aria-label="Reference details">
+            <div className="claim-submitted-row claim-submitted-row--reference">
+              <span className="claim-submitted-row__label">Reference</span>
+              <strong className="claim-submitted-row__value claim-submitted-row__value--reference">
+                {submittedClaim.reference}
+              </strong>
+            </div>
+            <div className="claim-submitted-row">
+              <span className="claim-submitted-row__label">Status</span>
+              <span className="claim-submitted-row__pill">{claimStatusLabel(submittedClaim.status)}</span>
+            </div>
+            <div className="claim-submitted-row claim-submitted-row--last">
+              <span className="claim-submitted-row__label">Submitted</span>
+              <strong className="claim-submitted-row__value">
+                {new Date(submittedClaim.updatedAt || submittedClaim.createdAt).toLocaleString('en-GB')}
+              </strong>
+            </div>
+          </section>
+
+          <div className="claim-submitted-actions">
+            <button
+              type="button"
+              className="claim-submitted-actions__primary"
+              onClick={() => openClaimDetail?.(submittedClaim.id)}
+            >
+              View claim
+            </button>
+            <button
+              type="button"
+              className="claim-submitted-actions__secondary"
+              onClick={() => setScreen('claim')}
+            >
+              Done
+            </button>
+          </div>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="screen claim-flow-screen">
+    <main
+      className={`screen claim-flow-screen ${
+        step === 3 ? 'claim-flow-screen--upload' : step === 4 ? 'claim-flow-screen--review' : 'claim-flow-screen--describe'
+      }`}
+    >
       <header className="claim-flow-screen__header">
         <button
           type="button"
@@ -545,10 +579,10 @@ export default function ClaimFlowScreen({
             </p>
           ) : null}
           {[
-            { key: 'police_report', label: 'Police report' },
-            { key: 'medical_note', label: 'Medical note' },
-            { key: 'photo', label: 'Accident photos' },
-            { key: 'other', label: 'Vehicle / trip details' },
+            { key: 'police_report', label: 'Police report', typeIcon: policeReportIcon },
+            { key: 'medical_note', label: 'Medical note', typeIcon: claimMedicalIcon },
+            { key: 'photo', label: 'Accident photos', typeIcon: claimUploadPhotoIcon },
+            { key: 'other', label: 'Vehicle / trip details', typeIcon: claimDocumentIcon },
           ].map((row) => {
             const file = pendingFiles[row.key];
             return (
@@ -567,7 +601,10 @@ export default function ClaimFlowScreen({
                     {file ? <FileCheck size={20} /> : <UploadCloud size={20} />}
                   </div>
                   <div className="claim-doc-row__info">
-                    <span className="claim-doc-row__label">{row.label}</span>
+                    <span className="claim-doc-row__label">
+                      <img className="claim-doc-row__type-icon" src={row.typeIcon} alt="" aria-hidden="true" />
+                      {row.label}
+                    </span>
                     {file ? (
                       <span className="claim-doc-row__filename">{file.name}</span>
                     ) : (

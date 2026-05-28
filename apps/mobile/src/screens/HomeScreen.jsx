@@ -5,10 +5,13 @@ import {
   HelpCircle,
   Shield,
   ShieldCheck,
+  QrCode,
+  Siren,
   Users,
 } from 'lucide-react';
 import HomeCoverHero from '../components/HomeCoverHero.jsx';
 import HomeMapPreview from '../components/HomeMapPreview.jsx';
+import safeLogo from '../assets/real/safe_logo_clean.png';
 import {
   fetchHomeSummary,
   formatActivityWhen,
@@ -148,9 +151,12 @@ export default function HomeScreen({
         ) : null}
 
         <header className="home-header">
-          <div className="home-header__text">
-            <h1 className="home-header__greeting">{greeting}</h1>
-            <p className="home-header__sub">Your SAFE cover status is below.</p>
+          <div className="home-header__brand">
+            <img className="home-header__logo" src={safeLogo} alt="SAFE" draggable={false} />
+            <div className="home-header__text">
+              <h1 className="home-header__greeting">{greeting}</h1>
+              <p className="home-header__sub">Your SAFE cover status is below.</p>
+            </div>
           </div>
           <button
             type="button"
@@ -183,9 +189,15 @@ export default function HomeScreen({
               onClick={() => setScreen('choose')}
             />
             <QuickActionCard
+              title="Verify"
+              subtitle="Scan QR or enter code."
+              Icon={QrCode}
+              onClick={() => (session?.token ? setScreen('qrScanner') : setScreen('login'))}
+            />
+            <QuickActionCard
               title="Start claim"
               subtitle="Report an accident or request help."
-              Icon={FileText}
+              Icon={Siren}
               onClick={() => openClaimFlow(1)}
             />
             <QuickActionCard
@@ -195,8 +207,8 @@ export default function HomeScreen({
               onClick={() => setScreen('helpSafety')}
             />
             <QuickActionCard
-              title="Trusted contacts"
-              subtitle="Emergency contacts."
+              title="Contacts"
+              subtitle="Trusted contacts."
               Icon={Users}
               onClick={() => setScreen('trustedContacts')}
             />

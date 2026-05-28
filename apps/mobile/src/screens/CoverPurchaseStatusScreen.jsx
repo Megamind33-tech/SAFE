@@ -1,9 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchPurchaseStatus } from '../services/cover.js';
 import { formatCoverEnds, isCoverActive } from '../services/cover.js';
+import paymentPendingIcon from '../assets/pack/icons/payment-pending.svg';
+import paymentSuccessIcon from '../assets/pack/icons/payment-success.svg';
+import paymentFailedIcon from '../assets/pack/icons/payment-failed.svg';
+import paymentProcessingArt from '../assets/pack/empty-states/payment-processing.png';
 
 const POLL_MS = 4000;
 const POLL_TIMEOUT_MS = 90000;
+
+function StatusHeader({ icon, title, subtitle, art }) {
+  return (
+    <div className="cover-flow-status-card__header">
+      {art ? (
+        <img className="cover-flow-status-card__art" src={art} alt="" aria-hidden="true" />
+      ) : null}
+      <div className="cover-flow-status-card__header-row">
+        <img className="cover-flow-status-card__icon" src={icon} alt="" aria-hidden="true" />
+        <div className="cover-flow-status-card__header-text">
+          <h2>{title}</h2>
+          {subtitle ? <p>{subtitle}</p> : null}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function CoverPurchaseStatusScreen({
   session,
@@ -67,8 +88,11 @@ export default function CoverPurchaseStatusScreen({
             <span className="cover-flow-header__spacer" />
           </header>
           <section className="cover-flow-status-card" aria-live="polite">
-            <h2>Payment provider is not connected yet.</h2>
-            <p>No cover was activated.</p>
+            <StatusHeader
+              icon={paymentFailedIcon}
+              title="Payment provider not connected"
+              subtitle="No cover was activated. Please try again later."
+            />
             <button
               type="button"
               className="cover-flow-btn cover-flow-btn--primary"
@@ -92,8 +116,11 @@ export default function CoverPurchaseStatusScreen({
             <span className="cover-flow-header__spacer" />
           </header>
           <section className="cover-flow-status-card cover-flow-status-card--error" aria-live="polite">
-            <h2>Payment failed</h2>
-            <p>Your cover was not activated. Try another payment method or retry.</p>
+            <StatusHeader
+              icon={paymentFailedIcon}
+              title="Payment failed"
+              subtitle="Your cover was not activated. Try again or choose another method."
+            />
             <button type="button" className="cover-flow-btn cover-flow-btn--primary" onClick={onRetryPayment}>
               Retry payment
             </button>
@@ -120,8 +147,11 @@ export default function CoverPurchaseStatusScreen({
             <span className="cover-flow-header__spacer" />
           </header>
           <section className="cover-flow-status-card cover-flow-status-card--success" aria-live="polite">
-            <h2>Cover activated</h2>
-            <p>Your SAFE cover is now active.</p>
+            <StatusHeader
+              icon={paymentSuccessIcon}
+              title="Cover activated"
+              subtitle="Your SAFE cover is now active."
+            />
             <dl className="cover-flow-hero__details">
               {cover.policyId ? (
                 <div>
@@ -173,8 +203,12 @@ export default function CoverPurchaseStatusScreen({
           <span className="cover-flow-header__spacer" />
         </header>
         <section className="cover-flow-status-card" aria-live="polite">
-          <h2>Payment pending</h2>
-          <p>{message || 'Complete the payment request on your phone to activate cover.'}</p>
+          <StatusHeader
+            icon={paymentPendingIcon}
+            title="Payment pending"
+            subtitle={message || 'Complete the payment request on your phone to activate cover.'}
+            art={paymentProcessingArt}
+          />
           {timedOut ? (
             <p className="cover-flow-note">
               We couldn’t confirm payment yet. Check again in a moment.

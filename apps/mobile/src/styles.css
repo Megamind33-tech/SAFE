@@ -2,17 +2,37 @@
   --primary: #006b3f;
   --primary-2: #008751;
   --secondary: #2a6a49;
+  --safe-dark: #0a1128;
+  --safe-charcoal: #101820;
+  --safe-ink: #0b0f14;
   --danger: #ba1a1a;
+  --danger-2: #c81e3a;
   --warning: #b45309;
+  --warning-2: #ffc612;
+  --success: #007a3d;
   --surface: #f8f9fa;
   --surface-low: #f3f4f5;
   --surface-mid: #e7e8e9;
   --surface-card: #ffffff;
+  --surface-dark: #0d1622;
   --text: #191c1d;
   --muted: #536158;
   --outline: #bdcabe;
   --shadow: 0 12px 28px rgba(27, 34, 31, 0.1);
   --soft-shadow: 0 6px 18px rgba(27, 34, 31, 0.08);
+  --radius-xl: 28px;
+  --radius-lg: 24px;
+  --radius-md: 18px;
+  --radius-sm: 14px;
+  --radius-xs: 10px;
+  --btn-height: 48px;
+  --btn-height-compact: 42px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -37,6 +57,100 @@ textarea {
 
 button {
   cursor: pointer;
+}
+
+.safe-btn {
+  height: var(--btn-height);
+  border: 0;
+  border-radius: var(--radius-md);
+  padding: 0 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: transform 120ms ease, box-shadow 160ms ease, background 160ms ease, color 160ms ease,
+    border-color 160ms ease, opacity 160ms ease;
+}
+
+.safe-btn:active {
+  transform: translateY(1px);
+}
+
+.safe-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.safe-btn--primary {
+  background: linear-gradient(180deg, var(--primary-2) 0%, var(--primary) 100%);
+  color: #ffffff;
+  box-shadow: 0 12px 26px rgba(0, 107, 63, 0.22);
+}
+
+.safe-btn--secondary {
+  background: rgba(16, 24, 32, 0.04);
+  color: var(--safe-charcoal);
+  border: 1px solid rgba(16, 24, 32, 0.12);
+  box-shadow: none;
+}
+
+.safe-btn--danger {
+  background: linear-gradient(180deg, #df1b41 0%, var(--danger-2) 100%);
+  color: #ffffff;
+  box-shadow: 0 12px 26px rgba(200, 30, 58, 0.22);
+}
+
+.safe-btn--text {
+  height: auto;
+  padding: 10px 0;
+  background: transparent;
+  color: var(--primary);
+  box-shadow: none;
+}
+
+.safe-card {
+  background: var(--surface-card);
+  border: 1px solid rgba(0, 107, 63, 0.1);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 14px 32px rgba(0, 45, 28, 0.09);
+}
+
+.safe-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.safe-chip--active {
+  background: rgba(0, 122, 61, 0.12);
+  border: 1px solid rgba(0, 122, 61, 0.22);
+  color: #0e5c2c;
+}
+
+.safe-chip--warn {
+  background: rgba(255, 198, 18, 0.18);
+  border: 1px solid rgba(255, 198, 18, 0.35);
+  color: #5c4a00;
+}
+
+.safe-chip--danger {
+  background: rgba(200, 30, 58, 0.14);
+  border: 1px solid rgba(200, 30, 58, 0.24);
+  color: #7c0e25;
+}
+
+.safe-chip--muted {
+  background: rgba(16, 24, 32, 0.06);
+  border: 1px solid rgba(16, 24, 32, 0.12);
+  color: rgba(16, 24, 32, 0.78);
 }
 
 .app-shell {
@@ -166,16 +280,16 @@ button {
   background: transparent;
   color: rgba(255, 255, 255, 0.62);
   /* Fixed width/height on ALL items — active state must not shift siblings */
-  width: 72px;
-  height: 60px;
-  min-height: 60px;
+  width: 64px;
+  height: 58px;
+  min-height: 58px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 6px;
   border-radius: 22px;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 14px;
   font-weight: 600;
   transition: color 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
@@ -230,6 +344,34 @@ button {
   inset: 0;
   background: linear-gradient(180deg, rgba(4, 10, 24, .05), rgba(4, 10, 24, .2) 48%, rgba(4, 10, 24, .42));
   pointer-events: none;
+}
+
+.splash-hero-container {
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  width: min(360px, 92vw);
+  transform: translateX(-50%);
+  opacity: 0.78;
+  pointer-events: none;
+  filter: drop-shadow(0 26px 60px rgba(0, 0, 0, 0.28));
+}
+
+.splash-logo {
+  width: min(220px, 72%);
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  filter: drop-shadow(0 18px 38px rgba(0, 0, 0, 0.28));
+}
+
+.splash-tagline {
+  margin: 16px 0 0;
+  max-width: 280px;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 650;
 }
 
 .splash-content {
@@ -335,6 +477,39 @@ button {
   display: grid;
   place-items: center;
   padding: 18px 32px 6px;
+}
+
+.onboarding-asset-frame {
+  position: relative;
+  width: min(340px, 86vw);
+  height: min(340px, 86vw);
+  display: grid;
+  place-items: center;
+}
+
+.onboarding-hero-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.78;
+  filter: drop-shadow(0 18px 38px rgba(0, 0, 0, 0.14));
+}
+
+.onboarding-asset {
+  position: relative;
+  z-index: 1;
+  width: min(320px, 82vw);
+  height: auto;
+  display: block;
+  transform: translateY(6px);
+  filter: drop-shadow(0 22px 44px rgba(0, 0, 0, 0.16));
+}
+
+.onboarding-asset--verification {
+  width: min(300px, 78vw);
+  transform: translateY(2px);
 }
 
 .illustration-circle {
@@ -574,10 +749,11 @@ button {
   margin: auto 22px 28px;
   padding: 22px 18px 18px;
   border: 1px solid rgba(255,255,255,.18);
-  border-radius: 8px;
+  border-radius: 22px;
   background: rgba(8, 18, 39, .84);
   backdrop-filter: blur(18px);
   box-shadow: 0 22px 54px rgba(0,0,0,.35);
+  overflow: hidden;
 }
 
 .signup-screen .auth-card {
@@ -585,12 +761,22 @@ button {
 }
 
 .auth-logo {
-  width: 82px;
-  height: 82px;
+  width: 168px;
+  height: auto;
   display: block;
-  margin-bottom: 14px;
-  border-radius: 22px;
-  box-shadow: 0 12px 30px rgba(0,0,0,.24);
+  margin: 8px 0 16px;
+  filter: drop-shadow(0 16px 34px rgba(0, 0, 0, 0.24));
+}
+
+.auth-hero-container {
+  position: absolute;
+  top: -44px;
+  right: -56px;
+  width: 260px;
+  height: auto;
+  opacity: 0.6;
+  pointer-events: none;
+  filter: drop-shadow(0 22px 44px rgba(0, 0, 0, 0.22));
 }
 
 .auth-card .eyebrow {

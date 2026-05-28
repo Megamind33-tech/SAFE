@@ -11,6 +11,7 @@
 import { useMemo, useState } from 'react';
 import { ArrowLeft, FileText, ShieldCheck } from 'lucide-react';
 import BottomScrollSpacer from '../components/BottomScrollSpacer.jsx';
+import noTripsArt from '../assets/pack/empty-states/no-trips.png';
 import {
   buildCoverHistoryItems,
   filterCoverHistoryItems,
@@ -89,6 +90,7 @@ export default function CoverHistoryScreen({
 
         {allItems.length === 0 ? (
           <section className="cover-history-empty" aria-label="No cover history">
+            <img className="cover-history-empty__art" src={noTripsArt} alt="" aria-hidden="true" />
             <div className="cover-history-empty__icon" aria-hidden="true">
               <ShieldCheck size={28} strokeWidth={2} color="#007A3D" />
             </div>
@@ -102,6 +104,7 @@ export default function CoverHistoryScreen({
           </section>
         ) : visibleItems.length === 0 ? (
           <section className="cover-history-empty cover-history-empty--filtered" aria-label="No matching covers">
+            <img className="cover-history-empty__art" src={noTripsArt} alt="" aria-hidden="true" />
             <h3 className="cover-history-empty__title">No records found</h3>
             <p className="cover-history-empty__subtitle">
               Try another filter or start a new cover.

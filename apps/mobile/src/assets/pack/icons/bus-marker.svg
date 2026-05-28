@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+  <style>.s{stroke:#007A3D;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}.sg{stroke:#64748B;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}.f{fill:#007A3D}.fm{fill:#EAFBF1}.fr{fill:#E31B23}.fy{fill:#FFD100}.fb{fill:#1A56DB}</style>
+  <rect class="s" x="14" y="12" width="36" height="34" rx="7" fill="#EAFBF1"/><path class="s" d="M21 20h22v13H21z"/><path class="s" d="M20 51h5M39 51h5"/><circle class="f" cx="23" cy="40" r="3"/><circle class="f" cx="41" cy="40" r="3"/>
+</svg>

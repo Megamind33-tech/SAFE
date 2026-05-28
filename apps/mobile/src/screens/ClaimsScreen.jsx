@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { RefreshCcw } from 'lucide-react';
 import safeShieldIcon from '../assets/real/safe_shield_clean.png';
+import noClaimsArt from '../assets/real/no_claims_clean.png';
+import claimAccidentIcon from '../assets/pack/icons/claim-accident.svg';
 import {
   loadClaimsBundle,
   readCachedClaims,
@@ -152,6 +154,7 @@ export default function ClaimsScreen({
         </article>
       ) : !hasClaims && !loading ? (
         <article className="claims-empty-card">
+          <img className="claims-empty-card__art" src={noClaimsArt} alt="" aria-hidden="true" />
           <h2 className="claims-empty-card__title">No claims yet</h2>
           <p className="claims-empty-card__body">
             If something happened, start a claim and upload your documents.
@@ -161,6 +164,7 @@ export default function ClaimsScreen({
             className="claims-btn claims-btn--primary"
             onClick={() => openClaimFlow?.()}
           >
+            <img className="claims-btn__icon" src={claimAccidentIcon} alt="" aria-hidden="true" />
             Start claim
           </button>
         </article>

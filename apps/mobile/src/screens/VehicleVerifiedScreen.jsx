@@ -1,5 +1,6 @@
 import { ArrowLeft, BadgeCheck } from 'lucide-react';
 import { formatVerifiedTime, toCoverVehicleContext } from '../services/qr.js';
+import verifiedVehicleArt from '../assets/real/verified_vehicle_clean.png';
 
 export default function VehicleVerifiedScreen({
   session,
@@ -52,6 +53,7 @@ export default function VehicleVerifiedScreen({
         </header>
 
         <section className="qr-verified-card" aria-label="Verified vehicle details">
+          <img className="qr-verified-hero" src={verifiedVehicleArt} alt="" aria-hidden="true" />
           <span className="qr-verified-badge">
             <BadgeCheck size={14} aria-hidden="true" />
             Verified
@@ -88,7 +90,7 @@ export default function VehicleVerifiedScreen({
           <div className="qr-actions">
             {eligibility?.canStartTripTracking ? (
               <button type="button" className="qr-btn qr-btn--primary" onClick={handleStartTrip}>
-                Continue to cover
+                Start trip tracking
               </button>
             ) : (
               <button type="button" className="qr-btn qr-btn--primary" onClick={handleBuyCover}>

@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Check, ChevronRight } from 'lucide-react';
+import travelRouteArt from '../assets/transport/travel_route_with_bus_and_markers_transparent.png';
+import coverBasicIcon from '../assets/pack/icons/cover-basic.svg';
+import coverPlusIcon from '../assets/pack/icons/cover-plus.svg';
+import coverDailyIcon from '../assets/pack/icons/cover-daily.svg';
 import {
   fetchCoverPlans,
   formatDurationLabel,
@@ -7,38 +11,13 @@ import {
   readCachedCoverScreen,
 } from '../services/cover.js';
 
-const DEV_FALLBACK_PLANS = [
-  {
-    id: 'dev-basic',
-    name: 'Basic Trip Cover (Dev Fallback)',
-    price: 3,
-    currency: 'ZMW',
-    durationMinutes: 240,
-    benefits: ['Up to K3,000 emergency payout', 'Valid for one trip window', 'Dev testing fallback'],
-    isPopular: false,
-    isAvailable: true,
-  },
-  {
-    id: 'dev-plus',
-    name: 'Plus Trip Cover (Dev Fallback)',
-    price: 5,
-    currency: 'ZMW',
-    durationMinutes: 240,
-    benefits: ['Up to K5,000 emergency payout', 'Accident and disability support', 'Dev testing fallback'],
-    isPopular: true,
-    isAvailable: true,
-  },
-  {
-    id: 'dev-daily',
-    name: 'Daily Cover (Dev Fallback)',
-    price: 12,
-    currency: 'ZMW',
-    durationMinutes: 1440,
-    benefits: ['Covers trips through the day', 'Up to K5,000 payout tier', 'Dev testing fallback'],
-    isPopular: false,
-    isAvailable: true,
-  }
-];
+function coverIconForPlan(plan) {
+  const id = String(plan?.id ?? '').toLowerCase();
+  const name = String(plan?.name ?? '').toLowerCase();
+  if (id.includes('plus') || name.includes('plus')) return coverPlusIcon;
+  if (id.includes('daily') || name.includes('daily')) return coverDailyIcon;
+  return coverBasicIcon;
+}
 
 export default function CoverPlanSelectScreen({
   session,
@@ -52,7 +31,6 @@ export default function CoverPlanSelectScreen({
   const [plans, setPlans] = useState(cached?.plans ?? []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [isUsingDevFallback, setIsUsingDevFallback] = useState(false);
   const [retryTrigger, setRetryTrigger] = useState(0);
 
   useEffect(() => {
@@ -72,7 +50,6 @@ export default function CoverPlanSelectScreen({
       setLoading(true);
     }
     setError('');
-    setIsUsingDevFallback(false);
 
     let active = true;
     let timeoutId;
@@ -100,13 +77,7 @@ export default function CoverPlanSelectScreen({
           friendlyError = 'Connection timed out. The server took too long to respond. Please try again.';
         }
 
-        if (import.meta.env.DEV) {
-          setPlans(DEV_FALLBACK_PLANS);
-          setIsUsingDevFallback(true);
-          setError('');
-        } else {
-          setError(friendlyError);
-        }
+        setError(friendlyError);
       })
       .finally(() => {
         clearTimeout(timeoutId);
@@ -124,7 +95,7 @@ export default function CoverPlanSelectScreen({
   const waitingForSession = !session?.ready;
   const notAuthenticated = session?.ready && !session?.token;
 
-  const availablePlans = plans.filter((p) => p.isAvailable);
+  const availablePlans = plans.filter((p) => p?.isAvailable !== false);
 
   return (
     <main className="screen cover-flow">
@@ -142,6 +113,7 @@ export default function CoverPlanSelectScreen({
           <p className="cover-flow-intro__sub">
             Buy cover before your trip and keep your policy details ready.
           </p>
+          <img className="cover-flow-intro__art" src={travelRouteArt} alt="" aria-hidden="true" />
           {scannedVehicle?.vehicle?.plateNumber ? (
             <p className="cover-flow-vehicle-chip">
               Vehicle: {scannedVehicle.vehicle.plateNumber}
@@ -153,7 +125,7 @@ export default function CoverPlanSelectScreen({
         </section>
 
         {waitingForSession ? (
-          <div className="cover-flow__loading-container" style={{ textAlign: 'center', padding: '40px 0' }}>
+          <div className="cover-flow__loading-block">
             <p className="cover-flow__loading">Connecting to SAFE...</p>
           </div>
         ) : null}
@@ -183,18 +155,11 @@ export default function CoverPlanSelectScreen({
             <button
               type="button"
               className="cover-flow-btn cover-flow-btn--secondary cover-flow-btn--wide"
-              style={{ marginTop: '16px' }}
               onClick={() => setRetryTrigger((prev) => prev + 1)}
             >
               Try Again
             </button>
           </section>
-        ) : null}
-
-        {!waitingForSession && !notAuthenticated && import.meta.env.DEV && isUsingDevFallback ? (
-          <div className="cover-flow-sync-warning" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#b91c1c' }}>
-            ⚠️ Dev Fallback: Server offline or unreachable. Displaying local test plans.
-          </div>
         ) : null}
 
         {!waitingForSession && !notAuthenticated && !loading && !error && availablePlans.length === 0 ? (
@@ -220,6 +185,7 @@ export default function CoverPlanSelectScreen({
                   disabled={!plan.isAvailable}
                   onClick={() => onSelectPlan(plan)}
                 >
+                  <img className="cover-flow-plan-card__icon" src={coverIconForPlan(plan)} alt="" aria-hidden="true" />
                   <span className="cover-flow-plan-card__head">
                     <strong className="cover-flow-plan-card__name">{plan.name}</strong>
                     {plan.isPopular ? (
