@@ -1,44 +1,48 @@
 import { useCallback, useEffect, useState } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
-import { ChevronRight, Navigation2 } from 'lucide-react';
+import { ChevronRight, Navigation2, Share2 } from 'lucide-react';
 import LiveRouteMap from './LiveRouteMap.jsx';
 import { activeTrip as fetchActiveTrip, loadToken, tripLocation } from '../api/safeApi.js';
+import { deriveHomeLiveTripState, isCoverActive } from '../services/home.js';
 import busStopArt from '../assets/transport/safe_and_calm_bus_stop_vignette_transparent.png';
+import mapFallbackArt from '../assets/pack/backgrounds/home-map-fallback.png';
 
 /** Default map center from seeded Lusaka route data — not a fake static map image. */
 const HOME_IDLE_MAP_CENTER = [-15.395, 28.281];
 
-function HomeNoTripOverlay({ onStartCover }) {
+function HomeMapOverlay({ title, body, ctaLabel, onCta, artSrc, ctaVariant = 'text' }) {
   return (
-    <aside className="home-map-preview__empty-overlay" aria-label="No active trip">
-      <img className="home-map-preview__empty-overlay-art" src={busStopArt} alt="" aria-hidden="true" />
-      <strong>No active trip</strong>
-      <p>Start cover when you begin your journey.</p>
-      <button type="button" className="home-map-preview__empty-overlay-cta" onClick={onStartCover}>
-        Start cover
-        <ChevronRight size={16} aria-hidden="true" />
-      </button>
+    <aside className="home-map-preview__empty-overlay" aria-label={title}>
+      {artSrc ? (
+        <img className="home-map-preview__empty-overlay-art" src={artSrc} alt="" aria-hidden="true" />
+      ) : null}
+      <strong>{title}</strong>
+      {body ? <p>{body}</p> : null}
+      {ctaLabel && onCta ? (
+        <button
+          type="button"
+          className={
+            ctaVariant === 'primary'
+              ? 'home-map-preview__empty-overlay-btn home-map-preview__empty-overlay-btn--primary'
+              : 'home-map-preview__empty-overlay-cta'
+          }
+          onClick={onCta}
+        >
+          {ctaLabel}
+          <ChevronRight size={16} aria-hidden="true" />
+        </button>
+      ) : null}
     </aside>
   );
 }
 
-function HomeIdleMapPreview({ onStartCover, onEnableLocation }) {
+function HomeMapFrame({ children, overlay, onEnableLocation, liveActions }) {
   return (
     <div className="home-map-preview home-map-preview--idle">
       <div className="home-map-preview__frame">
-        <MapContainer
-          center={HOME_IDLE_MAP_CENTER}
-          zoom={12}
-          className="home-map-preview__canvas home-map-preview__canvas--idle"
-          scrollWheelZoom={false}
-          zoomControl={false}
-          attributionControl={false}
-        >
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        </MapContainer>
-
-        <HomeNoTripOverlay onStartCover={onStartCover} />
-
+        {children}
+        {overlay}
+        {liveActions}
         <button
           type="button"
           className="home-map-preview__loc-btn"
@@ -52,12 +56,139 @@ function HomeIdleMapPreview({ onStartCover, onEnableLocation }) {
   );
 }
 
-function HomeSummaryMapPreview({ summaryTrip, onEnableLocation, onStartCover }) {
+function HomeIdleMapPanel({ state, onBuyCover, onStartLiveTrip, onViewTripSummary, onEnableLocation }) {
+  if (state === 'cover_expired') {
+    return (
+      <HomeMapFrame
+        onEnableLocation={onEnableLocation}
+        overlay={
+          <HomeMapOverlay
+            title="Cover expired"
+            body="Your SAFE cover has ended."
+            ctaLabel="Buy cover again"
+            onCta={onBuyCover}
+            artSrc={mapFallbackArt}
+            ctaVariant="primary"
+          />
+        }
+      >
+        <MapContainer
+          center={HOME_IDLE_MAP_CENTER}
+          zoom={12}
+          className="home-map-preview__canvas home-map-preview__canvas--idle"
+          scrollWheelZoom={false}
+          zoomControl={false}
+          attributionControl={false}
+        >
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        </MapContainer>
+      </HomeMapFrame>
+    );
+  }
+
+  if (state === 'active_cover_ready_to_start') {
+    return (
+      <HomeMapFrame
+        onEnableLocation={onEnableLocation}
+        overlay={
+          <HomeMapOverlay
+            title="Cover active"
+            body="Start live trip when you begin your journey."
+            ctaLabel="Start live trip"
+            onCta={onStartLiveTrip}
+            artSrc={busStopArt}
+            ctaVariant="primary"
+          />
+        }
+      >
+        <MapContainer
+          center={HOME_IDLE_MAP_CENTER}
+          zoom={12}
+          className="home-map-preview__canvas home-map-preview__canvas--idle"
+          scrollWheelZoom={false}
+          zoomControl={false}
+          attributionControl={false}
+        >
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        </MapContainer>
+      </HomeMapFrame>
+    );
+  }
+
+  if (state === 'trip_completed_cover_active') {
+    return (
+      <HomeMapFrame
+        onEnableLocation={onEnableLocation}
+        overlay={
+          <HomeMapOverlay
+            title="Trip completed"
+            body="Your journey was tracked under this cover."
+            ctaLabel="View trip summary"
+            onCta={onViewTripSummary}
+            artSrc={busStopArt}
+            ctaVariant="primary"
+          />
+        }
+      >
+        <MapContainer
+          center={HOME_IDLE_MAP_CENTER}
+          zoom={12}
+          className="home-map-preview__canvas home-map-preview__canvas--idle"
+          scrollWheelZoom={false}
+          zoomControl={false}
+          attributionControl={false}
+        >
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        </MapContainer>
+      </HomeMapFrame>
+    );
+  }
+
+  return (
+    <HomeMapFrame
+      onEnableLocation={onEnableLocation}
+      overlay={
+        <HomeMapOverlay
+          title="No active trip"
+          body="Buy cover before starting your journey."
+          ctaLabel="Buy cover"
+          onCta={onBuyCover}
+          artSrc={busStopArt}
+          ctaVariant="primary"
+        />
+      }
+    >
+      <MapContainer
+        center={HOME_IDLE_MAP_CENTER}
+        zoom={12}
+        className="home-map-preview__canvas home-map-preview__canvas--idle"
+        scrollWheelZoom={false}
+        zoomControl={false}
+        attributionControl={false}
+      >
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      </MapContainer>
+    </HomeMapFrame>
+  );
+}
+
+function HomeSummaryMapPreview({
+  summaryTrip,
+  cover,
+  liveTripState: liveTripStateProp,
+  onEnableLocation,
+  onBuyCover,
+  onStartLiveTrip,
+  onShareTrip,
+  onEmergencyHelp,
+  onViewTripSummary,
+}) {
   const [trip, setTrip] = useState(summaryTrip?.mapTrip ?? null);
   const [loading, setLoading] = useState(Boolean(summaryTrip?.id && !summaryTrip?.mapTrip));
   const [error, setError] = useState('');
-  const [locationNeeded, setLocationNeeded] = useState(false);
-  const [trackingUnavailable, setTrackingUnavailable] = useState(false);
+
+  const liveTripState =
+    liveTripStateProp ?? deriveHomeLiveTripState(cover, summaryTrip);
 
   const refreshTrip = useCallback(async () => {
     const token = loadToken();
@@ -70,7 +201,6 @@ function HomeSummaryMapPreview({ summaryTrip, onEnableLocation, onStartCover }) 
       setError('');
       const data = await fetchActiveTrip(token);
       setTrip(data?.trip ?? null);
-      setTrackingUnavailable(false);
     } catch (e) {
       setError(e?.message || 'Unable to load trip');
       setTrip(null);
@@ -85,13 +215,13 @@ function HomeSummaryMapPreview({ summaryTrip, onEnableLocation, onStartCover }) 
       setLoading(false);
       return;
     }
-    if (summaryTrip?.id) {
+    if (summaryTrip?.id && liveTripState === 'active_trip_live') {
       refreshTrip();
       return;
     }
     setTrip(null);
     setLoading(false);
-  }, [summaryTrip, refreshTrip]);
+  }, [summaryTrip, refreshTrip, liveTripState]);
 
   useEffect(() => {
     const token = loadToken();
@@ -109,40 +239,20 @@ function HomeSummaryMapPreview({ summaryTrip, onEnableLocation, onStartCover }) 
     return () => clearInterval(id);
   }, [trip?.tripId]);
 
-  useEffect(() => {
-    if (typeof navigator === 'undefined' || !navigator.permissions) return undefined;
-    navigator.permissions
-      .query({ name: 'geolocation' })
-      .then((result) => {
-        if (result.state === 'denied') setLocationNeeded(true);
-      })
-      .catch(() => {});
-    return undefined;
-  }, []);
-
-  const hasMapData =
-    trip &&
-    (trip.route?.polyline?.length >= 2 ||
-      (trip.route?.start && trip.route?.destination) ||
-      trip.vehicleLocation);
-
-  if (!summaryTrip?.id && !trip && !loading) {
-    return <HomeIdleMapPreview onStartCover={onStartCover} onEnableLocation={onEnableLocation} />;
+  if (liveTripState !== 'active_trip_live') {
+    return (
+      <HomeIdleMapPanel
+        state={liveTripState}
+        onBuyCover={onBuyCover}
+        onStartLiveTrip={onStartLiveTrip}
+        onViewTripSummary={onViewTripSummary}
+        onEnableLocation={onEnableLocation}
+      />
+    );
   }
 
-  if (trackingUnavailable && !trip && !loading) {
-    return <HomeIdleMapPreview onStartCover={onStartCover} onEnableLocation={onEnableLocation} />;
-  }
-
-  if (locationNeeded && !hasMapData && !loading) {
-    return <HomeIdleMapPreview onStartCover={onStartCover} onEnableLocation={onEnableLocation} />;
-  }
-
-  if (!hasMapData && !loading) {
-    return <HomeIdleMapPreview onStartCover={onStartCover} onEnableLocation={onEnableLocation} />;
-  }
-
-  const lastUpdated = trip?.vehicleLocation?.updatedAt || summaryTrip?.lastUpdatedAt;
+  const lastUpdated = trip?.vehicleLocation?.updatedAt || trip?.lastUpdatedAt || summaryTrip?.lastUpdatedAt;
+  const trackableCover = isCoverActive(cover) ? { trackable: true } : null;
 
   return (
     <div className="home-map-preview home-map-preview--live">
@@ -153,7 +263,29 @@ function HomeSummaryMapPreview({ summaryTrip, onEnableLocation, onStartCover }) 
           </p>
         ) : null}
         <div className="home-map-preview__map">
-          <LiveRouteMap trip={trip} loading={loading} error={error} onRetry={refreshTrip} compact />
+          <LiveRouteMap
+            trip={trip}
+            activeCover={trackableCover}
+            loading={loading}
+            error={error}
+            onRetry={refreshTrip}
+            onStartTracking={onStartLiveTrip}
+            onBuyCover={onBuyCover}
+            compact
+          />
+        </div>
+        <div className="home-map-preview__live-actions">
+          <button type="button" className="home-map-preview__live-action" onClick={onShareTrip}>
+            <Share2 size={16} aria-hidden="true" />
+            Share trip
+          </button>
+          <button
+            type="button"
+            className="home-map-preview__live-action home-map-preview__live-action--muted"
+            onClick={onEmergencyHelp}
+          >
+            Emergency help
+          </button>
         </div>
       </div>
     </div>

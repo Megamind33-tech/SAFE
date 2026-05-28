@@ -14,10 +14,12 @@ import iconContacts from '../assets/pack/icons/nav-account.svg';
 import iconClaimDoc from '../assets/pack/icons/claim-document.svg';
 import iconActivity from '../assets/pack/icons/receipt.svg';
 import {
+  deriveHomeLiveTripState,
   fetchHomeSummary,
   formatActivityWhen,
   formatClaimStatus,
   getDisplayCover,
+  getHomeLiveTripStatusLabel,
   greetingForUser,
   readCachedHomeSummary,
   writeCachedHomeSummary,
@@ -36,18 +38,13 @@ function QuickActionCard({ title, subtitle, iconSrc, onClick }) {
   );
 }
 
-function liveTripStatusLabel(activeTrip) {
-  if (!activeTrip?.id) return 'No active trip';
-  if (activeTrip?.status === 'active') return 'Trip in progress';
-  return 'Trip update';
-}
-
 export default function HomeScreen({
   session,
   setScreen,
   goCover,
   openClaimFlow,
   openHistory,
+  openLiveTrip,
 }) {
   const cached = readCachedHomeSummary();
   const [summary, setSummary] = useState(cached);
@@ -66,7 +63,8 @@ export default function HomeScreen({
   const latestClaim = summary?.latestClaim ?? null;
   const recentActivity = summary?.recentActivity ?? [];
   const activeTrip = summary?.activeTrip ?? null;
-  const tripStatusLabel = liveTripStatusLabel(activeTrip);
+  const liveTripState = deriveHomeLiveTripState(displayCover, activeTrip);
+  const tripStatusLabel = getHomeLiveTripStatusLabel(liveTripState);
 
   const loadSummary = useCallback(async () => {
     if (!token) {
@@ -233,7 +231,11 @@ export default function HomeScreen({
               Live trip
             </h2>
             <span
-              className={`home-trip-pill ${activeTrip?.id ? 'home-trip-pill--live' : ''}`}
+              className={`home-trip-pill ${
+                liveTripState === 'active_trip_live' || liveTripState === 'active_cover_ready_to_start'
+                  ? 'home-trip-pill--live'
+                  : ''
+              }`}
               role="status"
             >
               <i aria-hidden="true" />
@@ -242,8 +244,14 @@ export default function HomeScreen({
           </div>
           <HomeMapPreview
             summaryTrip={activeTrip}
+            cover={displayCover}
+            liveTripState={liveTripState}
             onEnableLocation={requestLocation}
-            onStartCover={() => setScreen('choose')}
+            onBuyCover={() => setScreen('choose')}
+            onStartLiveTrip={openLiveTrip ?? (() => setScreen('liveTrip'))}
+            onShareTrip={openLiveTrip ?? (() => setScreen('liveTrip'))}
+            onEmergencyHelp={() => setScreen('helpSafety')}
+            onViewTripSummary={openLiveTrip ?? (() => setScreen('liveTrip'))}
           />
         </section>
 

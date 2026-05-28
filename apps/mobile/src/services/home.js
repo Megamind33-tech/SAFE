@@ -97,6 +97,64 @@ export function formatTimeRemaining(endsAt) {
   return secs > 0 ? `${secs}s left` : null;
 }
 
+/** Live HH:MM:SS countdown for active-cover hero. */
+export function formatCountdownClock(endsAt) {
+  const diff = new Date(endsAt).getTime() - Date.now();
+  if (diff <= 0) return '00:00:00';
+  const totalSecs = Math.floor(diff / 1000);
+  const hours = Math.floor(totalSecs / 3600);
+  const mins = Math.floor((totalSecs % 3600) / 60);
+  const secs = totalSecs % 60;
+  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function mapTripIsLive(activeTrip) {
+  const trip = activeTrip?.mapTrip;
+  if (!trip) return false;
+  if (trip.status === 'ended' || trip.coverExpired) return false;
+  if (trip.status !== 'active') return false;
+  return Boolean(
+    trip.routePolyline?.length >= 2 ||
+      trip.currentLocation ||
+      trip.startLocation ||
+      activeTrip?.currentLocation,
+  );
+}
+
+function mapTripIsCompleted(activeTrip) {
+  const trip = activeTrip?.mapTrip;
+  if (!trip) return false;
+  return trip.status === 'ended' || Boolean(trip.endedAt);
+}
+
+/**
+ * Home Live trip panel state (derived from real cover + trip summary).
+ * @returns {'no_cover_no_trip'|'active_cover_ready_to_start'|'active_trip_live'|'trip_completed_cover_active'|'cover_expired'}
+ */
+export function deriveHomeLiveTripState(cover, activeTrip) {
+  if (isCoverExpired(cover)) return 'cover_expired';
+  if (!isCoverActive(cover)) return 'no_cover_no_trip';
+  if (mapTripIsCompleted(activeTrip)) return 'trip_completed_cover_active';
+  if (mapTripIsLive(activeTrip)) return 'active_trip_live';
+  if (isCoverActive(cover)) return 'active_cover_ready_to_start';
+  return 'no_cover_no_trip';
+}
+
+export function getHomeLiveTripStatusLabel(state) {
+  switch (state) {
+    case 'active_cover_ready_to_start':
+      return 'Ready to start';
+    case 'active_trip_live':
+      return 'Live trip active';
+    case 'trip_completed_cover_active':
+      return 'Trip completed';
+    case 'cover_expired':
+      return 'Cover expired';
+    default:
+      return 'No active trip';
+  }
+}
+
 export function formatCoverEnds(endsAt) {
   if (!endsAt) return '';
   const end = new Date(endsAt);

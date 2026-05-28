@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
-import { AlertCircle, ChevronRight, ShieldCheck } from 'lucide-react';
+import { AlertCircle, Calendar, ChevronRight, Clock3, ShieldCheck } from 'lucide-react';
 import {
+  formatCountdownClock,
   formatCoverEnds,
-  formatTimeRemaining,
   isCoverActive,
   isCoverExpired,
   isPaymentPending,
 } from '../services/home.js';
 import safeBusHeroCity from '../assets/real/bus_hero_city_clean.png';
-import safeBusProtected from '../assets/transport/green_bus_with_protective_emblem_transparent.png';
 import lockShieldIcon from '../assets/pack/icons/lock-shield.svg';
+import iconCoverPlan from '../assets/pack/icons/cover-daily.svg';
 
 export default function HomeCoverHero({
   cover,
@@ -22,20 +22,21 @@ export default function HomeCoverHero({
   onRetry,
   loadError,
 }) {
-  const [timeLeft, setTimeLeft] = useState(() =>
-    cover?.endsAt ? formatTimeRemaining(cover.endsAt) : null,
+  const active = isCoverActive(cover);
+  const [countdown, setCountdown] = useState(() =>
+    cover?.endsAt && active ? formatCountdownClock(cover.endsAt) : null,
   );
 
   useEffect(() => {
-    if (!cover?.endsAt || !isCoverActive(cover)) {
-      setTimeLeft(null);
+    if (!cover?.endsAt || !active) {
+      setCountdown(null);
       return undefined;
     }
-    const tick = () => setTimeLeft(formatTimeRemaining(cover.endsAt));
+    const tick = () => setCountdown(formatCountdownClock(cover.endsAt));
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [cover?.endsAt, cover?.status, cover?.paymentStatus]);
+  }, [cover?.endsAt, cover?.status, cover?.paymentStatus, active]);
 
   if (loadError) {
     return (
@@ -56,7 +57,8 @@ export default function HomeCoverHero({
   return (
     <CoverHeroBody
       cover={cover}
-      timeLeft={timeLeft}
+      countdown={countdown}
+      active={active}
       onViewCover={onViewCover}
       onStartClaim={onStartClaim}
       onBuyCover={onBuyCover}
@@ -68,10 +70,11 @@ export default function HomeCoverHero({
 }
 
 function HeroPill({ tone, children }) {
-  const showIcon = tone === 'warn' || tone === 'muted';
+  const showWarnIcon = tone === 'warn' || tone === 'muted';
   return (
     <span className={`home-hero__pill home-hero__pill--${tone}`}>
-      {showIcon ? <AlertCircle size={14} strokeWidth={2.5} aria-hidden="true" /> : null}
+      {tone === 'active' ? <ShieldCheck size={14} strokeWidth={2.5} aria-hidden="true" /> : null}
+      {showWarnIcon ? <AlertCircle size={14} strokeWidth={2.5} aria-hidden="true" /> : null}
       {children}
     </span>
   );
@@ -79,7 +82,8 @@ function HeroPill({ tone, children }) {
 
 function CoverHeroBody({
   cover,
-  timeLeft,
+  countdown,
+  active,
   onViewCover,
   onStartClaim,
   onBuyCover,
@@ -88,10 +92,9 @@ function CoverHeroBody({
   syncWarning,
 }) {
   const pending = isPaymentPending(cover);
-  const active = isCoverActive(cover) && Boolean(timeLeft);
   const expired = isCoverExpired(cover) || (cover && !active && !pending);
 
-  const heroArt = pending || !active ? safeBusHeroCity : safeBusProtected;
+  const heroArt = safeBusHeroCity;
   const heroModifier = pending
     ? 'pending'
     : active
@@ -105,7 +108,8 @@ function CoverHeroBody({
   let subtitle = 'Buy SAFE cover before your next trip.';
   let primary = { label: 'Buy cover', onClick: onBuyCover };
   let secondary = { label: 'How SAFE works', onClick: onHowSafeWorks };
-  let showFootnote = true;
+  let showPaymentFootnote = true;
+  let showProtectedFootnote = false;
 
   if (pending) {
     pill = { tone: 'warn', label: 'Payment pending' };
@@ -113,21 +117,22 @@ function CoverHeroBody({
     subtitle = 'Complete payment to activate your SAFE cover.';
     primary = { label: 'Complete payment', onClick: onCompletePayment };
     secondary = null;
-    showFootnote = false;
+    showPaymentFootnote = false;
   } else if (active) {
-    pill = { tone: 'active', label: 'Active' };
+    pill = { tone: 'active', label: 'Active cover' };
     title = 'You’re covered';
-    subtitle = 'Your SAFE cover is active.';
+    subtitle = 'Your SAFE cover is active for this trip.';
     primary = { label: 'View cover', onClick: onViewCover };
     secondary = { label: 'Start claim', onClick: onStartClaim };
-    showFootnote = false;
+    showPaymentFootnote = false;
+    showProtectedFootnote = true;
   } else if (expired && cover) {
     pill = { tone: 'expired', label: 'Expired' };
     title = 'Cover expired';
     subtitle = 'Your last SAFE cover has ended.';
     primary = { label: 'Buy cover again', onClick: onBuyCover };
     secondary = null;
-    showFootnote = false;
+    showPaymentFootnote = false;
   }
 
   return (
@@ -143,29 +148,32 @@ function CoverHeroBody({
         <p className="home-hero__subtitle">{subtitle}</p>
 
         {active ? (
-          <dl className="home-hero__details">
-            <div>
-              <dt>Plan</dt>
+          <dl className="home-hero__details home-hero__details--active">
+            <div className="home-hero__detail">
+              <dt>
+                <img src={iconCoverPlan} alt="" aria-hidden="true" className="home-hero__detail-icon" />
+                Plan
+              </dt>
               <dd>{cover.planName}</dd>
             </div>
-            <div>
-              <dt>Time remaining</dt>
-              <dd aria-live="polite">{timeLeft || 'Ending soon'}</dd>
+            <div className="home-hero__detail">
+              <dt>
+                <Clock3 size={16} strokeWidth={2.25} aria-hidden="true" className="home-hero__detail-icon" />
+                Time remaining
+              </dt>
+              <dd aria-live="polite">{countdown || '00:00:00'}</dd>
             </div>
-            <div>
-              <dt>Cover ends</dt>
+            <div className="home-hero__detail">
+              <dt>
+                <Calendar size={16} strokeWidth={2.25} aria-hidden="true" className="home-hero__detail-icon" />
+                Cover ends
+              </dt>
               <dd>{formatCoverEnds(cover.endsAt)}</dd>
             </div>
-            {cover.policyId ? (
-              <div>
-                <dt>Policy</dt>
-                <dd>{cover.policyId}</dd>
-              </div>
-            ) : null}
           </dl>
         ) : null}
 
-        <div className="home-hero__actions">
+        <div className={`home-hero__actions ${active ? 'home-hero__actions--pair' : ''}`}>
           <button type="button" className="home-btn home-btn--primary" onClick={primary.onClick}>
             {primary.label}
             <ChevronRight size={18} strokeWidth={2.5} aria-hidden="true" />
@@ -173,19 +181,21 @@ function CoverHeroBody({
           {secondary ? (
             <button type="button" className="home-btn home-btn--secondary" onClick={secondary.onClick}>
               {secondary.label}
+              {active ? <ChevronRight size={18} strokeWidth={2.5} aria-hidden="true" /> : null}
             </button>
           ) : null}
         </div>
 
-        {showFootnote ? (
+        {showPaymentFootnote ? (
           <p className="home-hero__note">
             <img src={lockShieldIcon} alt="" aria-hidden="true" className="home-hero__note-icon" />
             <span>Cover starts after successful payment.</span>
           </p>
-        ) : active ? (
-          <p className="home-hero__note">
+        ) : null}
+        {showProtectedFootnote ? (
+          <p className="home-hero__note home-hero__note--protected">
             <ShieldCheck size={16} strokeWidth={2.5} aria-hidden="true" />
-            <span>Your trip is protected while cover is active.</span>
+            <span>Protected for the current journey</span>
           </p>
         ) : null}
       </div>
