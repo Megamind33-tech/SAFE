@@ -1,58 +1,29 @@
 /**
- * Payment provider logo tile — uses paymentAssets.ts only.
+ * Payment provider logo/mark — uses paymentAssets.ts only.
  */
 import {
-  getPaymentAsset,
-  paymentAssets,
-  resolvePaymentAssetKey,
+  getPaymentBrandAsset,
+  getPaymentBrandLabel,
+  resolvePaymentProviderKey,
 } from '../assets/paymentAssets.ts';
 
 /**
  * @param {{
  *   provider: string;
  *   dual?: boolean;
+ *   variant?: 'svg' | 'icon';
  *   className?: string;
  *   disabled?: boolean;
  * }} props
  */
-export default function PaymentLogo({ provider, dual = false, className = '', disabled = false }) {
-  const resolved = dual || provider === 'visa_mastercard' ? 'dual_cards' : resolvePaymentAssetKey(provider);
+export default function PaymentLogo({ provider, dual = false, variant = 'svg', className = '', disabled = false }) {
+  const resolved =
+    dual || provider === 'visa_mastercard'
+      ? 'visa_mastercard'
+      : resolvePaymentProviderKey(provider) ?? 'airtel';
 
-  if (resolved === 'dual_cards') {
-    return (
-      <span
-        className={`payment-logo payment-logo--cards${disabled ? ' payment-logo--disabled' : ''} ${className}`.trim()}
-        aria-label="Visa and Mastercard"
-      >
-        <img
-          src={paymentAssets.visa}
-          alt="Visa"
-          className="payment-logo__image payment-logo__image--visa"
-          draggable={false}
-        />
-        <img
-          src={paymentAssets.mastercard}
-          alt="Mastercard"
-          className="payment-logo__image payment-logo__image--mastercard"
-          draggable={false}
-        />
-      </span>
-    );
-  }
-
-  const assetKey = resolved;
-  const src = getPaymentAsset(assetKey);
-
-  const label =
-    assetKey === 'airtel'
-      ? 'Airtel Money'
-      : assetKey === 'mtn'
-        ? 'MTN Mobile Money'
-        : assetKey === 'visa'
-          ? 'Visa'
-          : assetKey === 'mastercard'
-            ? 'Mastercard'
-            : 'Payment method';
+  const src = getPaymentBrandAsset(resolved, variant) ?? getPaymentBrandAsset(resolved, 'icon');
+  const label = getPaymentBrandLabel(resolved);
 
   if (!src) {
     if (import.meta.env.DEV) {
@@ -62,9 +33,7 @@ export default function PaymentLogo({ provider, dual = false, className = '', di
   }
 
   return (
-    <span
-      className={`payment-logo payment-logo--${assetKey}${disabled ? ' payment-logo--disabled' : ''} ${className}`.trim()}
-    >
+    <span className={`payment-logo payment-logo--${resolved}${disabled ? ' payment-logo--disabled' : ''} ${className}`.trim()}>
       <img src={src} alt={label} className="payment-logo__image" draggable={false} />
     </span>
   );

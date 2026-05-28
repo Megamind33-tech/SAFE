@@ -5,6 +5,10 @@ import { MapPin, Navigation2, RefreshCw } from 'lucide-react';
 import mapStartIcon from '../assets/pack/icons/map-start-marker.svg';
 import mapDestIcon from '../assets/pack/icons/map-destination-pin.svg';
 import mapBusIcon from '../assets/pack/icons/map-bus-marker.svg';
+import mapFallbackArt from '../assets/pack/backgrounds/home-map-fallback.png';
+import offlineMapArt from '../assets/pack/map/offline-map-placeholder.png';
+import routeFallbackArt from '../assets/real/route_map_bus_hero_clean.png';
+import busStopArt from '../assets/transport/safe_and_calm_bus_stop_vignette_transparent.png';
 import { tripStaleness } from '../utils/tripStaleness.js';
 
 function svgIcon(url, size, anchor) {
@@ -127,6 +131,7 @@ export default function LiveRouteMap({
   if (error && !trip) {
     return (
       <div className={`live-trip-map live-trip-map--error live-trip-map--${compact ? 'compact' : 'full'}`}>
+        <img className="live-trip-map__art" src={routeFallbackArt} alt="" aria-hidden="true" />
         <strong>Couldn’t load live trip</strong>
         <p>Check your connection and try again.</p>
         {onRetry ? (
@@ -142,7 +147,7 @@ export default function LiveRouteMap({
   if (!activeCover?.trackable && !trip) {
     return (
       <div className={`live-trip-map live-trip-map--empty live-trip-map--${compact ? 'compact' : 'full'}`}>
-        <Navigation2 size={26} aria-hidden="true" />
+        <img className="live-trip-map__art" src={routeFallbackArt} alt="" aria-hidden="true" />
         <strong>Buy cover to start trip tracking</strong>
         <p>Active SAFE cover is required before live trip tracking can begin.</p>
         {onBuyCover ? (
@@ -157,6 +162,7 @@ export default function LiveRouteMap({
   if (trip?.coverExpired || (trip?.status === 'ended' && trip?.coverExpired)) {
     return (
       <div className={`live-trip-map live-trip-map--empty live-trip-map--${compact ? 'compact' : 'full'}`}>
+        <img className="live-trip-map__art" src={busStopArt} alt="" aria-hidden="true" />
         <strong>Cover expired</strong>
         <p>Trip tracking has stopped.</p>
       </div>
@@ -166,7 +172,7 @@ export default function LiveRouteMap({
   if (!trip && activeCover?.trackable) {
     return (
       <div className={`live-trip-map live-trip-map--empty live-trip-map--${compact ? 'compact' : 'full'}`}>
-        <Navigation2 size={26} aria-hidden="true" />
+        <img className="live-trip-map__art" src={busStopArt} alt="" aria-hidden="true" />
         <strong>No active trip</strong>
         <p>Start SAFE cover when you begin your journey.</p>
         {onStartTracking ? (
@@ -181,6 +187,7 @@ export default function LiveRouteMap({
   if (trip && trip.status === 'ended') {
     return (
       <div className={`live-trip-map live-trip-map--empty live-trip-map--${compact ? 'compact' : 'full'}`}>
+        <img className="live-trip-map__art" src={busStopArt} alt="" aria-hidden="true" />
         <strong>No active trip</strong>
         <p>Start SAFE cover when you begin your journey.</p>
         {activeCover?.trackable && onStartTracking ? (
@@ -199,7 +206,7 @@ export default function LiveRouteMap({
   ) {
     return (
       <div className={`live-trip-map live-trip-map--empty live-trip-map--${compact ? 'compact' : 'full'}`}>
-        <MapPin size={26} aria-hidden="true" />
+        <img className="live-trip-map__art" src={mapFallbackArt} alt="" aria-hidden="true" />
         <strong>Location needed</strong>
         <p>Enable location to show your live trip position.</p>
         {onEnableLocation ? (
@@ -214,6 +221,7 @@ export default function LiveRouteMap({
   if (requireDeviceLocation && locationState === 'denied') {
     return (
       <div className={`live-trip-map live-trip-map--empty live-trip-map--${compact ? 'compact' : 'full'}`}>
+        <img className="live-trip-map__art" src={offlineMapArt} alt="" aria-hidden="true" />
         <strong>Location is turned off</strong>
         <p>You can still use SAFE cover, but live trip tracking will not update.</p>
         {onOpenSettings ? (
@@ -228,6 +236,7 @@ export default function LiveRouteMap({
   if (mapTileError) {
     return (
       <div className={`live-trip-map live-trip-map--error live-trip-map--${compact ? 'compact' : 'full'}`}>
+        <img className="live-trip-map__art" src={mapFallbackArt} alt="" aria-hidden="true" />
         <strong>Map unavailable</strong>
         <p>Check your connection and try again.</p>
         {onRetry ? (
@@ -243,7 +252,7 @@ export default function LiveRouteMap({
   if (!canShowMap) {
     return (
       <div className={`live-trip-map live-trip-map--empty live-trip-map--${compact ? 'compact' : 'full'}`}>
-        <Navigation2 size={26} aria-hidden="true" />
+        <img className="live-trip-map__art" src={busStopArt} alt="" aria-hidden="true" />
         <strong>No active trip</strong>
         <p>Start SAFE cover when you begin your journey.</p>
       </div>

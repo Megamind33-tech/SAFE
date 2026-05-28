@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { MapPin, Navigation2 } from 'lucide-react';
 import LiveRouteMap from './LiveRouteMap.jsx';
 import { activeTrip as fetchActiveTrip, loadToken, tripLocation } from '../api/safeApi.js';
+import busStopArt from '../assets/transport/safe_and_calm_bus_stop_vignette_transparent.png';
+import mapFallbackArt from '../assets/pack/backgrounds/home-map-fallback.png';
 
 function HomeSummaryMapPreview({ summaryTrip, onEnableLocation }) {
   const [trip, setTrip] = useState(summaryTrip?.mapTrip ?? null);
@@ -80,7 +82,7 @@ function HomeSummaryMapPreview({ summaryTrip, onEnableLocation }) {
   if (!summaryTrip?.id && !trip) {
     return (
       <div className="home-map-preview home-map-preview--empty">
-        <Navigation2 size={24} aria-hidden="true" />
+        <img className="home-map-preview__art" src={busStopArt} alt="" aria-hidden="true" />
         <strong>No active trip</strong>
         <p>Start cover when you begin your journey.</p>
       </div>
@@ -90,7 +92,7 @@ function HomeSummaryMapPreview({ summaryTrip, onEnableLocation }) {
   if (trackingUnavailable && !trip) {
     return (
       <div className="home-map-preview home-map-preview--empty">
-        <MapPin size={24} aria-hidden="true" />
+        <img className="home-map-preview__art" src={mapFallbackArt} alt="" aria-hidden="true" />
         <p>Live trip map will appear when trip tracking is connected.</p>
       </div>
     );
@@ -99,7 +101,7 @@ function HomeSummaryMapPreview({ summaryTrip, onEnableLocation }) {
   if (locationNeeded && !hasMapData) {
     return (
       <div className="home-map-preview home-map-preview--empty">
-        <MapPin size={24} aria-hidden="true" />
+        <img className="home-map-preview__art" src={mapFallbackArt} alt="" aria-hidden="true" />
         <p>Location needed for live trip view.</p>
         <button type="button" className="home-btn home-btn--secondary" onClick={onEnableLocation}>
           Enable location
@@ -111,7 +113,7 @@ function HomeSummaryMapPreview({ summaryTrip, onEnableLocation }) {
   if (!hasMapData && !loading && trip) {
     return (
       <div className="home-map-preview home-map-preview--empty">
-        <Navigation2 size={24} aria-hidden="true" />
+        <img className="home-map-preview__art" src={busStopArt} alt="" aria-hidden="true" />
         <strong>Awaiting route</strong>
         <p>Live trip map will appear when trip tracking is connected.</p>
       </div>
@@ -121,7 +123,7 @@ function HomeSummaryMapPreview({ summaryTrip, onEnableLocation }) {
   if (!hasMapData && !loading) {
     return (
       <div className="home-map-preview home-map-preview--empty">
-        <Navigation2 size={24} aria-hidden="true" />
+        <img className="home-map-preview__art" src={busStopArt} alt="" aria-hidden="true" />
         <strong>No active trip</strong>
         <p>Start cover when you begin your journey.</p>
       </div>

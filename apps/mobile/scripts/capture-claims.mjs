@@ -5,7 +5,7 @@
 import { chromium } from 'playwright';
 import { execSync } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
-import { readFileSync as readSync } from 'node:fs';
+import { readFileSync as readSync, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -499,10 +499,9 @@ async function main() {
   await browser.close();
 
   for (const shot of REQUIRED_SHOTS) {
-    try {
-      execSync(`test -f ${path.join(OUTPUT_DIR, shot)}`);
-    } catch {
-      throw new Error(`Missing screenshot: ${shot}`);
+    const full = path.join(OUTPUT_DIR, shot);
+    if (!existsSync(full) || statSync(full).size === 0) {
+      throw new Error(`Missing or empty screenshot: ${shot}`);
     }
   }
 

@@ -1,11 +1,14 @@
 import { ArrowLeft, FileText, Share2, Siren } from 'lucide-react';
 import safeShieldIcon from '../assets/real/safe_shield_clean.png';
+import coverVerificationArt from '../assets/real/cover_verification_clean.png';
+import routeStripArt from '../assets/real/route_strip_bus_clean.png';
 import iconLockShield from '../assets/pack/icons/lock-shield.svg';
 import { coverDurationMins, formatPlanLabel } from '../hooks/useActiveTrip.js';
 import HomeMapPreview from '../components/HomeMapPreview.jsx';
 import { useLiveTrip } from '../hooks/useLiveTrip.js';
 
 function policyId(cover) {
+  if (cover?.policyId) return String(cover.policyId);
   if (!cover?.id) return 'Pending';
   const stamp = cover.createdAt || cover.startedAt;
   const date = stamp ? new Date(stamp) : new Date();
@@ -36,6 +39,13 @@ function heroSubtext(cover) {
 function formatValidUntil(endsAt) {
   if (!endsAt) return 'Pending';
   return new Date(endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDateTime(iso) {
+  if (!iso) return 'Pending';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return 'Pending';
+  return date.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
 function coverDurationLabel(cover) {
@@ -118,20 +128,30 @@ export default function ViewPolicyScreen({
   const statusChip = expired ? 'Expired' : 'Cover Active';
   const hasCover = Boolean(activeCoverState);
 
+  const verificationCode =
+    activeCoverState?.verificationCode ||
+    activeCoverState?.manualCode ||
+    activeCoverState?.code ||
+    activeCoverState?.referenceCode ||
+    null;
+
   const detailRows = hasCover
     ? [
         { label: 'Policy ID', value: policyId(activeCoverState) },
         { label: 'Vehicle', value: activeCoverState.vehicle?.plateNumber || 'Not assigned' },
         { label: 'Route', value: routeDisplay(activeCoverState) },
         { label: 'Plan', value: planCoverTitle(activeCoverState.plan) },
+        { label: 'Start time', value: formatDateTime(activeCoverState.startedAt || activeCoverState.createdAt) },
         { label: 'Valid until', value: formatValidUntil(activeCoverState.endsAt) },
         { label: 'Cover duration', value: coverDurationLabel(activeCoverState) },
+        ...(verificationCode ? [{ label: 'Manual code', value: String(verificationCode) }] : []),
       ]
     : [
         { label: 'Policy ID', value: 'Pending' },
         { label: 'Vehicle', value: 'Not assigned' },
         { label: 'Route', value: 'Awaiting route' },
         { label: 'Plan', value: 'Pending' },
+        { label: 'Start time', value: 'Pending' },
         { label: 'Valid until', value: 'Pending' },
         { label: 'Cover duration', value: 'Pending' },
       ];
@@ -174,6 +194,18 @@ export default function ViewPolicyScreen({
         </p>
       </section>
 
+      <section className="view-policy-trip-card" aria-label="Trip summary">
+        <img className="view-policy-trip-card__strip" src={routeStripArt} alt="" aria-hidden="true" />
+        <div className="view-policy-trip-card__body">
+          <strong className="view-policy-trip-card__title">{routeDisplay(activeCoverState)}</strong>
+          <p className="view-policy-trip-card__sub">
+            {activeCoverState?.vehicle?.plateNumber
+              ? `Vehicle ${activeCoverState.vehicle.plateNumber}`
+              : 'Vehicle not assigned yet'}
+          </p>
+        </div>
+      </section>
+
       <section className="view-policy-screen__details" aria-label="Policy details">
         {detailRows.map((row, index) => (
           <div
@@ -189,6 +221,17 @@ export default function ViewPolicyScreen({
       </section>
 
       <ViewPolicyLiveMap openLiveTrip={openLiveTrip} goCover={goCover} />
+
+      <section className="view-policy-verify-card" aria-label="Verification">
+        <img className="view-policy-verify-card__art" src={coverVerificationArt} alt="" aria-hidden="true" />
+        <div className="view-policy-verify-card__body">
+          <strong>Verification</strong>
+          <p>Show this screen for proof, or scan a vehicle QR to link your trip context.</p>
+        </div>
+        <button type="button" className="view-policy-verify-card__cta" onClick={() => setScreen('qrScanner')}>
+          Scan vehicle QR
+        </button>
+      </section>
 
       <div className="view-policy-screen__actions">
         <button className="view-policy-screen__btn view-policy-screen__btn--document" type="button">

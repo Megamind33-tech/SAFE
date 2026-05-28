@@ -9,6 +9,10 @@ import {
   readCachedCoverScreen,
   writeCachedCoverScreen,
 } from '../services/cover.js';
+import protectedBusArt from '../assets/transport/green_bus_with_protective_emblem_transparent.png';
+import noCoverArt from '../assets/real/no_active_cover_clean.png';
+import busHeroCityArt from '../assets/real/bus_hero_city_clean.png';
+import coverVerificationArt from '../assets/real/cover_verification_clean.png';
 
 const SAFE_GREEN = '#007A3D';
 
@@ -149,10 +153,14 @@ export default function CoverScreen({
               ? 'Your SAFE cover is active.'
               : 'Buy cover before your trip and keep your policy details ready.'}
           </p>
+          {!active && !expired ? (
+            <img className="cover-flow-intro__hero" src={busHeroCityArt} alt="" aria-hidden="true" />
+          ) : null}
         </section>
 
         {active ? (
           <section className="cover-flow-hero cover-flow-hero--active" aria-label="Active cover">
+            <img className="cover-flow-hero__art" src={protectedBusArt} alt="" aria-hidden="true" />
             <span className="cover-flow-pill cover-flow-pill--active">Active</span>
             <dl className="cover-flow-hero__details">
               <div>
@@ -217,6 +225,7 @@ export default function CoverScreen({
 
         {expired && lastEndedCover ? (
           <section className="cover-flow-hero cover-flow-hero--expired" aria-label="Cover expired">
+            <img className="cover-flow-hero__art" src={busHeroCityArt} alt="" aria-hidden="true" />
             <span className="cover-flow-pill">Expired</span>
             <h3 className="cover-flow-hero__title">Cover expired</h3>
             <p className="cover-flow-hero__sub">Your last SAFE cover has ended.</p>
@@ -232,6 +241,7 @@ export default function CoverScreen({
 
         {!active && !expired ? (
           <section className="cover-flow-start" aria-label="Get covered">
+            <img className="cover-flow-start__art" src={noCoverArt} alt="" aria-hidden="true" />
             <button
               type="button"
               className="cover-flow-btn cover-flow-btn--primary cover-flow-btn--wide"
@@ -242,6 +252,22 @@ export default function CoverScreen({
             <p className="cover-flow-note">Cover starts only after payment is confirmed.</p>
           </section>
         ) : null}
+
+        <section className="cover-flow-proof-card" aria-label="Proof and verification">
+          <img className="cover-flow-proof-card__art" src={coverVerificationArt} alt="" aria-hidden="true" />
+          <div className="cover-flow-proof-card__body">
+            <strong>Proof & verification</strong>
+            <p>View your cover details or verify a vehicle QR code.</p>
+          </div>
+          <div className="cover-flow-proof-card__actions">
+            <button type="button" className="cover-flow-btn cover-flow-btn--secondary" onClick={() => setScreen('viewPolicy')}>
+              View cover
+            </button>
+            <button type="button" className="cover-flow-btn cover-flow-btn--secondary" onClick={() => (session?.token ? setScreen('qrScanner') : setScreen('login'))}>
+              Verify
+            </button>
+          </div>
+        </section>
 
         {bundle?.pendingCover?.paymentStatus === 'pending' ? (
           <section className="cover-flow-banner cover-flow-banner--warn" role="status">

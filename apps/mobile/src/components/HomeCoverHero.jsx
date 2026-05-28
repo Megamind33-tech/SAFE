@@ -6,6 +6,8 @@ import {
   isCoverExpired,
   isPaymentPending,
 } from '../services/home.js';
+import safeBusProtected from '../assets/transport/green_bus_with_protective_emblem_transparent.png';
+import safeBusHeroCity from '../assets/real/bus_hero_city_clean.png';
 
 export default function HomeCoverHero({
   cover,
@@ -88,10 +90,17 @@ function CoverHeroBody({
   const active = isCoverActive(cover) && Boolean(timeLeft);
   const expired = isCoverExpired(cover) || (cover && !active && !pending);
 
+  const heroArt = pending
+    ? safeBusHeroCity
+    : active
+      ? safeBusProtected
+      : safeBusHeroCity;
+
   if (pending) {
     return (
       <section className="home-hero home-hero--pending" aria-label="Payment pending">
         {syncWarning ? <p className="home-sync-warning">{syncWarning}</p> : null}
+        <img className="home-hero__art" src={heroArt} alt="" aria-hidden="true" />
         <span className="home-hero__pill home-hero__pill--warn">Payment pending</span>
         <h2 className="home-hero__title">Payment pending</h2>
         <p className="home-hero__subtitle">Complete payment to activate your SAFE cover.</p>
@@ -108,6 +117,7 @@ function CoverHeroBody({
     return (
       <section className="home-hero home-hero--active" aria-label="Active cover">
         {syncWarning ? <p className="home-sync-warning">{syncWarning}</p> : null}
+        <img className="home-hero__art" src={heroArt} alt="" aria-hidden="true" />
         <span className="home-hero__pill home-hero__pill--active">Active</span>
         <h2 className="home-hero__title">You’re covered</h2>
         <p className="home-hero__subtitle">Your SAFE cover is active.</p>
@@ -147,6 +157,7 @@ function CoverHeroBody({
     return (
       <section className="home-hero home-hero--expired" aria-label="Cover expired">
         {syncWarning ? <p className="home-sync-warning">{syncWarning}</p> : null}
+        <img className="home-hero__art" src={heroArt} alt="" aria-hidden="true" />
         <span className="home-hero__pill home-hero__pill--muted">Expired</span>
         <h2 className="home-hero__title">Cover expired</h2>
         <p className="home-hero__subtitle">Your last SAFE cover has ended.</p>
@@ -160,8 +171,9 @@ function CoverHeroBody({
   }
 
   return (
-    <section className="home-hero home-hero--none" aria-label="No active cover">
+    <section className="home-hero home-hero--none home-hero--not-covered" aria-label="No active cover">
       {syncWarning ? <p className="home-sync-warning">{syncWarning}</p> : null}
+      <img className="home-hero__art" src={heroArt} alt="" aria-hidden="true" />
       <span className="home-hero__pill home-hero__pill--muted">Not covered</span>
       <h2 className="home-hero__title">You’re not covered yet</h2>
       <p className="home-hero__subtitle">Buy SAFE cover before your next trip.</p>

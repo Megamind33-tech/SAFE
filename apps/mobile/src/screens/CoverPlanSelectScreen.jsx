@@ -1,11 +1,23 @@
 import { useEffect, useState } from 'react';
 import { Check, ChevronRight } from 'lucide-react';
+import travelRouteArt from '../assets/transport/travel_route_with_bus_and_markers_transparent.png';
+import coverBasicIcon from '../assets/pack/icons/cover-basic.svg';
+import coverPlusIcon from '../assets/pack/icons/cover-plus.svg';
+import coverDailyIcon from '../assets/pack/icons/cover-daily.svg';
 import {
   fetchCoverPlans,
   formatDurationLabel,
   formatPrice,
   readCachedCoverScreen,
 } from '../services/cover.js';
+
+function coverIconForPlan(plan) {
+  const id = String(plan?.id ?? '').toLowerCase();
+  const name = String(plan?.name ?? '').toLowerCase();
+  if (id.includes('plus') || name.includes('plus')) return coverPlusIcon;
+  if (id.includes('daily') || name.includes('daily')) return coverDailyIcon;
+  return coverBasicIcon;
+}
 
 export default function CoverPlanSelectScreen({
   session,
@@ -17,27 +29,73 @@ export default function CoverPlanSelectScreen({
 }) {
   const cached = readCachedCoverScreen();
   const [plans, setPlans] = useState(cached?.plans ?? []);
-  const [loading, setLoading] = useState(() => !cached?.plans?.length);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [retryTrigger, setRetryTrigger] = useState(0);
 
   useEffect(() => {
     const token = session?.token;
-    if (!token) return;
-    if (cached?.plans?.length) {
-      setPlans(cached.plans);
+    
+    if (!session?.ready) {
+      setLoading(true);
+      return;
+    }
+
+    if (!token) {
       setLoading(false);
       return;
     }
-    fetchCoverPlans(token)
+
+    if (!plans || plans.length === 0) {
+      setLoading(true);
+    }
+    setError('');
+
+    let active = true;
+    let timeoutId;
+
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error('timeout'));
+      }, 7000);
+    });
+
+    Promise.race([
+      fetchCoverPlans(token),
+      timeoutPromise
+    ])
       .then((res) => {
+        if (!active) return;
         setPlans(res.plans ?? []);
         setError('');
       })
-      .catch(() => setError('Couldn’t load cover plans'))
-      .finally(() => setLoading(false));
-  }, [session?.token, cached?.plans?.length]);
+      .catch((err) => {
+        if (!active) return;
+        
+        let friendlyError = 'We couldn’t load the cover plans. Please check your connection and try again.';
+        if (err?.message === 'timeout') {
+          friendlyError = 'Connection timed out. The server took too long to respond. Please try again.';
+        }
 
-  const availablePlans = plans.filter((p) => p.isAvailable);
+        setError(friendlyError);
+      })
+      .finally(() => {
+        clearTimeout(timeoutId);
+        if (active) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+      clearTimeout(timeoutId);
+    };
+  }, [session?.token, session?.ready, retryTrigger]);
+
+  const waitingForSession = !session?.ready;
+  const notAuthenticated = session?.ready && !session?.token;
+
+  const availablePlans = plans.filter((p) => p?.isAvailable !== false);
 
   return (
     <main className="screen cover-flow">
@@ -55,6 +113,7 @@ export default function CoverPlanSelectScreen({
           <p className="cover-flow-intro__sub">
             Buy cover before your trip and keep your policy details ready.
           </p>
+          <img className="cover-flow-intro__art" src={travelRouteArt} alt="" aria-hidden="true" />
           {scannedVehicle?.vehicle?.plateNumber ? (
             <p className="cover-flow-vehicle-chip">
               Vehicle: {scannedVehicle.vehicle.plateNumber}
@@ -65,22 +124,52 @@ export default function CoverPlanSelectScreen({
           ) : null}
         </section>
 
-        {loading ? <p className="cover-flow__loading">Loading plans…</p> : null}
-        {error ? (
-          <section className="cover-flow-error-card" aria-live="assertive">
-            <h2>{error}</h2>
-            <p>Check your connection and try again.</p>
+        {waitingForSession ? (
+          <div className="cover-flow__loading-block">
+            <p className="cover-flow__loading">Connecting to SAFE...</p>
+          </div>
+        ) : null}
+
+        {notAuthenticated ? (
+          <section className="cover-flow-empty-card">
+            <h2>Log in to buy cover</h2>
+            <p>You need to be logged in to view and purchase SAFE cover plans.</p>
+            <button
+              type="button"
+              className="cover-flow-btn cover-flow-btn--primary cover-flow-btn--wide"
+              onClick={() => setScreen('login')}
+            >
+              Log In
+            </button>
           </section>
         ) : null}
 
-        {!loading && !error && availablePlans.length === 0 ? (
+        {!waitingForSession && !notAuthenticated && loading ? (
+          <p className="cover-flow__loading">Loading plans…</p>
+        ) : null}
+
+        {!waitingForSession && !notAuthenticated && error ? (
+          <section className="cover-flow-error-card" aria-live="assertive">
+            <h2>{error}</h2>
+            <p>Check your connection and try again.</p>
+            <button
+              type="button"
+              className="cover-flow-btn cover-flow-btn--secondary cover-flow-btn--wide"
+              onClick={() => setRetryTrigger((prev) => prev + 1)}
+            >
+              Try Again
+            </button>
+          </section>
+        ) : null}
+
+        {!waitingForSession && !notAuthenticated && !loading && !error && availablePlans.length === 0 ? (
           <section className="cover-flow-empty-card">
             <h2>No cover plans available</h2>
             <p>Please try again later.</p>
           </section>
         ) : null}
 
-        {!loading && !error && availablePlans.length > 0 ? (
+        {!waitingForSession && !notAuthenticated && !loading && !error && availablePlans.length > 0 ? (
           <div className="cover-flow-plan-list" role="list">
             {availablePlans.map((plan) => {
               const selected = selectedPlanId === plan.id;
@@ -96,6 +185,7 @@ export default function CoverPlanSelectScreen({
                   disabled={!plan.isAvailable}
                   onClick={() => onSelectPlan(plan)}
                 >
+                  <img className="cover-flow-plan-card__icon" src={coverIconForPlan(plan)} alt="" aria-hidden="true" />
                   <span className="cover-flow-plan-card__head">
                     <strong className="cover-flow-plan-card__name">{plan.name}</strong>
                     {plan.isPopular ? (
@@ -123,7 +213,7 @@ export default function CoverPlanSelectScreen({
           </div>
         ) : null}
 
-        {availablePlans.length > 0 ? (
+        {!waitingForSession && !notAuthenticated && availablePlans.length > 0 ? (
           <button
             type="button"
             className="cover-flow-btn cover-flow-btn--primary cover-flow-btn--wide"

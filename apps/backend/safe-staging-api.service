@@ -1,0 +1,18 @@
+[Unit]
+Description=SAFE Minibus Insurance Staging API Backend
+After=network.target
+
+[Service]
+Type=simple
+User=node
+WorkingDirectory=/var/www/safe/apps/backend
+EnvironmentFile=/var/www/safe/apps/backend/.env
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=safe-staging-api
+
+[Install]
+WantedBy=multi-user.target

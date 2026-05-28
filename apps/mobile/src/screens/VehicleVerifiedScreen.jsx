@@ -1,5 +1,6 @@
 import { ArrowLeft, BadgeCheck } from 'lucide-react';
 import { formatVerifiedTime, toCoverVehicleContext } from '../services/qr.js';
+import verifiedVehicleArt from '../assets/real/verified_vehicle_clean.png';
 
 export default function VehicleVerifiedScreen({
   session,
@@ -38,6 +39,8 @@ export default function VehicleVerifiedScreen({
     openLiveTrip?.();
   };
 
+  const operatorName = verified.partner?.name || verified.vehicle?.operatorName || '—';
+
   return (
     <main className="screen qr-screen">
       <div className="qr-screen__scroll">
@@ -50,13 +53,14 @@ export default function VehicleVerifiedScreen({
         </header>
 
         <section className="qr-verified-card" aria-label="Verified vehicle details">
+          <img className="qr-verified-hero" src={verifiedVehicleArt} alt="" aria-hidden="true" />
           <span className="qr-verified-badge">
             <BadgeCheck size={14} aria-hidden="true" />
             Verified
           </span>
           <dl className="qr-verified-details">
             <div>
-              <dt>Plate number</dt>
+              <dt>Registration</dt>
               <dd>{verified.vehicle.plateNumber}</dd>
             </div>
             {verified.route ? (
@@ -67,18 +71,18 @@ export default function VehicleVerifiedScreen({
                 </dd>
               </div>
             ) : null}
-            {verified.partner?.name ? (
+            <div>
+              <dt>Operator/company</dt>
+              <dd>{operatorName}</dd>
+            </div>
+            {(verified.code || verified.qrCodeId) ? (
               <div>
-                <dt>Operator</dt>
-                <dd>{verified.partner.name}</dd>
+                <dt>SAFE sticker ID</dt>
+                <dd>{verified.code || verified.qrCodeId}</dd>
               </div>
             ) : null}
             <div>
-              <dt>Verification status</dt>
-              <dd>Vehicle verified</dd>
-            </div>
-            <div>
-              <dt>Last verified</dt>
+              <dt>Verification time</dt>
               <dd>{formatVerifiedTime(verified.verifiedAt)}</dd>
             </div>
           </dl>
@@ -90,7 +94,7 @@ export default function VehicleVerifiedScreen({
               </button>
             ) : (
               <button type="button" className="qr-btn qr-btn--primary" onClick={handleBuyCover}>
-                Buy cover for this trip
+                Continue to cover
               </button>
             )}
             <button type="button" className="qr-btn qr-btn--secondary" onClick={() => setScreen('qrScanner')}>

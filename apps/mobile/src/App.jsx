@@ -5,11 +5,9 @@ import {
   ArrowRight,
   BadgeCheck,
   Bell,
-  Bus,
   Check,
   CheckCircle2,
   ChevronRight,
-  CircleUserRound,
   Clock3,
   CreditCard,
   FileText,
@@ -35,10 +33,15 @@ import {
   WalletCards,
 } from 'lucide-react';
 import zambiaScene from './assets/zambia-commute-scene.svg';
-import safeLogo from './assets/SAFE_app_icon_master_3D_1024.png';
 import safeRoadBackground from './assets/safe-road-background.png';
+import safeLogoClean from './assets/real/safe_logo_clean.png';
+import safeAppIconMaster3D from './assets/SAFE_app_icon_master_3D_1024.png';
 import shareTrackMap from './assets/share-track-map.png';
-import lusakaNightAerial from './assets/lusaka-night-aerial.png';
+import heroContainerMobile from './assets/hero/safe_hero_container_mobile_transparent.png';
+import heroContainerLarge from './assets/hero/safe_hero_container_transparent.png';
+import busHeroCity from './assets/real/bus_hero_city_clean.png';
+import coverVerificationArt from './assets/real/cover_verification_clean.png';
+import roadToSecurityArt from './assets/transport/mint_green_road_to_security_and_peace_transparent.png';
 import HomeScreen from './screens/HomeScreen.jsx';
 import CoverScreen from './screens/CoverScreen.jsx';
 import CoverPlanSelectScreen from './screens/CoverPlanSelectScreen.jsx';
@@ -57,6 +60,7 @@ import PaymentMethodsScreen from './screens/PaymentMethodsScreen.jsx';
 import TrustedContactsScreen from './screens/TrustedContactsScreen.jsx';
 import NotificationsScreen from './screens/NotificationsScreen.jsx';
 import HelpSafetyScreen from './screens/HelpSafetyScreen.jsx';
+import { createSupportReport } from './services/helpSafety.js';
 import SettingsScreen from './screens/SettingsScreen.jsx';
 import QRScannerScreen from './screens/QRScannerScreen.jsx';
 import VehicleVerifiedScreen from './screens/VehicleVerifiedScreen.jsx';
@@ -67,6 +71,7 @@ import {
 } from './utils/activeCover.js';
 import navHomeIcon from './assets/pack/icons/nav-home.svg';
 import navCoverIcon from './assets/pack/icons/nav-cover-active.svg';
+import navVerifyIcon from './assets/pack/icons/qr-scan.svg';
 import navClaimsIcon from './assets/pack/icons/nav-claims.svg';
 import navAccountIcon from './assets/pack/icons/nav-account.svg';
 import { writeCachedClaims } from './services/claims.js';
@@ -91,42 +96,8 @@ import { verifyQrCode } from './services/qr.js';
 
 const bgImage = zambiaScene;
 
-const trip = {
-  route: 'Matero to Town',
-  vehicle: 'LSK 2481',
-  departure: '09:40 AM',
-  policy: 'SAFE-2026-0518-2943',
-  validUntil: '13:42',
-};
-
-const coverPlans = [
-  {
-    id: 'basic',
-    name: 'Basic Cover',
-    price: 'K3',
-    summary: 'Emergency accident cash support',
-    payout: 'Up to K3,000',
-    tone: 'silver',
-  },
-  {
-    id: 'plus',
-    name: 'Plus Cover',
-    price: 'K5',
-    summary: 'Higher payout plus accident and disability support',
-    payout: 'Up to K5,000',
-    tone: 'green',
-  },
-];
-
-const paymentMethods = [
-  { id: 'airtel', name: 'Airtel Money', detail: 'Pay with Airtel Money', brandType: 'airtel' },
-  { id: 'mtn', name: 'MTN Mobile Money', detail: 'Pay with MTN MoMo', brandType: 'mtn' },
-  { id: 'card', name: 'Visa / Mastercard', detail: 'Card payment', brandType: 'visa_mastercard', dual: true },
-];
-
 function App() {
   const [screen, setScreen] = useState('splash');
-  const [selectedPlan, setSelectedPlan] = useState('plus');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [historyReturn, setHistoryReturn] = useState('active');
   const [viewPolicyReturn, setViewPolicyReturn] = useState('active');
@@ -372,11 +343,6 @@ function App() {
     return () => clearInterval(interval);
   }, [activeCoverState?.endsAt]);
 
-  const activePlan = useMemo(
-    () => coverPlans.find((plan) => plan.id === selectedPlan) ?? coverPlans[1],
-    [selectedPlan]
-  );
-
   const activeCover = useMemo(
     () => resolveActiveCover(activeCoverState, coversHistory),
     [activeCoverState, coversHistory]
@@ -396,6 +362,13 @@ function App() {
 
   const goHome = () => setScreen('home');
   const goCover = () => setScreen('active');
+  const goVerify = () => {
+    if (!session?.token) {
+      setScreen('login');
+      return;
+    }
+    setScreen('qrScanner');
+  };
   const goClaims = () => setScreen('claim');
   const goProfile = () => setScreen('profile');
   const openHistory = (returnTo = 'active') => {
@@ -426,7 +399,6 @@ function App() {
   const showBottomNav = !['splash', 'onboarding1', 'onboarding2', 'onboarding3', 'login', 'signup', 'chat', 'offline'].includes(screen);
 
   const screenProps = {
-    activePlan,
     historyReturn,
     openHistory,
     openCoverHistoryDetail,
@@ -440,10 +412,8 @@ function App() {
     claimFlowOpts,
     selectedClaimId,
     paymentMethod,
-    selectedPlan,
     setPaymentMethod,
     setScreen,
-    setSelectedPlan,
     session,
     setSession,
     auth: {
@@ -519,6 +489,7 @@ function App() {
             setScreen={setScreen}
             selectedPlan={coverFlow.selectedPlan}
             paymentMethod={coverFlow.selectedPaymentMethod}
+            scannedVehicle={scannedVehicle}
             onPaymentMethodResolved={(method) =>
               setCoverFlow((f) => ({ ...f, selectedPaymentMethod: method }))
             }
@@ -635,7 +606,16 @@ function App() {
         )}
         {screen === 'chat' && <ChatScreen {...screenProps} />}
         {screen === 'offline' && <OfflineScreen {...screenProps} />}
-        {showBottomNav && <BottomNav current={navState(screen)} onHome={goHome} onCover={goCover} onClaims={goClaims} onProfile={goProfile} />}
+        {showBottomNav && (
+          <BottomNav
+            current={navState(screen)}
+            onHome={goHome}
+            onCover={goCover}
+            onVerify={goVerify}
+            onClaims={goClaims}
+            onProfile={goProfile}
+          />
+        )}
       </div>
     </div>
   );
@@ -644,8 +624,8 @@ function App() {
 function navState(screen) {
   if (screen === 'home') return 'home';
   if (['choose', 'payment', 'active', 'viewPolicy', 'coverPlans', 'coverReview', 'coverPay', 'coverStatus'].includes(screen)) return 'cover';
+  if (['qrScanner', 'vehicleVerified'].includes(screen)) return 'verify';
   if (['claim', 'claimFlow', 'claimDetail'].includes(screen)) return 'claims';
-  if (['qrScanner', 'vehicleVerified'].includes(screen)) return 'profile';
   if (['history', 'coverHistoryDetail', 'profile', 'profilePayments', 'trustedContacts', 'settings', 'notifications', 'helpSafety'].includes(screen)) {
     return 'profile';
   }
@@ -672,10 +652,11 @@ function TopBar({ onBack, title, action }) {
   );
 }
 
-function BottomNav({ current, onHome, onCover, onClaims, onProfile }) {
+function BottomNav({ current, onHome, onCover, onVerify, onClaims, onProfile }) {
   const items = [
     { id: 'home', label: 'Home', icon: navHomeIcon, onClick: onHome },
     { id: 'cover', label: 'Cover', icon: navCoverIcon, onClick: onCover },
+    { id: 'verify', label: 'Verify', icon: navVerifyIcon, onClick: onVerify },
     { id: 'claims', label: 'Claims', icon: navClaimsIcon, onClick: onClaims },
     { id: 'profile', label: 'Profile', icon: navAccountIcon, onClick: onProfile },
   ];
@@ -694,25 +675,7 @@ function BottomNav({ current, onHome, onCover, onClaims, onProfile }) {
         const active = current === item.id;
         return (
           <button className={`nav-item ${active ? 'active' : ''}`} key={item.id} type="button" onClick={item.onClick}>
-            {item.id === 'claims' && active ? (
-              <FileText
-                className="nav-item-icon nav-item-icon--claims-active"
-                size={22}
-                strokeWidth={2}
-                color="#FFC612"
-                aria-hidden="true"
-              />
-            ) : item.id === 'profile' && active ? (
-              <CircleUserRound
-                className="nav-item-icon nav-item-icon--profile-active"
-                size={22}
-                strokeWidth={2}
-                color="#FFC612"
-                aria-hidden="true"
-              />
-            ) : (
-              <img className="nav-item-icon" src={item.icon} alt="" aria-hidden="true" />
-            )}
+            <img className="nav-item-icon" src={item.icon} alt="" aria-hidden="true" />
             <span>{item.label}</span>
           </button>
         );
@@ -724,18 +687,31 @@ function BottomNav({ current, onHome, onCover, onClaims, onProfile }) {
 function SplashScreen({ setScreen }) {
   return (
     <main className="screen no-nav splash-screen">
-      <div className="splash-road" style={{ backgroundImage: `url(${safeRoadBackground})` }} />
-      <section className="splash-content">
-        <div className="safe-shield-mark">
-          <img src={safeLogo} alt="SAFE logo" />
+      <div className="splash-road" style={{ backgroundImage: `url(${safeRoadBackground})` }} aria-hidden="true" />
+      <div className="splash-overlay" aria-hidden="true" />
+      
+      <div className="splash-content-wrapper">
+        <div className="splash-top-bar-placeholder" />
+        
+        <div className="splash-brand-section">
+          <div className="splash-logo-container">
+            <img className="splash-logo-3d" src={safeAppIconMaster3D} alt="SAFE App Icon" />
+          </div>
+          <h1 className="splash-title">SAFE</h1>
+          <p className="splash-promise">
+            <span className="highlight-yellow">You ride.</span> We protect.
+          </p>
         </div>
-        <h1>SAFE</h1>
-        <p><span>You ride.</span> We protect.</p>
-      </section>
-      <section className="splash-actions">
-        <button className="yellow-btn" type="button" onClick={() => setScreen('onboarding1')}>Get Started</button>
-        <button className="ghost-btn" type="button" onClick={() => setScreen('login')}>Log In</button>
-      </section>
+
+        <div className="splash-actions-section">
+          <button className="yellow-pill-btn" type="button" onClick={() => setScreen('onboarding1')}>
+            Get Started
+          </button>
+          <button className="outline-pill-btn" type="button" onClick={() => setScreen('login')}>
+            Log In
+          </button>
+        </div>
+      </div>
     </main>
   );
 }
@@ -758,7 +734,7 @@ function OnboardingShell({ body, children, highlight, onNext, setScreen, step, t
           {[1, 2, 3].map((item) => <span className={item === step ? 'active' : ''} key={item} />)}
         </div>
         <button className="next-round" type="button" aria-label="Next step" onClick={onNext}>
-          <ChevronRight size={24} />
+          <ArrowRight size={22} />
         </button>
       </footer>
     </main>
@@ -768,18 +744,18 @@ function OnboardingShell({ body, children, highlight, onNext, setScreen, step, t
 function OnboardingOne({ setScreen }) {
   return (
     <OnboardingShell
-      body="We're here to make every journey safer and more secure for you."
-      highlight="Every Ride"
+      body="Buy cover before you board and travel with total peace of mind."
+      highlight="in minutes"
       onNext={() => setScreen('onboarding2')}
       setScreen={setScreen}
       step={1}
-      title="Safety First,"
+      title="Cover your trip"
     >
-      <div className="illustration-circle driver">
-        <div className="driver-wheel" />
-        <div className="driver-face" />
-        <div className="driver-body" />
-        <div className="shield-badge"><ShieldCheck size={33} /></div>
+      <div className="illustration-circle">
+        <img className="onboarding-asset" src={busHeroCity} alt="" aria-hidden="true" />
+        <div className="shield-badge">
+          <ShieldCheck size={32} />
+        </div>
       </div>
     </OnboardingShell>
   );
@@ -788,21 +764,20 @@ function OnboardingOne({ setScreen }) {
 function OnboardingTwo({ setScreen }) {
   return (
     <OnboardingShell
-      body="Real-time monitoring and instant alerts for your peace of mind."
-      highlight="Always On"
+      body="We're here to make every journey safer and more secure for you."
+      highlight="Every Ride"
       onNext={() => setScreen('onboarding3')}
       setScreen={setScreen}
       step={2}
-      title="Smart Protection"
+      title="Safety First,"
     >
-      <div className="illustration-circle smart">
-        <div className="city-bars"><span /><span /><span /><span /><span /></div>
-        <div className="phone-illustration">
-          <ShieldCheck size={46} />
-          <small />
-          <small />
+      <div className="illustration-circle driver">
+        <div className="driver-wheel" />
+        <div className="driver-face" />
+        <div className="driver-body" />
+        <div className="shield-badge">
+          <ShieldCheck size={32} />
         </div>
-        <div className="check-badge"><Check size={26} /></div>
       </div>
     </OnboardingShell>
   );
@@ -819,7 +794,10 @@ function OnboardingThree({ setScreen }) {
       title="Share. Track."
     >
       <div className="illustration-circle map">
-        <img className="real-map-illustration" src={shareTrackMap} alt="Secure route tracking map" />
+        <img className="real-map-illustration" src={shareTrackMap} alt="" aria-hidden="true" />
+        <div className="shield-badge">
+          <ShieldCheck size={32} />
+        </div>
       </div>
     </OnboardingShell>
   );
@@ -833,11 +811,15 @@ function LoginScreen({ setScreen, setSession, auth, refreshPassengerData }) {
 
   return (
     <main className="screen no-nav auth-screen">
-      <div className="auth-bg" style={{ backgroundImage: `url(${safeRoadBackground})` }} />
-      <section className="auth-card">
-        <img className="auth-logo" src={safeLogo} alt="SAFE logo" />
-        <p className="eyebrow">Welcome back</p>
-        <h1>Log in to SAFE</h1>
+      <div className="auth-content-wrapper">
+        <div className="auth-header">
+          <div className="auth-logo-wrapper">
+            <img className="auth-logo-3d" src={safeAppIconMaster3D} alt="SAFE Logo" />
+          </div>
+          <p className="auth-eyebrow">Welcome back</p>
+          <h1 className="auth-title">Log in to SAFE</h1>
+          <p className="auth-subtitle">Log in to manage your cover, trips, and claims.</p>
+        </div>
 
         <form
           className="auth-form"
@@ -861,35 +843,61 @@ function LoginScreen({ setScreen, setSession, auth, refreshPassengerData }) {
               setSession({ token: data.token, user, ready: true });
               setScreen('home');
             } catch (e) {
-              setError(e?.message || 'Login failed');
+              setError(e?.message || 'Login failed. Please check your credentials.');
             } finally {
               setBusy(false);
             }
           }}
         >
-          <label>
-            <span>Phone or email</span>
-            <div className="auth-input">
-              <User size={18} />
-              <input value={identifier} onChange={(event) => setIdentifier(event.target.value)} placeholder="+260 or email address" />
+          <div className="auth-fields-group">
+            <label className="auth-field-label">
+              <span>Phone or email</span>
+              <div className="auth-input-wrapper">
+                <User className="auth-input-icon" size={20} />
+                <input 
+                  value={identifier} 
+                  onChange={(event) => setIdentifier(event.target.value)} 
+                  placeholder="+260 or email address" 
+                  disabled={busy}
+                  className="auth-field-input"
+                />
+              </div>
+            </label>
+            <label className="auth-field-label">
+              <span>Password</span>
+              <div className="auth-input-wrapper">
+                <Lock className="auth-input-icon" size={20} />
+                <input 
+                  value={password} 
+                  onChange={(event) => setPassword(event.target.value)} 
+                  placeholder="Enter password" 
+                  type="password" 
+                  disabled={busy}
+                  className="auth-field-input"
+                />
+              </div>
+            </label>
+          </div>
+
+          {error ? (
+            <div className="auth-error-alert" role="alert">
+              <AlertTriangle size={18} />
+              <span>{error}</span>
             </div>
-          </label>
-          <label>
-            <span>Password</span>
-            <div className="auth-input">
-              <Lock size={18} />
-              <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter password" type="password" />
-            </div>
-          </label>
-          {error ? <p className="auth-error">{error}</p> : null}
-          <button className="yellow-btn" type="submit" disabled={busy}>
+          ) : null}
+
+          <button className="auth-pill-btn-primary" type="submit" disabled={busy}>
             {busy ? 'Logging in…' : 'Log In'}
           </button>
         </form>
 
-        <button className="text-link" type="button">Forgot password?</button>
-        <p className="auth-switch">New to SAFE? <button type="button" onClick={() => setScreen('signup')}>Create account</button></p>
-      </section>
+        <div className="auth-footer-actions">
+          <button className="auth-forgot-password-link" type="button" disabled={busy}>Forgot password?</button>
+          <p className="auth-switch-prompt">
+            New to SAFE? <button type="button" className="auth-switch-action-btn" onClick={() => setScreen('signup')} disabled={busy}>Create account</button>
+          </p>
+        </div>
+      </div>
     </main>
   );
 }
@@ -902,12 +910,16 @@ function SignupScreen({ setScreen, setSession, auth }) {
   const [error, setError] = useState('');
 
   return (
-    <main className="screen no-nav auth-screen signup-screen">
-      <div className="auth-bg" style={{ backgroundImage: `url(${safeRoadBackground})` }} />
-      <section className="auth-card">
-        <img className="auth-logo" src={safeLogo} alt="SAFE logo" />
-        <p className="eyebrow">Create your account</p>
-        <h1>Join SAFE</h1>
+    <main className="screen no-nav auth-screen">
+      <div className="auth-content-wrapper">
+        <div className="auth-header">
+          <div className="auth-logo-wrapper">
+            <img className="auth-logo-3d" src={safeAppIconMaster3D} alt="SAFE Logo" />
+          </div>
+          <p className="auth-eyebrow">Create your SAFE account</p>
+          <h1 className="auth-title">Join SAFE</h1>
+          <p className="auth-subtitle">Start protecting your commuter trips in minutes.</p>
+        </div>
 
         <form
           className="auth-form"
@@ -921,237 +933,119 @@ function SignupScreen({ setScreen, setSession, auth }) {
               setSession({ token: data.token, user: data.user ?? null, ready: true });
               setScreen('home');
             } catch (e) {
-              setError(e?.message || 'Sign up failed');
+              setError(e?.message || 'Sign up failed. Please try again.');
             } finally {
               setBusy(false);
             }
           }}
         >
-          <label>
-            <span>Full name</span>
-            <div className="auth-input">
-              <User size={18} />
-              <input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Moses Banda" />
+          <div className="auth-fields-group">
+            <label className="auth-field-label">
+              <span>Full name</span>
+              <div className="auth-input-wrapper">
+                <User className="auth-input-icon" size={20} />
+                <input 
+                  value={fullName} 
+                  onChange={(event) => setFullName(event.target.value)} 
+                  placeholder="Moses Banda" 
+                  disabled={busy}
+                  className="auth-field-input"
+                />
+              </div>
+            </label>
+            <label className="auth-field-label">
+              <span>Mobile number</span>
+              <div className="auth-input-wrapper">
+                <Smartphone className="auth-input-icon" size={20} />
+                <input 
+                  value={phone} 
+                  onChange={(event) => setPhone(event.target.value)} 
+                  placeholder="+260 97 000 0000" 
+                  disabled={busy}
+                  className="auth-field-input"
+                />
+              </div>
+            </label>
+            <label className="auth-field-label">
+              <span>Password</span>
+              <div className="auth-input-wrapper">
+                <Lock className="auth-input-icon" size={20} />
+                <input 
+                  value={password} 
+                  onChange={(event) => setPassword(event.target.value)} 
+                  placeholder="Create password" 
+                  type="password" 
+                  disabled={busy}
+                  className="auth-field-input"
+                />
+              </div>
+            </label>
+          </div>
+
+          {error ? (
+            <div className="auth-error-alert" role="alert">
+              <AlertTriangle size={18} />
+              <span>{error}</span>
             </div>
-          </label>
-          <label>
-            <span>Mobile number</span>
-            <div className="auth-input">
-              <Smartphone size={18} />
-              <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+260 97 000 0000" />
-            </div>
-          </label>
-          <label>
-            <span>Password</span>
-            <div className="auth-input">
-              <Lock size={18} />
-              <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Create password" type="password" />
-            </div>
-          </label>
-          {error ? <p className="auth-error">{error}</p> : null}
-          <button className="yellow-btn" type="submit" disabled={busy}>
+          ) : null}
+
+          <button className="auth-pill-btn-primary" type="submit" disabled={busy}>
             {busy ? 'Creating…' : 'Create account'}
           </button>
         </form>
 
-        <p className="auth-switch">Already have an account? <button type="button" onClick={() => setScreen('login')}>Log in</button></p>
-      </section>
-    </main>
-  );
-}
-
-function TripRows() {
-  return (
-    <div className="trip-rows">
-      <div className="trip-row">
-        <span className="row-icon"><MapPin size={18} /></span>
-        <span>Route</span>
-        <strong>{trip.route}</strong>
-      </div>
-      <div className="trip-row">
-        <span className="row-icon"><Bus size={18} /></span>
-        <span>Minibus ID</span>
-        <strong>{trip.vehicle}</strong>
-      </div>
-      <div className="trip-row">
-        <span className="row-icon"><Clock3 size={18} /></span>
-        <span>Departure</span>
-        <strong>{trip.departure}</strong>
-      </div>
-    </div>
-  );
-}
-
-/** @deprecated Unreachable legacy fake cover purchase UI — use coverPlans flow. */
-function ChooseCoverScreen_LEGACY({ selectedPlan, setSelectedPlan, setScreen, scannedVehicle }) {
-  return (
-    <main className="screen padded">
-      <TopBar onBack={() => setScreen('home')} />
-      <section className="page-heading">
-        <h1>Choose your cover</h1>
-        {scannedVehicle && (
-          <div className="mt-3.5 inline-flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 border border-slate-700 rounded-full select-none">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[11px] font-black text-slate-300">
-              Verified Minibus: <strong className="text-white">{scannedVehicle.vehicle?.plateNumber}</strong> ({scannedVehicle.route ? `${scannedVehicle.route.origin} ➔ ${scannedVehicle.route.destination}` : 'Lusaka'})
-            </span>
-          </div>
-        )}
-      </section>
-
-      <section className="plan-list">
-        {coverPlans.map((plan) => (
-          <button
-            className={`plan-card ${selectedPlan === plan.id ? 'selected' : ''}`}
-            key={plan.id}
-            type="button"
-            onClick={() => setSelectedPlan(plan.id)}
-          >
-            <span className={`plan-shield ${plan.tone}`}>
-              <ShieldCheck size={38} />
-            </span>
-            <span className="plan-main">
-              <span className="plan-label">{plan.name}</span>
-              <strong>{plan.price}</strong>
-              <span>{plan.summary}</span>
-              <span className="chips">
-                <span>{plan.payout}</span>
-                <span><Clock3 size={14} /> Valid 4h</span>
-              </span>
-            </span>
-            <span className="checkmark">{selectedPlan === plan.id ? <Check size={18} /> : <ChevronRight size={18} />}</span>
-          </button>
-        ))}
-      </section>
-
-      <button className="primary-btn sticky-cta" type="button" onClick={() => setScreen('payment')}>
-        <span>Continue to payment</span>
-        <ArrowRight size={18} />
-      </button>
-    </main>
-  );
-}
-
-/** @deprecated Unreachable legacy fake payment UI — use coverPay/coverStatus. */
-function PaymentScreen_LEGACY({ activePlan, paymentMethod, selectedPlan, session, setPaymentMethod, setScreen, scannedVehicle, refreshPassengerData }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-
-  return (
-    <main className="screen padded payment-screen">
-      <div className="soft-visual" style={{ backgroundImage: `linear-gradient(180deg, rgba(248,249,250,.2), rgba(248,249,250,.9)), url(${bgImage})` }} />
-      <TopBar onBack={() => setScreen('coverPlans')} />
-      <section className="page-heading with-lock">
-        <div>
-          <h1>Pay securely</h1>
+        <div className="auth-footer-actions">
+          <p className="auth-switch-prompt">
+            Already have an account? <button type="button" className="auth-switch-action-btn" onClick={() => setScreen('login')} disabled={busy}>Log in</button>
+          </p>
         </div>
-        <Lock size={28} />
-      </section>
-
-      <section className="summary-card">
-        <h2>Trip summary</h2>
-        <div className="summary-row"><Bus size={18} /><span>Route</span><strong>{scannedVehicle?.route ? `${scannedVehicle.route.origin} to ${scannedVehicle.route.destination}` : trip.route}</strong></div>
-        <div className="summary-row"><FileText size={18} /><span>Vehicle</span><strong>{scannedVehicle?.vehicle?.plateNumber || trip.vehicle}</strong></div>
-        <div className="summary-row"><ShieldCheck size={18} /><span>Cover plan</span><strong>{activePlan.name} ({activePlan.price})</strong></div>
-        <div className="summary-row"><Clock3 size={18} /><span>Validity</span><strong>4 hours</strong></div>
-      </section>
-
-      <section className="payment-methods">
-        <h2>Choose payment method</h2>
-        {paymentMethods.map((method) => {
-          const selected = paymentMethod === method.id;
-          return (
-            <button className={`method-card ${selected ? 'selected' : ''}`} key={method.id} type="button" onClick={() => setPaymentMethod(method.id)}>
-              <PaymentBrandIcon
-                type={method.brandType}
-                dual={method.dual}
-                className="method-card__brand"
-              />
-              <span>
-                <strong>{method.name}</strong>
-                <small>{method.detail}</small>
-              </span>
-              <span className="radio-dot">{selected && <Check size={14} />}</span>
-            </button>
-          );
-        })}
-      </section>
-
-      <section className="payment-dock">
-        <div><span>Total</span><strong>{activePlan.price}</strong></div>
-        <button
-          className="primary-btn"
-          type="button"
-          disabled={busy || !paymentMethod}
-          onClick={async () => {
-            setError('');
-            if (!session?.token) {
-              setScreen('login');
-              return;
-            }
-            setBusy(true);
-            try {
-              await buyCover(session.token, {
-                plan: selectedPlan === 'basic' ? 'basic' : 'plus',
-                plateNumber: scannedVehicle?.vehicle?.plateNumber || 'LSK 2481',
-                paymentMethod,
-              });
-              await refreshPassengerData(session.token);
-              setScreen('active');
-            } catch (e) {
-              setError(e?.message || 'Payment failed');
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <Lock size={18} />
-          <span>{busy ? 'Confirming…' : 'Confirm payment'}</span>
-        </button>
-      </section>
-
-      {error ? <p className="payment-error">{error}</p> : null}
+      </div>
     </main>
   );
 }
 
-
-
-function ChatScreen({ setScreen }) {
+function ChatScreen({ setScreen, session }) {
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      from: 'safe',
-      text: 'Hi Moses. SAFE support is here. What do you need help with today?',
-      time: 'Now',
-    },
-    {
-      id: 2,
-      from: 'user',
-      text: 'I need help understanding my accident cover.',
-      time: 'Now',
-    },
-    {
-      id: 3,
-      from: 'safe',
-      text: 'No problem. Your current Plus Cover protects this Matero to Town trip for 4 hours and supports accident claims.',
-      time: 'Now',
-    },
-  ]);
+  const [messages, setMessages] = useState([]);
 
   const quickReplies = ['Start a claim', 'Payment issue', 'View cover', 'Offline help'];
 
-  const sendMessage = (event) => {
+  const sendMessage = async (event) => {
     event.preventDefault();
     const trimmed = message.trim();
     if (!trimmed) return;
-    setMessages((current) => [
-      ...current,
-      { id: Date.now(), from: 'user', text: trimmed, time: 'Now' },
-      { id: Date.now() + 1, from: 'safe', text: 'Thanks. A SAFE agent will review this and guide you through the next step.', time: 'Now' },
-    ]);
+
+    const userMsg = { id: Date.now(), from: 'user', text: trimmed, time: 'Now' };
+    setMessages((current) => [...current, userMsg]);
     setMessage('');
+
+    try {
+      if (session?.token) {
+        await createSupportReport(session.token, {
+          problemType: 'other',
+          message: trimmed,
+        });
+      }
+      setMessages((current) => [
+        ...current,
+        {
+          id: Date.now() + 1,
+          from: 'safe',
+          text: 'Your message has been received. A SAFE support agent will follow up with you shortly.',
+          time: 'Now',
+        },
+      ]);
+    } catch {
+      setMessages((current) => [
+        ...current,
+        {
+          id: Date.now() + 2,
+          from: 'safe',
+          text: "We couldn't send your message right now. Please check your connection and try again.",
+          time: 'Now',
+        },
+      ]);
+    }
   };
 
   return (
@@ -1161,30 +1055,37 @@ function ChatScreen({ setScreen }) {
         <div className="chat-title">
           <span><MessageCircle size={18} /></span>
           <div>
-            <strong>Chat with SAFE</strong>
-            <small>Usually replies instantly</small>
+            <strong>SAFE Support</strong>
+            <small>Send a message — we&apos;ll follow up</small>
           </div>
         </div>
         <IconButton label="Safety info" quiet onClick={() => setScreen('helpSafety')}><Info size={21} /></IconButton>
       </header>
 
-      <section className="chat-messages" aria-label="Chat messages">
-        {messages.map((item) => (
-          <article className={`message-bubble ${item.from}`} key={item.id}>
-            <p>{item.text}</p>
-            <small>{item.time}</small>
-          </article>
-        ))}
+      <section className="chat-messages" aria-label="Support messages">
+        {messages.length === 0 ? (
+          <div className="chat-empty-state">
+            <MessageCircle size={36} aria-hidden="true" />
+            <p>Send us a message below and a SAFE agent will follow up with you.</p>
+          </div>
+        ) : (
+          messages.map((item) => (
+            <article className={`message-bubble ${item.from}`} key={item.id}>
+              <p>{item.text}</p>
+              <small>{item.time}</small>
+            </article>
+          ))
+        )}
       </section>
 
-      <section className="quick-replies" aria-label="Quick replies">
+      <section className="quick-replies" aria-label="Quick topic shortcuts">
         {quickReplies.map((reply) => (
           <button type="button" key={reply} onClick={() => setMessage(reply)}>{reply}</button>
         ))}
       </section>
 
       <form className="chat-composer" onSubmit={sendMessage}>
-        <input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Type your message..." />
+        <input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Describe your issue..." />
         <button type="submit" aria-label="Send message"><Send size={18} /></button>
       </form>
     </main>

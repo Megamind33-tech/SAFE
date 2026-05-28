@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import PaymentBrandIcon from '../components/PaymentBrandIcon.jsx';
+import { getPaymentBrandAsset, getPaymentBrandLabel, resolvePaymentProviderKey } from '../assets/paymentAssets.ts';
 import {
   getPaymentMethods,
   providerDisplayName,
@@ -8,6 +9,8 @@ import {
 } from '../services/paymentMethods.js';
 import { formatPrice, purchaseCover } from '../services/cover.js';
 import { loadToken } from '../api/safeApi.js';
+import paymentSecureBg from '../assets/pack/backgrounds/payment-secure-bg.png';
+import securePaymentBanner from '../assets/pack/payment/secure-payment-banner.png';
 
 
 export default function CoverPaymentScreen({
@@ -89,6 +92,14 @@ export default function CoverPaymentScreen({
           <p className="cover-flow-review-card__price">{formatPrice(selectedPlan)}</p>
         </section>
 
+        <section className="cover-flow-payment-hero" style={{ backgroundImage: `url(${paymentSecureBg})` }}>
+          <img className="cover-flow-payment-hero__banner" src={securePaymentBanner} alt="" aria-hidden="true" />
+          <div className="cover-flow-payment-hero__copy">
+            <strong>Secure payment</strong>
+            <p>Approve the payment request on your phone. SAFE never asks for your PIN in the app.</p>
+          </div>
+        </section>
+
         <h2 className="cover-flow-section-title">Payment method</h2>
 
         {loading ? <p className="cover-flow__loading">Loading payment methods…</p> : null}
@@ -110,6 +121,10 @@ export default function CoverPaymentScreen({
           <div className="cover-flow-method-list">
             {methods.map((method) => {
               const isSelected = method.id === selectedPaymentMethodId;
+              const resolvedProvider =
+                resolvePaymentProviderKey(method.provider) ?? (method.type === 'card' ? 'visa_mastercard' : method.provider);
+              const tile = getPaymentBrandAsset(resolvedProvider, 'tile');
+              const label = getPaymentBrandLabel(resolvedProvider);
               return (
                 <button
                   key={method.id}
@@ -117,9 +132,10 @@ export default function CoverPaymentScreen({
                   className={`cover-flow-method-card${isSelected ? ' cover-flow-method-card--selected' : ''}`}
                   aria-pressed={isSelected}
                   onClick={() => onSelectPaymentMethod(method)}
+                  style={tile ? { backgroundImage: `linear-gradient(180deg, rgba(8, 18, 39, 0.02), rgba(8, 18, 39, 0.06)), url(${tile})` } : undefined}
                 >
                   <PaymentBrandIcon
-                    type={method.provider === 'visa' || method.provider === 'mastercard' ? method.provider : method.provider}
+                    type={resolvedProvider}
                     className="cover-flow-method-card__icon"
                   />
                   <span className="cover-flow-method-card__body">
@@ -153,6 +169,7 @@ export default function CoverPaymentScreen({
         ) : null}
 
         <p className="cover-flow-note">
+          {selected ? `Selected: ${providerDisplayName(selected.provider)}. ` : ''}
           Approve the payment request on your phone. SAFE never asks for your PIN in the app.
         </p>
       </div>

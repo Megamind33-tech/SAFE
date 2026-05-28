@@ -60,6 +60,7 @@ type VerifyPayload = {
   status: 'verified' | 'invalid' | 'expired' | 'disabled';
   qrType: 'vehicle';
   qrCodeId?: string;
+  code?: string;
   verifiedAt?: string;
   vehicle?: {
     id: string;
@@ -285,6 +286,7 @@ export async function verifyQrCode(rawCode: string, context: VerifyContext = {})
     status: 'verified',
     qrType: 'vehicle',
     qrCodeId: record.id,
+    code: record.code,
     verifiedAt: now.toISOString(),
     vehicle: {
       id: vehicle.id,

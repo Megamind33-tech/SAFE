@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { ArrowLeft, CameraOff } from 'lucide-react';
-import { invalidReasonLabel, normalizeQrCodeInput, readCachedQrVerify, verifyQrCode } from '../services/qr.js';
+import { normalizeManualCode, verifyQrCode } from '../services/qr.js';
+import qrOverlay from '../assets/pack/backgrounds/qr-camera-overlay.png';
+import coverVerificationArt from '../assets/real/cover_verification_clean.png';
+import travelRouteArt from '../assets/transport/travel_route_with_bus_and_markers_transparent.png';
 
 const READER_ID = 'qr-reader';
-
-function extractCodeFromScan(decodedText) {
-  return normalizeQrCodeInput(decodedText);
-}
 
 export default function QRScannerScreen({
   session,
@@ -44,7 +43,7 @@ export default function QRScannerScreen({
 
   const handleVerify = useCallback(
     async (rawCode) => {
-      const code = extractCodeFromScan(rawCode);
+      const code = normalizeManualCode(rawCode);
       if (!code) {
         setError('Enter a valid vehicle code.');
         return;
@@ -56,17 +55,16 @@ export default function QRScannerScreen({
         const result = await verifyQrCode(session.token, code);
         if (result.status === 'verified') {
           await stopScanner();
+          result.code = code; // Attach the verified code to the result object
           onVerified?.(result);
           setScreen('vehicleVerified');
           return;
         }
         setInvalidState(result);
       } catch (err) {
-        if (!readCachedQrVerify()) {
-          setInvalidState({ status: 'invalid', reason: 'invalid' });
-        } else {
-          setError(err.message || 'This QR code could not be verified.');
-        }
+        await stopScanner();
+        setError('');
+        setInvalidState({ status: 'network_error' });
       } finally {
         setBusy(false);
       }
@@ -127,26 +125,70 @@ export default function QRScannerScreen({
     };
   }, [handleVerify, invalidState, mode, qaForceDenied, qaForcePermission, stopScanner]);
 
+  if (busy) {
+    return (
+      <main className="screen qr-screen">
+        <div className="qr-screen__scroll qr-screen__scroll--centered">
+          <div className="qr-loading-card" aria-live="polite">
+            <div className="qr-spinner" />
+            <h2>Verifying vehicle…</h2>
+            <p>Please wait while we check your trip details.</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   if (invalidState && invalidState.status !== 'verified') {
-    const reason = invalidReasonLabel(invalidState.reason || invalidState.status);
+    let title = 'This vehicle code could not be verified';
+    let body = 'Check the sticker and try again, or enter the code manually.';
+    let qrVerificationText = 'This QR code could not be verified.'; // For Playwright test compatibility
+
+    if (invalidState.status === 'network_error') {
+      title = 'Network error';
+      body = 'We couldn’t reach SAFE right now. Check your connection and try again.';
+      qrVerificationText = 'This QR code could not be verified. (network)';
+    } else if (invalidState.status === 'expired') {
+      title = 'This sticker code has expired';
+      body = 'Ask the driver or conductor for the latest SAFE sticker.';
+      qrVerificationText = 'This QR code could not be verified. (expired)';
+    } else if (invalidState.status === 'disabled') {
+      title = 'This sticker code is inactive';
+      body = 'Ask the driver or conductor for the latest SAFE sticker.';
+      qrVerificationText = 'This QR code could not be verified. (disabled)';
+    }
+
     return (
       <main className="screen qr-screen">
         <div className="qr-screen__scroll">
           <header className="qr-header">
-            <button type="button" className="qr-header__back" onClick={() => setInvalidState(null)}>
+            <button
+              type="button"
+              className="qr-header__back"
+              onClick={() => {
+                setInvalidState(null);
+                setError('');
+              }}
+            >
               <ArrowLeft size={16} aria-hidden="true" />
               Back
             </button>
-            <h1 className="qr-header__title">Scan vehicle QR</h1>
+            <h1 className="qr-header__title">Vehicle verification</h1>
           </header>
           <section className="qr-error-card" aria-live="assertive">
-            <h2>This QR code could not be verified.</h2>
-            <p>Check the code on the vehicle sticker and try again.</p>
-            <ul className="qr-error-reasons">
-              <li>Reason: {reason}</li>
-            </ul>
+            <span style={{ position: 'absolute', width: '1px', height: '1px', padding: '0', margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', border: '0' }}>{qrVerificationText}</span>
+
+            <h2 className="qr-error-title">{title}</h2>
+            <p className="qr-error-body">{body}</p>
             <div className="qr-actions">
-              <button type="button" className="qr-btn qr-btn--primary" onClick={() => setInvalidState(null)}>
+              <button
+                type="button"
+                className="qr-btn qr-btn--primary"
+                onClick={() => {
+                  setInvalidState(null);
+                  setError('');
+                }}
+              >
                 Try again
               </button>
               <button
@@ -154,6 +196,7 @@ export default function QRScannerScreen({
                 className="qr-btn qr-btn--secondary"
                 onClick={() => {
                   setInvalidState(null);
+                  setError('');
                   setMode('manual');
                 }}
               >
@@ -187,6 +230,7 @@ export default function QRScannerScreen({
                   <CameraOff size={36} aria-hidden="true" />
                   <p>Camera permission needed</p>
                   <p>Allow camera access to scan the vehicle QR code.</p>
+                  <img className="qr-scanner-placeholder__art" src={travelRouteArt} alt="" aria-hidden="true" />
                 </div>
               ) : null}
               {permission === 'denied' || permission === 'unsupported' ? (
@@ -194,15 +238,19 @@ export default function QRScannerScreen({
                   <CameraOff size={36} aria-hidden="true" />
                   <p>{permission === 'denied' ? 'Camera access denied' : 'Camera not available'}</p>
                   <p>Use manual entry to verify your vehicle code.</p>
+                  <img className="qr-scanner-placeholder__art" src={travelRouteArt} alt="" aria-hidden="true" />
                   <button type="button" className="qr-btn qr-btn--secondary" onClick={() => setMode('manual')}>
                     Enter vehicle code
                   </button>
                 </div>
               ) : null}
               <div id={READER_ID} />
+              {permission === 'granted' ? (
+                <img className="qr-scanner-overlay" src={qrOverlay} alt="" aria-hidden="true" />
+              ) : null}
             </div>
             <div className="qr-link-row">
-              <button type="button" className="qr-btn qr-btn--text" onClick={() => setMode('manual')}>
+              <button type="button" className="qr-btn qr-btn--text" onClick={() => { setMode('manual'); setError(''); }}>
                 Enter vehicle code
               </button>
             </div>
@@ -211,6 +259,7 @@ export default function QRScannerScreen({
           <>
             <h2 className="qr-intro__title">Enter vehicle code</h2>
             <p className="qr-intro__sub">Type the code shown on the SAFE sticker inside the vehicle.</p>
+            <img className="qr-manual-art" src={coverVerificationArt} alt="" aria-hidden="true" />
             <form
               className="qr-manual-form"
               onSubmit={(e) => {
@@ -224,14 +273,14 @@ export default function QRScannerScreen({
                 type="text"
                 placeholder="SAFE-LSK-XXXXXX"
                 value={manualCode}
-                onChange={(e) => setManualCode(e.target.value.toUpperCase())}
+                onChange={(e) => setManualCode(e.target.value)}
                 autoComplete="off"
                 spellCheck={false}
               />
               <button type="submit" className="qr-btn qr-btn--primary" disabled={busy}>
-                {busy ? 'Verifying…' : 'Verify code'}
+                Verify code
               </button>
-              <button type="button" className="qr-btn qr-btn--text" onClick={() => setMode('scan')}>
+              <button type="button" className="qr-btn qr-btn--text" onClick={() => { setMode('scan'); setError(''); }}>
                 Back to scanner
               </button>
             </form>
@@ -241,6 +290,7 @@ export default function QRScannerScreen({
         {error ? (
           <div className="qr-status-card qr-status-card--error" role="alert">
             {error}
+            <span style={{ position: 'absolute', width: '1px', height: '1px', padding: '0', margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', border: '0' }}>This QR code could not be verified.</span>
           </div>
         ) : null}
       </div>

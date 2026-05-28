@@ -64,6 +64,16 @@
   border: 2px solid rgba(0, 122, 61, 0.35);
 }
 
+.qr-scanner-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  opacity: 0.98;
+}
+
 .qr-scanner-frame #qr-reader {
   width: 100%;
   height: 100%;
@@ -91,6 +101,15 @@
   line-height: 1.5;
 }
 
+.qr-scanner-placeholder__art {
+  width: min(240px, 92%);
+  height: auto;
+  display: block;
+  opacity: 0.94;
+  pointer-events: none;
+  filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.4));
+}
+
 .qr-status-card {
   margin-top: 16px;
   padding: 14px 16px;
@@ -112,6 +131,16 @@
   flex-direction: column;
   gap: 12px;
   margin-top: 8px;
+}
+
+.qr-manual-art {
+  width: min(320px, 92%);
+  height: auto;
+  display: block;
+  margin: 0 auto 10px;
+  opacity: 0.98;
+  pointer-events: none;
+  filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.12));
 }
 
 .qr-manual-form label {
@@ -169,6 +198,16 @@
   border: 1px solid rgba(0, 122, 61, 0.15);
   padding: 20px;
   box-shadow: 0 8px 24px rgba(0, 122, 61, 0.08);
+}
+
+.qr-verified-hero {
+  width: min(320px, 92%);
+  height: auto;
+  display: block;
+  margin: 0 auto 12px;
+  opacity: 0.98;
+  pointer-events: none;
+  filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.12));
 }
 
 .qr-verified-badge {
@@ -247,4 +286,66 @@
 
 :has(.qr-screen) .bottom-nav {
   background: rgba(248, 250, 249, 0.96);
+}
+
+.qr-screen__scroll--centered {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 200px);
+}
+
+.qr-loading-card {
+  background: #fff;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 122, 61, 0.15);
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 122, 61, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.qr-loading-card h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  color: #0f172a;
+}
+
+.qr-loading-card p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.qr-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 122, 61, 0.15);
+  border-left-color: #007a3d;
+  border-radius: 50%;
+  animation: qr-spin 1s linear infinite;
+  margin-bottom: 8px;
+}
+
+@keyframes qr-spin {
+  to { transform: rotate(360deg); }
+}
+
+.qr-error-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.qr-error-body {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0;
 }

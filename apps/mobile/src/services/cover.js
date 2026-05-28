@@ -144,7 +144,10 @@ export function formatDurationLabel(minutes) {
 
 export function formatPrice(plan) {
   if (!plan) return '';
-  return `K${plan.price}`;
+  const raw = plan.price ?? plan.amount ?? plan.priceZmw ?? null;
+  const value = raw == null ? NaN : Number(raw);
+  if (!Number.isFinite(value) || value <= 0) return 'Price unavailable';
+  return `K${value}`;
 }
 
 export function estimateEndsAt(durationMinutes) {

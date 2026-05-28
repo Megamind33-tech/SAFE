@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
+import routeStripArt from '../assets/real/route_strip_bus_clean.png';
 import {
   estimateEndsAt,
   formatDurationLabel,
@@ -17,6 +18,7 @@ export default function CoverReviewScreen({
   setScreen,
   selectedPlan,
   paymentMethod,
+  scannedVehicle,
   onPaymentMethodResolved,
   onContinue,
   onChangePlan,
@@ -56,6 +58,10 @@ export default function CoverReviewScreen({
   }
 
   const hasPaymentMethod = Boolean(paymentMethod?.id);
+  const routeLabel =
+    scannedVehicle?.route?.origin && scannedVehicle?.route?.destination
+      ? `${scannedVehicle.route.origin} → ${scannedVehicle.route.destination}`
+      : null;
 
   return (
     <main className="screen cover-flow">
@@ -69,8 +75,15 @@ export default function CoverReviewScreen({
         </header>
 
         <section className="cover-flow-review-card" aria-label="Review purchase">
+          <img className="cover-flow-review-strip" src={routeStripArt} alt="" aria-hidden="true" />
           <h2 className="cover-flow-review-card__plan">{selectedPlan.name}</h2>
           <p className="cover-flow-review-card__price">{formatPrice(selectedPlan)}</p>
+          {scannedVehicle?.vehicle?.plateNumber || routeLabel ? (
+            <p className="cover-flow-review-card__trip">
+              {scannedVehicle?.vehicle?.plateNumber ? `Vehicle ${scannedVehicle.vehicle.plateNumber}` : 'Vehicle selected'}
+              {routeLabel ? ` · ${routeLabel}` : ''}
+            </p>
+          ) : null}
           <dl className="cover-flow-review-card__rows">
             <div>
               <dt>Duration</dt>
