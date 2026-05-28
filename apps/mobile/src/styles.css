@@ -162,9 +162,10 @@ button {
 }
 
 .nav-item {
-  border: 0;
+  border: 1px solid transparent;
   background: transparent;
   color: rgba(255, 255, 255, 0.62);
+  /* Fixed width/height on ALL items — active state must not shift siblings */
   width: 72px;
   height: 60px;
   min-height: 60px;
@@ -177,18 +178,16 @@ button {
   font-size: 12px;
   line-height: 14px;
   font-weight: 600;
-  transition: all 180ms ease;
+  transition: color 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .nav-item.active {
-  width: 84px;
-  height: 62px;
-  min-height: 62px;
+  /* No width/height change — purely visual highlight */
   color: #ffc612;
   font-weight: 700;
   background: linear-gradient(180deg, rgba(255, 198, 18, 0.16) 0%, rgba(255, 198, 18, 0.1) 100%);
-  border: 1px solid rgba(255, 198, 18, 0.24);
-  border-radius: 24px;
+  border-color: rgba(255, 198, 18, 0.24);
+  border-radius: 22px;
   box-shadow: 0 6px 18px rgba(255, 198, 18, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
@@ -198,7 +197,7 @@ button {
   height: 22px;
   opacity: 0.58;
   filter: brightness(0) saturate(100%) invert(100%);
-  transition: all 180ms ease;
+  transition: opacity 180ms ease, filter 180ms ease;
 }
 
 .bottom-nav .nav-item.active img,
@@ -2713,6 +2712,30 @@ button {
   display: grid;
   place-items: center;
   box-shadow: 0 8px 16px rgba(0, 107, 63, .24);
+}
+
+.chat-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding: 40px 24px;
+  color: rgba(16, 24, 32, 0.42);
+}
+
+.chat-empty-state svg {
+  opacity: 0.32;
+  color: var(--primary);
+}
+
+.chat-empty-state p {
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.5;
+  max-width: 220px;
 }
 
 .offline-screen {

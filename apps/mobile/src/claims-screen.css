@@ -394,3 +394,37 @@
     --claims-content-width: calc(100vw - 36px);
   }
 }
+
+.claims-refresh-btn {
+  position: fixed;
+  bottom: 112px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid rgba(0, 122, 61, 0.15);
+  color: #007a3d;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 18px rgba(0, 45, 28, 0.12);
+  cursor: pointer;
+  z-index: 99;
+  transition: transform 160ms ease, background-color 160ms ease;
+  outline: none;
+}
+
+.claims-refresh-btn:hover {
+  background-color: #f2fff8;
+  border-color: rgba(0, 122, 61, 0.3);
+}
+
+.claims-refresh-btn:active {
+  transform: scale(0.92);
+  background-color: #e6ffef;
+}
+
+.claims-refresh-btn:focus-visible {
+  box-shadow: 0 0 0 3px rgba(0, 122, 61, 0.2);
+}
+

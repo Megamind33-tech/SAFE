@@ -38,6 +38,8 @@ export default function VehicleVerifiedScreen({
     openLiveTrip?.();
   };
 
+  const operatorName = verified.partner?.name || verified.vehicle?.operatorName || '—';
+
   return (
     <main className="screen qr-screen">
       <div className="qr-screen__scroll">
@@ -56,7 +58,7 @@ export default function VehicleVerifiedScreen({
           </span>
           <dl className="qr-verified-details">
             <div>
-              <dt>Plate number</dt>
+              <dt>Registration</dt>
               <dd>{verified.vehicle.plateNumber}</dd>
             </div>
             {verified.route ? (
@@ -67,18 +69,18 @@ export default function VehicleVerifiedScreen({
                 </dd>
               </div>
             ) : null}
-            {verified.partner?.name ? (
+            <div>
+              <dt>Operator/company</dt>
+              <dd>{operatorName}</dd>
+            </div>
+            {(verified.code || verified.qrCodeId) ? (
               <div>
-                <dt>Operator</dt>
-                <dd>{verified.partner.name}</dd>
+                <dt>SAFE sticker ID</dt>
+                <dd>{verified.code || verified.qrCodeId}</dd>
               </div>
             ) : null}
             <div>
-              <dt>Verification status</dt>
-              <dd>Vehicle verified</dd>
-            </div>
-            <div>
-              <dt>Last verified</dt>
+              <dt>Verification time</dt>
               <dd>{formatVerifiedTime(verified.verifiedAt)}</dd>
             </div>
           </dl>
@@ -86,11 +88,11 @@ export default function VehicleVerifiedScreen({
           <div className="qr-actions">
             {eligibility?.canStartTripTracking ? (
               <button type="button" className="qr-btn qr-btn--primary" onClick={handleStartTrip}>
-                Start trip tracking
+                Continue to cover
               </button>
             ) : (
               <button type="button" className="qr-btn qr-btn--primary" onClick={handleBuyCover}>
-                Buy cover for this trip
+                Continue to cover
               </button>
             )}
             <button type="button" className="qr-btn qr-btn--secondary" onClick={() => setScreen('qrScanner')}>

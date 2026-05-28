@@ -57,6 +57,7 @@ import PaymentMethodsScreen from './screens/PaymentMethodsScreen.jsx';
 import TrustedContactsScreen from './screens/TrustedContactsScreen.jsx';
 import NotificationsScreen from './screens/NotificationsScreen.jsx';
 import HelpSafetyScreen from './screens/HelpSafetyScreen.jsx';
+import { createSupportReport } from './services/helpSafety.js';
 import SettingsScreen from './screens/SettingsScreen.jsx';
 import QRScannerScreen from './screens/QRScannerScreen.jsx';
 import VehicleVerifiedScreen from './screens/VehicleVerifiedScreen.jsx';
@@ -984,44 +985,46 @@ function TripRows() {
 
 function ChatScreen({ setScreen, session }) {
   const [message, setMessage] = useState('');
-  
-  const userName = session?.user?.fullName
-    ? session.user.fullName.trim().split(/\s+/)[0]
-    : 'there';
-
-  const [messages, setMessages] = useState(() => [
-    {
-      id: 1,
-      from: 'safe',
-      text: `Hi ${userName}. SAFE support is here. What do you need help with today?`,
-      time: 'Now',
-    },
-    {
-      id: 2,
-      from: 'user',
-      text: 'I need help understanding my accident cover.',
-      time: 'Now',
-    },
-    {
-      id: 3,
-      from: 'safe',
-      text: 'No problem. Your active cover protects your current minibus trip and supports accident claims.',
-      time: 'Now',
-    },
-  ]);
+  const [messages, setMessages] = useState([]);
 
   const quickReplies = ['Start a claim', 'Payment issue', 'View cover', 'Offline help'];
 
-  const sendMessage = (event) => {
+  const sendMessage = async (event) => {
     event.preventDefault();
     const trimmed = message.trim();
     if (!trimmed) return;
-    setMessages((current) => [
-      ...current,
-      { id: Date.now(), from: 'user', text: trimmed, time: 'Now' },
-      { id: Date.now() + 1, from: 'safe', text: 'Thanks. A SAFE agent will review this and guide you through the next step.', time: 'Now' },
-    ]);
+
+    const userMsg = { id: Date.now(), from: 'user', text: trimmed, time: 'Now' };
+    setMessages((current) => [...current, userMsg]);
     setMessage('');
+
+    try {
+      if (session?.token) {
+        await createSupportReport(session.token, {
+          problemType: 'other',
+          message: trimmed,
+        });
+      }
+      setMessages((current) => [
+        ...current,
+        {
+          id: Date.now() + 1,
+          from: 'safe',
+          text: 'Your message has been received. A SAFE support agent will follow up with you shortly.',
+          time: 'Now',
+        },
+      ]);
+    } catch {
+      setMessages((current) => [
+        ...current,
+        {
+          id: Date.now() + 2,
+          from: 'safe',
+          text: "We couldn't send your message right now. Please check your connection and try again.",
+          time: 'Now',
+        },
+      ]);
+    }
   };
 
   return (
@@ -1031,30 +1034,37 @@ function ChatScreen({ setScreen, session }) {
         <div className="chat-title">
           <span><MessageCircle size={18} /></span>
           <div>
-            <strong>Chat with SAFE</strong>
-            <small>Usually replies instantly</small>
+            <strong>SAFE Support</strong>
+            <small>Send a message — we&apos;ll follow up</small>
           </div>
         </div>
         <IconButton label="Safety info" quiet onClick={() => setScreen('helpSafety')}><Info size={21} /></IconButton>
       </header>
 
-      <section className="chat-messages" aria-label="Chat messages">
-        {messages.map((item) => (
-          <article className={`message-bubble ${item.from}`} key={item.id}>
-            <p>{item.text}</p>
-            <small>{item.time}</small>
-          </article>
-        ))}
+      <section className="chat-messages" aria-label="Support messages">
+        {messages.length === 0 ? (
+          <div className="chat-empty-state">
+            <MessageCircle size={36} aria-hidden="true" />
+            <p>Send us a message below and a SAFE agent will follow up with you.</p>
+          </div>
+        ) : (
+          messages.map((item) => (
+            <article className={`message-bubble ${item.from}`} key={item.id}>
+              <p>{item.text}</p>
+              <small>{item.time}</small>
+            </article>
+          ))
+        )}
       </section>
 
-      <section className="quick-replies" aria-label="Quick replies">
+      <section className="quick-replies" aria-label="Quick topic shortcuts">
         {quickReplies.map((reply) => (
           <button type="button" key={reply} onClick={() => setMessage(reply)}>{reply}</button>
         ))}
       </section>
 
       <form className="chat-composer" onSubmit={sendMessage}>
-        <input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Type your message..." />
+        <input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Describe your issue..." />
         <button type="submit" aria-label="Send message"><Send size={18} /></button>
       </form>
     </main>

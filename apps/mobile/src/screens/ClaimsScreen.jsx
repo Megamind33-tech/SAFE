@@ -210,14 +210,16 @@ export default function ClaimsScreen({
         </section>
       ) : null}
 
-      <button
-        type="button"
-        className="claims-refresh-btn"
-        onClick={loadClaims}
-        aria-label="Refresh claims"
-      >
-        <RefreshCcw size={18} aria-hidden="true" />
-      </button>
+      {hasClaims && (
+        <button
+          type="button"
+          className="claims-refresh-btn"
+          onClick={loadClaims}
+          aria-label="Refresh claims"
+        >
+          <RefreshCcw size={18} aria-hidden="true" />
+        </button>
+      )}
     </main>
   );
 }

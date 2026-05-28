@@ -1049,3 +1049,235 @@ button.claim-flow-upload-option:disabled {
   transform: scale(1);
 }
 
+/* Premium Selectable Cards & Chips */
+.claim-selectable-group {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.claim-selectable-card {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid rgba(16, 24, 32, 0.1);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: #101820;
+  cursor: pointer;
+  transition: all 160ms ease;
+  text-align: left;
+  outline: none;
+}
+
+.claim-selectable-card:hover {
+  border-color: rgba(0, 122, 61, 0.3);
+  background: rgba(0, 122, 61, 0.01);
+}
+
+.claim-selectable-card:focus-visible {
+  border-color: #007a3d;
+  box-shadow: 0 0 0 3px rgba(0, 122, 61, 0.15);
+}
+
+.claim-selectable-card--active {
+  border-color: #007a3d;
+  background: rgba(0, 122, 61, 0.04);
+  color: #007a3d;
+  box-shadow: 0 4px 12px rgba(0, 122, 61, 0.05);
+}
+
+.claim-selectable-card__radio-circle {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(16, 24, 32, 0.2);
+  display: grid;
+  place-items: center;
+  transition: all 160ms ease;
+}
+
+.claim-selectable-card--active .claim-selectable-card__radio-circle {
+  border-color: #007a3d;
+}
+
+.claim-selectable-card__radio-inner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #007a3d;
+}
+
+/* Premium Date/Time Icon Wrapper */
+.claim-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-top: 6px;
+  width: 100%;
+}
+
+.claim-input-icon {
+  position: absolute;
+  left: 16px;
+  color: rgba(16, 24, 32, 0.42);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.claim-input-wrapper input {
+  display: block;
+  width: 100%;
+  padding: 14px 16px 14px 44px !important;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 20px;
+  color: #101820;
+  background: #ffffff;
+  border: 1px solid rgba(16, 24, 32, 0.12);
+  border-radius: 16px;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+  /* Prevent dark browser chrome on date/time pickers */
+  color-scheme: light;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* Suppress browser calendar/clock icon (it overlaps our custom icon) */
+.claim-input-wrapper input[type="date"]::-webkit-calendar-picker-indicator,
+.claim-input-wrapper input[type="time"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.claim-input-wrapper input:focus {
+  border-color: rgba(0, 122, 61, 0.45);
+  box-shadow: 0 0 0 3px rgba(0, 122, 61, 0.1);
+}
+
+/* Custom Premium File Upload Zones */
+.claim-doc-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 18px;
+  background: #ffffff;
+  border: 1px dashed rgba(0, 122, 61, 0.22);
+  border-radius: 20px;
+  box-shadow: 0 4px 14px rgba(0, 45, 28, 0.03);
+  transition: all 180ms ease;
+  cursor: pointer;
+}
+
+.claim-doc-row:hover {
+  border-color: #007a3d;
+  background: rgba(0, 122, 61, 0.02);
+}
+
+.claim-doc-row--filled {
+  border: 1px solid #007a3d;
+  background: rgba(0, 122, 61, 0.04);
+  box-shadow: 0 4px 14px rgba(0, 122, 61, 0.05);
+}
+
+.claim-doc-row__content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+.claim-doc-row__icon-wrap {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: rgba(0, 122, 61, 0.08);
+  color: #007a3d;
+  transition: all 160ms ease;
+}
+
+.claim-doc-row--filled .claim-doc-row__icon-wrap {
+  background: #007a3d;
+  color: #ffffff;
+}
+
+.claim-doc-row__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.claim-doc-row__label {
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 800;
+  color: #101820;
+}
+
+.claim-doc-row__hint {
+  font-size: 11px;
+  line-height: 14px;
+  color: rgba(16, 24, 32, 0.52);
+}
+
+.claim-doc-row__filename {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  color: #007a3d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.claim-doc-row__remove-btn {
+  flex-shrink: 0;
+  border: none;
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.claim-doc-row__remove-btn:hover {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+/* Visually Hidden, Screen-Reader Only helper */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+

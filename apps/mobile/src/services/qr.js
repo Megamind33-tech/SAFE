@@ -111,3 +111,11 @@ export function invalidReasonLabel(reason) {
   if (key.includes('vehicle')) return 'vehicle not found';
   return 'invalid';
 }
+
+export function normalizeManualCode(raw) {
+  let cleaned = String(raw || '').trim().toUpperCase();
+  cleaned = normalizeQrCodeInput(cleaned).toUpperCase();
+  cleaned = cleaned.replace(/\s+/g, '-');
+  cleaned = cleaned.replace(/-+/g, '-');
+  return cleaned;
+}
