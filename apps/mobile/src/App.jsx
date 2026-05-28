@@ -40,8 +40,7 @@ import shareTrackMap from './assets/share-track-map.png';
 import heroContainerMobile from './assets/hero/safe_hero_container_mobile_transparent.png';
 import heroContainerLarge from './assets/hero/safe_hero_container_transparent.png';
 import busHeroCity from './assets/real/bus_hero_city_clean.png';
-import coverVerificationArt from './assets/real/cover_verification_clean.png';
-import roadToSecurityArt from './assets/transport/mint_green_road_to_security_and_peace_transparent.png';
+import safetyProtectArt from './assets/transport/green_bus_with_protective_emblem_transparent.png';
 import HomeScreen from './screens/HomeScreen.jsx';
 import CoverScreen from './screens/CoverScreen.jsx';
 import CoverPlanSelectScreen from './screens/CoverPlanSelectScreen.jsx';
@@ -751,9 +750,9 @@ function OnboardingOne({ setScreen }) {
       step={1}
       title="Cover your trip"
     >
-      <div className="illustration-circle">
-        <img className="onboarding-asset" src={busHeroCity} alt="" aria-hidden="true" />
-        <div className="shield-badge">
+      <div className="illustration-circle illustration-circle--light">
+        <img className="onboarding-asset onboarding-asset--cover" src={busHeroCity} alt="" aria-hidden="true" />
+        <div className="shield-badge" aria-hidden="true">
           <ShieldCheck size={32} />
         </div>
       </div>
@@ -771,11 +770,9 @@ function OnboardingTwo({ setScreen }) {
       step={2}
       title="Safety First,"
     >
-      <div className="illustration-circle driver">
-        <div className="driver-wheel" />
-        <div className="driver-face" />
-        <div className="driver-body" />
-        <div className="shield-badge">
+      <div className="illustration-circle illustration-circle--light">
+        <img className="onboarding-asset onboarding-asset--safety" src={safetyProtectArt} alt="" aria-hidden="true" />
+        <div className="shield-badge" aria-hidden="true">
           <ShieldCheck size={32} />
         </div>
       </div>
@@ -793,11 +790,8 @@ function OnboardingThree({ setScreen }) {
       step={3}
       title="Share. Track."
     >
-      <div className="illustration-circle map">
-        <img className="real-map-illustration" src={shareTrackMap} alt="" aria-hidden="true" />
-        <div className="shield-badge">
-          <ShieldCheck size={32} />
-        </div>
+      <div className="illustration-circle illustration-circle--map">
+        <img className="onboarding-asset onboarding-asset--map" src={shareTrackMap} alt="" aria-hidden="true" />
       </div>
     </OnboardingShell>
   );
