@@ -37,6 +37,16 @@
   font-size: 14px;
 }
 
+.home-full-error__art {
+  width: min(320px, 92%);
+  height: auto;
+  display: block;
+  margin: 0 auto 18px;
+  opacity: 0.98;
+  pointer-events: none;
+  filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.12));
+}
+
 .home-sync-warning {
   margin: 0 0 12px;
   padding: 10px 12px;
@@ -149,6 +159,15 @@
 
 .home-hero--none {
   background: #ffffff;
+}
+
+.home-hero--not-covered {
+  background-image:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 255, 255, 0.9) 100%),
+    url("./assets/real/no_active_cover_clean.png");
+  background-repeat: no-repeat, no-repeat;
+  background-size: cover, 320px auto;
+  background-position: center, left -90px bottom -70px;
 }
 
 .home-hero--expired {
@@ -427,6 +446,15 @@
   background: #ffffff;
   border: 1px solid rgba(0, 122, 61, 0.08);
   box-shadow: 0 10px 24px rgba(0, 45, 28, 0.07);
+}
+
+.home-empty-card {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.92) 100%),
+    url("./assets/pack/backgrounds/empty-state-bg.png");
+  background-repeat: no-repeat;
+  background-size: cover, cover;
+  background-position: center, center;
 }
 
 .home-claim-card__top {

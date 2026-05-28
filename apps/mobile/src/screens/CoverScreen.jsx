@@ -153,6 +153,9 @@ export default function CoverScreen({
               ? 'Your SAFE cover is active.'
               : 'Buy cover before your trip and keep your policy details ready.'}
           </p>
+          {!active && !expired ? (
+            <img className="cover-flow-intro__hero" src={busHeroCityArt} alt="" aria-hidden="true" />
+          ) : null}
         </section>
 
         {active ? (

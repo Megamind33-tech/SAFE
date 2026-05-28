@@ -7,7 +7,6 @@ import {
   isPaymentPending,
 } from '../services/home.js';
 import safeBusProtected from '../assets/transport/green_bus_with_protective_emblem_transparent.png';
-import safeNoCover from '../assets/real/no_active_cover_clean.png';
 import safeBusHeroCity from '../assets/real/bus_hero_city_clean.png';
 
 export default function HomeCoverHero({
@@ -95,9 +94,7 @@ function CoverHeroBody({
     ? safeBusHeroCity
     : active
       ? safeBusProtected
-      : expired
-        ? safeBusHeroCity
-        : safeNoCover;
+      : safeBusHeroCity;
 
   if (pending) {
     return (
@@ -174,7 +171,7 @@ function CoverHeroBody({
   }
 
   return (
-    <section className="home-hero home-hero--none" aria-label="No active cover">
+    <section className="home-hero home-hero--none home-hero--not-covered" aria-label="No active cover">
       {syncWarning ? <p className="home-sync-warning">{syncWarning}</p> : null}
       <img className="home-hero__art" src={heroArt} alt="" aria-hidden="true" />
       <span className="home-hero__pill home-hero__pill--muted">Not covered</span>

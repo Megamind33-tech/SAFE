@@ -12,6 +12,7 @@ import {
 import HomeCoverHero from '../components/HomeCoverHero.jsx';
 import HomeMapPreview from '../components/HomeMapPreview.jsx';
 import safeLogo from '../assets/real/safe_logo_clean.png';
+import networkErrorArt from '../assets/pack/empty-states/network-error.png';
 import {
   fetchHomeSummary,
   formatActivityWhen,
@@ -131,6 +132,7 @@ export default function HomeScreen({
     return (
       <main className="screen home-screen home-command-center home-screen-board" aria-live="assertive">
         <section className="home-full-error">
+          <img className="home-full-error__art" src={networkErrorArt} alt="" aria-hidden="true" />
           <h1>Couldn’t load home</h1>
           <p>Check your connection and try again.</p>
           <button type="button" className="home-btn home-btn--primary" onClick={loadSummary}>

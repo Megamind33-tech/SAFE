@@ -104,6 +104,16 @@
   filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.12));
 }
 
+.cover-flow-intro__hero {
+  width: min(360px, 96%);
+  height: auto;
+  display: block;
+  margin: 14px auto 0;
+  opacity: 0.96;
+  pointer-events: none;
+  filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.12));
+}
+
 .cover-flow-vehicle-chip {
   margin-top: 10px;
   font-size: 12px;
@@ -125,6 +135,16 @@
   box-shadow: 0 12px 28px rgba(0, 45, 28, 0.08);
   position: relative;
   overflow: hidden;
+}
+
+.cover-flow-empty-card,
+.cover-flow-error-card {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.92) 100%),
+    url("./assets/pack/backgrounds/empty-state-bg.png");
+  background-repeat: no-repeat;
+  background-size: cover, cover;
+  background-position: center, center;
 }
 
 .cover-flow-hero--active {

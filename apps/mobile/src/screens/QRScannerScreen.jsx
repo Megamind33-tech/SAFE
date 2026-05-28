@@ -4,6 +4,7 @@ import { ArrowLeft, CameraOff } from 'lucide-react';
 import { normalizeManualCode, verifyQrCode } from '../services/qr.js';
 import qrOverlay from '../assets/pack/backgrounds/qr-camera-overlay.png';
 import coverVerificationArt from '../assets/real/cover_verification_clean.png';
+import travelRouteArt from '../assets/transport/travel_route_with_bus_and_markers_transparent.png';
 
 const READER_ID = 'qr-reader';
 
@@ -229,6 +230,7 @@ export default function QRScannerScreen({
                   <CameraOff size={36} aria-hidden="true" />
                   <p>Camera permission needed</p>
                   <p>Allow camera access to scan the vehicle QR code.</p>
+                  <img className="qr-scanner-placeholder__art" src={travelRouteArt} alt="" aria-hidden="true" />
                 </div>
               ) : null}
               {permission === 'denied' || permission === 'unsupported' ? (
@@ -236,6 +238,7 @@ export default function QRScannerScreen({
                   <CameraOff size={36} aria-hidden="true" />
                   <p>{permission === 'denied' ? 'Camera access denied' : 'Camera not available'}</p>
                   <p>Use manual entry to verify your vehicle code.</p>
+                  <img className="qr-scanner-placeholder__art" src={travelRouteArt} alt="" aria-hidden="true" />
                   <button type="button" className="qr-btn qr-btn--secondary" onClick={() => setMode('manual')}>
                     Enter vehicle code
                   </button>
