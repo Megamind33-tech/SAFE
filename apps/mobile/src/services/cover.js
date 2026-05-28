@@ -1,4 +1,5 @@
 import { loadToken, request } from '../api/safeApi.js';
+import { getPaymentMethods } from './paymentMethods.js';
 
 export const COVER_SCREEN_CACHE_KEY = 'safe_cover_screen_cache';
 
@@ -38,6 +39,7 @@ export async function fetchCoverActive(token) {
     cover: data?.cover ?? null,
     lastEndedCover: data?.lastEndedCover ?? null,
     pendingCover: data?.pendingCover ?? null,
+    trip: data?.trip ?? null,
     capabilities: data?.capabilities ?? {},
   };
 }
@@ -68,16 +70,21 @@ export async function fetchPurchaseStatus(token, purchaseId) {
 }
 
 export async function loadCoverScreenBundle(token) {
-  const [plansRes, activeRes] = await Promise.all([
+  const [plansRes, activeRes, paymentMethods] = await Promise.all([
     fetchCoverPlans(token),
     fetchCoverActive(token),
+    getPaymentMethods(token).catch(() => []),
   ]);
+  const defaultPaymentMethod =
+    paymentMethods.find((m) => m.isDefault) ?? paymentMethods[0] ?? null;
   return {
     plans: plansRes.plans,
     capabilities: { ...plansRes.capabilities, ...activeRes.capabilities },
     activeCover: activeRes.cover,
     lastEndedCover: activeRes.lastEndedCover,
     pendingCover: activeRes.pendingCover,
+    trip: activeRes.trip,
+    defaultPaymentMethod,
   };
 }
 
@@ -106,6 +113,26 @@ export function formatTimeRemaining(endsAt) {
   if (totalMins > 0) return `${totalMins}m left`;
   const secs = Math.floor(diff / 1000);
   return secs > 0 ? `${secs}s left` : null;
+}
+
+export function formatCoverPeriod(startsAt, endsAt) {
+  if (!startsAt && !endsAt) return null;
+  const fmt = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+  const start = fmt(startsAt);
+  const end = fmt(endsAt);
+  if (start && end) return `${start} to ${end}`;
+  return start || end || null;
 }
 
 export function formatCoverEnds(endsAt) {
