@@ -35,6 +35,8 @@ import {
 import zambiaScene from './assets/zambia-commute-scene.svg';
 import safeRoadBackground from './assets/safe-road-background.png';
 import safeLogoClean from './assets/real/safe_logo_clean.png';
+import safeAppIconMaster3D from './assets/SAFE_app_icon_master_3D_1024.png';
+import shareTrackMap from './assets/share-track-map.png';
 import heroContainerMobile from './assets/hero/safe_hero_container_mobile_transparent.png';
 import heroContainerLarge from './assets/hero/safe_hero_container_transparent.png';
 import busHeroCity from './assets/real/bus_hero_city_clean.png';
@@ -686,21 +688,30 @@ function SplashScreen({ setScreen }) {
   return (
     <main className="screen no-nav splash-screen">
       <div className="splash-road" style={{ backgroundImage: `url(${safeRoadBackground})` }} aria-hidden="true" />
-      <img className="splash-hero-container" src={heroContainerMobile} alt="" aria-hidden="true" />
-      <section className="splash-content">
-        <img className="splash-logo" src={safeLogoClean} alt="SAFE" />
-        <p className="splash-tagline">
-          Cover your commuter trip in minutes.
-        </p>
-      </section>
-      <section className="splash-actions">
-        <button className="yellow-btn" type="button" onClick={() => setScreen('onboarding1')}>
-          Get Started
-        </button>
-        <button className="ghost-btn" type="button" onClick={() => setScreen('login')}>
-          Log In
-        </button>
-      </section>
+      <div className="splash-overlay" aria-hidden="true" />
+      
+      <div className="splash-content-wrapper">
+        <div className="splash-top-bar-placeholder" />
+        
+        <div className="splash-brand-section">
+          <div className="splash-logo-container">
+            <img className="splash-logo-3d" src={safeAppIconMaster3D} alt="SAFE App Icon" />
+          </div>
+          <h1 className="splash-title">SAFE</h1>
+          <p className="splash-promise">
+            <span className="highlight-yellow">You ride.</span> We protect.
+          </p>
+        </div>
+
+        <div className="splash-actions-section">
+          <button className="yellow-pill-btn" type="button" onClick={() => setScreen('onboarding1')}>
+            Get Started
+          </button>
+          <button className="outline-pill-btn" type="button" onClick={() => setScreen('login')}>
+            Log In
+          </button>
+        </div>
+      </div>
     </main>
   );
 }
@@ -723,7 +734,7 @@ function OnboardingShell({ body, children, highlight, onNext, setScreen, step, t
           {[1, 2, 3].map((item) => <span className={item === step ? 'active' : ''} key={item} />)}
         </div>
         <button className="next-round" type="button" aria-label="Next step" onClick={onNext}>
-          <ChevronRight size={24} />
+          <ArrowRight size={22} />
         </button>
       </footer>
     </main>
@@ -733,16 +744,18 @@ function OnboardingShell({ body, children, highlight, onNext, setScreen, step, t
 function OnboardingOne({ setScreen }) {
   return (
     <OnboardingShell
-      body="Buy cover before you start your journey, and keep your proof ready."
+      body="Buy cover before you board and travel with total peace of mind."
       highlight="in minutes"
       onNext={() => setScreen('onboarding2')}
       setScreen={setScreen}
       step={1}
       title="Cover your trip"
     >
-      <div className="onboarding-asset-frame">
-        <img className="onboarding-hero-container" src={heroContainerLarge} alt="" aria-hidden="true" />
+      <div className="illustration-circle">
         <img className="onboarding-asset" src={busHeroCity} alt="" aria-hidden="true" />
+        <div className="shield-badge">
+          <ShieldCheck size={32} />
+        </div>
       </div>
     </OnboardingShell>
   );
@@ -751,16 +764,20 @@ function OnboardingOne({ setScreen }) {
 function OnboardingTwo({ setScreen }) {
   return (
     <OnboardingShell
-      body="Show proof to a conductor or marshal using a QR scan or manual vehicle code."
-      highlight="QR or manual"
+      body="We're here to make every journey safer and more secure for you."
+      highlight="Every Ride"
       onNext={() => setScreen('onboarding3')}
       setScreen={setScreen}
       step={2}
-      title="Verify fast"
+      title="Safety First,"
     >
-      <div className="onboarding-asset-frame">
-        <img className="onboarding-hero-container" src={heroContainerLarge} alt="" aria-hidden="true" />
-        <img className="onboarding-asset onboarding-asset--verification" src={coverVerificationArt} alt="" aria-hidden="true" />
+      <div className="illustration-circle driver">
+        <div className="driver-wheel" />
+        <div className="driver-face" />
+        <div className="driver-body" />
+        <div className="shield-badge">
+          <ShieldCheck size={32} />
+        </div>
       </div>
     </OnboardingShell>
   );
@@ -769,16 +786,18 @@ function OnboardingTwo({ setScreen }) {
 function OnboardingThree({ setScreen }) {
   return (
     <OnboardingShell
-      body="If something happens, start a claim and get guided emergency steps quickly."
-      highlight="ready when needed"
+      body="Share your trip and let your loved ones follow your journey in real time."
+      highlight="Stay Connected."
       onNext={() => setScreen('signup')}
       setScreen={setScreen}
       step={3}
-      title="Emergency & claims"
+      title="Share. Track."
     >
-      <div className="onboarding-asset-frame">
-        <img className="onboarding-hero-container" src={heroContainerLarge} alt="" aria-hidden="true" />
-        <img className="onboarding-asset" src={roadToSecurityArt} alt="" aria-hidden="true" />
+      <div className="illustration-circle map">
+        <img className="real-map-illustration" src={shareTrackMap} alt="" aria-hidden="true" />
+        <div className="shield-badge">
+          <ShieldCheck size={32} />
+        </div>
       </div>
     </OnboardingShell>
   );
@@ -792,12 +811,15 @@ function LoginScreen({ setScreen, setSession, auth, refreshPassengerData }) {
 
   return (
     <main className="screen no-nav auth-screen">
-      <div className="auth-bg" style={{ backgroundImage: `url(${safeRoadBackground})` }} />
-      <section className="auth-card">
-        <img className="auth-hero-container" src={heroContainerMobile} alt="" aria-hidden="true" />
-        <img className="auth-logo" src={safeLogoClean} alt="SAFE" />
-        <p className="eyebrow">Welcome back</p>
-        <h1>Log in to SAFE</h1>
+      <div className="auth-content-wrapper">
+        <div className="auth-header">
+          <div className="auth-logo-wrapper">
+            <img className="auth-logo-3d" src={safeAppIconMaster3D} alt="SAFE Logo" />
+          </div>
+          <p className="auth-eyebrow">Welcome back</p>
+          <h1 className="auth-title">Log in to SAFE</h1>
+          <p className="auth-subtitle">Log in to manage your cover, trips, and claims.</p>
+        </div>
 
         <form
           className="auth-form"
@@ -821,35 +843,61 @@ function LoginScreen({ setScreen, setSession, auth, refreshPassengerData }) {
               setSession({ token: data.token, user, ready: true });
               setScreen('home');
             } catch (e) {
-              setError(e?.message || 'Login failed');
+              setError(e?.message || 'Login failed. Please check your credentials.');
             } finally {
               setBusy(false);
             }
           }}
         >
-          <label>
-            <span>Phone or email</span>
-            <div className="auth-input">
-              <User size={18} />
-              <input value={identifier} onChange={(event) => setIdentifier(event.target.value)} placeholder="+260 or email address" />
+          <div className="auth-fields-group">
+            <label className="auth-field-label">
+              <span>Phone or email</span>
+              <div className="auth-input-wrapper">
+                <User className="auth-input-icon" size={20} />
+                <input 
+                  value={identifier} 
+                  onChange={(event) => setIdentifier(event.target.value)} 
+                  placeholder="+260 or email address" 
+                  disabled={busy}
+                  className="auth-field-input"
+                />
+              </div>
+            </label>
+            <label className="auth-field-label">
+              <span>Password</span>
+              <div className="auth-input-wrapper">
+                <Lock className="auth-input-icon" size={20} />
+                <input 
+                  value={password} 
+                  onChange={(event) => setPassword(event.target.value)} 
+                  placeholder="Enter password" 
+                  type="password" 
+                  disabled={busy}
+                  className="auth-field-input"
+                />
+              </div>
+            </label>
+          </div>
+
+          {error ? (
+            <div className="auth-error-alert" role="alert">
+              <AlertTriangle size={18} />
+              <span>{error}</span>
             </div>
-          </label>
-          <label>
-            <span>Password</span>
-            <div className="auth-input">
-              <Lock size={18} />
-              <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter password" type="password" />
-            </div>
-          </label>
-          {error ? <p className="auth-error">{error}</p> : null}
-          <button className="yellow-btn" type="submit" disabled={busy}>
+          ) : null}
+
+          <button className="auth-pill-btn-primary" type="submit" disabled={busy}>
             {busy ? 'Logging in…' : 'Log In'}
           </button>
         </form>
 
-        <button className="text-link" type="button">Forgot password?</button>
-        <p className="auth-switch">New to SAFE? <button type="button" onClick={() => setScreen('signup')}>Create account</button></p>
-      </section>
+        <div className="auth-footer-actions">
+          <button className="auth-forgot-password-link" type="button" disabled={busy}>Forgot password?</button>
+          <p className="auth-switch-prompt">
+            New to SAFE? <button type="button" className="auth-switch-action-btn" onClick={() => setScreen('signup')} disabled={busy}>Create account</button>
+          </p>
+        </div>
+      </div>
     </main>
   );
 }
@@ -862,13 +910,16 @@ function SignupScreen({ setScreen, setSession, auth }) {
   const [error, setError] = useState('');
 
   return (
-    <main className="screen no-nav auth-screen signup-screen">
-      <div className="auth-bg" style={{ backgroundImage: `url(${safeRoadBackground})` }} />
-      <section className="auth-card">
-        <img className="auth-hero-container" src={heroContainerMobile} alt="" aria-hidden="true" />
-        <img className="auth-logo" src={safeLogoClean} alt="SAFE" />
-        <p className="eyebrow">Create your account</p>
-        <h1>Join SAFE</h1>
+    <main className="screen no-nav auth-screen">
+      <div className="auth-content-wrapper">
+        <div className="auth-header">
+          <div className="auth-logo-wrapper">
+            <img className="auth-logo-3d" src={safeAppIconMaster3D} alt="SAFE Logo" />
+          </div>
+          <p className="auth-eyebrow">Create your SAFE account</p>
+          <h1 className="auth-title">Join SAFE</h1>
+          <p className="auth-subtitle">Start protecting your commuter trips in minutes.</p>
+        </div>
 
         <form
           className="auth-form"
@@ -882,41 +933,73 @@ function SignupScreen({ setScreen, setSession, auth }) {
               setSession({ token: data.token, user: data.user ?? null, ready: true });
               setScreen('home');
             } catch (e) {
-              setError(e?.message || 'Sign up failed');
+              setError(e?.message || 'Sign up failed. Please try again.');
             } finally {
               setBusy(false);
             }
           }}
         >
-          <label>
-            <span>Full name</span>
-            <div className="auth-input">
-              <User size={18} />
-              <input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Moses Banda" />
+          <div className="auth-fields-group">
+            <label className="auth-field-label">
+              <span>Full name</span>
+              <div className="auth-input-wrapper">
+                <User className="auth-input-icon" size={20} />
+                <input 
+                  value={fullName} 
+                  onChange={(event) => setFullName(event.target.value)} 
+                  placeholder="Moses Banda" 
+                  disabled={busy}
+                  className="auth-field-input"
+                />
+              </div>
+            </label>
+            <label className="auth-field-label">
+              <span>Mobile number</span>
+              <div className="auth-input-wrapper">
+                <Smartphone className="auth-input-icon" size={20} />
+                <input 
+                  value={phone} 
+                  onChange={(event) => setPhone(event.target.value)} 
+                  placeholder="+260 97 000 0000" 
+                  disabled={busy}
+                  className="auth-field-input"
+                />
+              </div>
+            </label>
+            <label className="auth-field-label">
+              <span>Password</span>
+              <div className="auth-input-wrapper">
+                <Lock className="auth-input-icon" size={20} />
+                <input 
+                  value={password} 
+                  onChange={(event) => setPassword(event.target.value)} 
+                  placeholder="Create password" 
+                  type="password" 
+                  disabled={busy}
+                  className="auth-field-input"
+                />
+              </div>
+            </label>
+          </div>
+
+          {error ? (
+            <div className="auth-error-alert" role="alert">
+              <AlertTriangle size={18} />
+              <span>{error}</span>
             </div>
-          </label>
-          <label>
-            <span>Mobile number</span>
-            <div className="auth-input">
-              <Smartphone size={18} />
-              <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+260 97 000 0000" />
-            </div>
-          </label>
-          <label>
-            <span>Password</span>
-            <div className="auth-input">
-              <Lock size={18} />
-              <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Create password" type="password" />
-            </div>
-          </label>
-          {error ? <p className="auth-error">{error}</p> : null}
-          <button className="yellow-btn" type="submit" disabled={busy}>
+          ) : null}
+
+          <button className="auth-pill-btn-primary" type="submit" disabled={busy}>
             {busy ? 'Creating…' : 'Create account'}
           </button>
         </form>
 
-        <p className="auth-switch">Already have an account? <button type="button" onClick={() => setScreen('login')}>Log in</button></p>
-      </section>
+        <div className="auth-footer-actions">
+          <p className="auth-switch-prompt">
+            Already have an account? <button type="button" className="auth-switch-action-btn" onClick={() => setScreen('login')} disabled={busy}>Log in</button>
+          </p>
+        </div>
+      </div>
     </main>
   );
 }
