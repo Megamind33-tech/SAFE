@@ -8,38 +8,46 @@ import busStopArt from '../assets/transport/safe_and_calm_bus_stop_vignette_tran
 /** Default map center from seeded Lusaka route data — not a fake static map image. */
 const HOME_IDLE_MAP_CENTER = [-15.395, 28.281];
 
+function HomeNoTripOverlay({ onStartCover }) {
+  return (
+    <aside className="home-map-preview__empty-overlay" aria-label="No active trip">
+      <img className="home-map-preview__empty-overlay-art" src={busStopArt} alt="" aria-hidden="true" />
+      <strong>No active trip</strong>
+      <p>Start cover when you begin your journey.</p>
+      <button type="button" className="home-map-preview__empty-overlay-cta" onClick={onStartCover}>
+        Start cover
+        <ChevronRight size={16} aria-hidden="true" />
+      </button>
+    </aside>
+  );
+}
+
 function HomeIdleMapPreview({ onStartCover, onEnableLocation }) {
   return (
     <div className="home-map-preview home-map-preview--idle">
-      <MapContainer
-        center={HOME_IDLE_MAP_CENTER}
-        zoom={12}
-        className="home-map-preview__canvas home-map-preview__canvas--idle"
-        scrollWheelZoom={false}
-        zoomControl={false}
-        attributionControl={false}
-      >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      </MapContainer>
+      <div className="home-map-preview__frame">
+        <MapContainer
+          center={HOME_IDLE_MAP_CENTER}
+          zoom={12}
+          className="home-map-preview__canvas home-map-preview__canvas--idle"
+          scrollWheelZoom={false}
+          zoomControl={false}
+          attributionControl={false}
+        >
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        </MapContainer>
 
-      <aside className="home-map-preview__overlay-card">
-        <img className="home-map-preview__overlay-art" src={busStopArt} alt="" aria-hidden="true" />
-        <strong>No active trip</strong>
-        <p>Start cover when you begin your journey.</p>
-        <button type="button" className="home-map-preview__overlay-cta" onClick={onStartCover}>
-          Start cover
-          <ChevronRight size={16} aria-hidden="true" />
+        <HomeNoTripOverlay onStartCover={onStartCover} />
+
+        <button
+          type="button"
+          className="home-map-preview__loc-btn"
+          aria-label="Enable location"
+          onClick={onEnableLocation}
+        >
+          <Navigation2 size={18} strokeWidth={2.25} aria-hidden="true" />
         </button>
-      </aside>
-
-      <button
-        type="button"
-        className="home-map-preview__loc-btn"
-        aria-label="Enable location"
-        onClick={onEnableLocation}
-      >
-        <Navigation2 size={18} strokeWidth={2.25} aria-hidden="true" />
-      </button>
+      </div>
     </div>
   );
 }
@@ -138,13 +146,15 @@ function HomeSummaryMapPreview({ summaryTrip, onEnableLocation, onStartCover }) 
 
   return (
     <div className="home-map-preview home-map-preview--live">
-      {lastUpdated ? (
-        <p className="home-map-preview__meta">
-          Last updated {new Date(lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </p>
-      ) : null}
-      <div className="home-map-preview__map">
-        <LiveRouteMap trip={trip} loading={loading} error={error} onRetry={refreshTrip} compact />
+      <div className="home-map-preview__frame">
+        {lastUpdated ? (
+          <p className="home-map-preview__meta">
+            Last updated {new Date(lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </p>
+        ) : null}
+        <div className="home-map-preview__map">
+          <LiveRouteMap trip={trip} loading={loading} error={error} onRetry={refreshTrip} compact />
+        </div>
       </div>
     </div>
   );
