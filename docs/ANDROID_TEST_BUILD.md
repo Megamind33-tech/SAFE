@@ -126,6 +126,15 @@ APK output:
 apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
+### Regenerating Launcher Icons
+
+The Android launcher icon is generated from the SAFE app icon source. If the logo changes, regenerate launcher icons before building APK:
+
+```bash
+cd apps/mobile
+node scripts/generate-icons.mjs
+```
+
 ---
 
 ## Phase 4 — Install APK on phone
