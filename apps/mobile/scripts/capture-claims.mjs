@@ -162,7 +162,7 @@ async function assertBottomNavNoOverlap(page) {
     const navTop = nav.getBoundingClientRect().top;
     const targets = [
       ...document.querySelectorAll(
-        '.claims-btn--primary, .claims-start-cta, .claim-flow-screen__next, .claim-submitted-card button'
+        '.claims-btn--primary, .claims-start-cta, .claim-flow-screen__next, .claim-submitted-actions button'
       ),
     ];
     if (!targets.length) return false;
@@ -413,8 +413,10 @@ async function main() {
     if (!submitBody?.claim?.reference) {
       throw new Error('Submit API must return backend claim reference');
     }
-    await page.waitForSelector('.claim-submitted-card', { timeout: 20000 });
-    const refText = await page.locator('.claim-submitted-card').innerText();
+    // Submitted screen was refactored to hero + reference sections.
+    await page.waitForSelector('.claim-submitted-hero', { timeout: 20000 });
+    await page.waitForSelector('.claim-submitted-reference', { timeout: 20000 });
+    const refText = await page.locator('.claim-submitted-reference').innerText();
     if (!refText.includes(submitBody.claim.reference)) {
       throw new Error('Submitted screen must show backend-generated reference only');
     }
