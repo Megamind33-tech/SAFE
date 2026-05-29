@@ -108,12 +108,16 @@ export default function CoverPlanSelectScreen({
           <span className="cover-flow-header__spacer" />
         </header>
 
-        <section className="cover-flow-intro">
-          <h2 className="cover-flow-intro__title">Choose your SAFE cover</h2>
-          <p className="cover-flow-intro__sub">
-            Buy cover before your trip and keep your policy details ready.
-          </p>
-          <img className="cover-flow-intro__art" src={travelRouteArt} alt="" aria-hidden="true" />
+        <section className="cover-flow-intro safe-visual-hero">
+          <div className="safe-visual-hero__copy">
+            <h2 className="cover-flow-intro__title">Choose cover for your trip</h2>
+            <p className="cover-flow-intro__sub">
+              Buy cover before your trip and keep your policy details ready.
+            </p>
+          </div>
+          <div className="safe-visual-hero__art-row">
+            <img className="cover-flow-intro__art safe-visual-hero__art" src={travelRouteArt} alt="" aria-hidden="true" />
+          </div>
           {scannedVehicle?.vehicle?.plateNumber ? (
             <p className="cover-flow-vehicle-chip">
               Vehicle: {scannedVehicle.vehicle.plateNumber}

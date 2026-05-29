@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import routeStripArt from '../assets/real/route_strip_bus_clean.png';
+import coverVerificationArt from '../assets/real/cover_verification_clean.png';
 import {
   estimateEndsAt,
   formatDurationLabel,
@@ -75,6 +76,7 @@ export default function CoverReviewScreen({
         </header>
 
         <section className="cover-flow-review-card" aria-label="Review purchase">
+          <img className="cover-flow-review-card__shield" src={coverVerificationArt} alt="" aria-hidden="true" />
           <img className="cover-flow-review-strip" src={routeStripArt} alt="" aria-hidden="true" />
           <h2 className="cover-flow-review-card__plan">{selectedPlan.name}</h2>
           <p className="cover-flow-review-card__price">{formatPrice(selectedPlan)}</p>

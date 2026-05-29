@@ -315,7 +315,7 @@ async function goCoverTab(page) {
 
 async function buyFlowToPayment(page, token) {
   if (token) await stubPaymentMethodsRoute(page, token);
-  await page.getByRole('button', { name: /choose cover/i }).click();
+  await page.getByRole('button', { name: /buy cover|choose cover/i }).click();
   await page.waitForSelector('.cover-flow-plan-card', { timeout: 15000 });
   await page.locator('.cover-flow-plan-card').first().click();
   await page.getByRole('button', { name: /^continue$/i }).click();
@@ -455,7 +455,7 @@ async function main() {
     const page = await browser.newPage();
     await login(page, PHONE_EMPTY, PASS);
     await goCoverTab(page);
-    await page.getByRole('button', { name: /choose cover/i }).click();
+    await page.getByRole('button', { name: /buy cover|choose cover/i }).click();
     await page.locator('.cover-flow-plan-card').first().click();
     await page.waitForSelector('.cover-flow-plan-card--selected', { timeout: 5000 });
     await captureCover(page, 'cover-plan-selected.png');
@@ -466,7 +466,7 @@ async function main() {
     const page = await browser.newPage();
     await login(page, PHONE_BUY, PASS);
     await goCoverTab(page);
-    await page.getByRole('button', { name: /choose cover/i }).click();
+    await page.getByRole('button', { name: /buy cover|choose cover/i }).click();
     await page.locator('.cover-flow-plan-card').first().click();
     await page.getByRole('button', { name: /^continue$/i }).click();
     await page.waitForSelector('.cover-flow-review-card', { timeout: 15000 });
