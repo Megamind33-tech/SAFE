@@ -25,7 +25,7 @@ import {
 } from '../services/cover.js';
 import { deriveHomeLiveTripState, isPaymentPending } from '../services/home.js';
 import { providerDisplayName } from '../services/paymentMethods.js';
-import protectedBusHeroArt from '../assets/transport/green_bus_with_protective_emblem_transparent.png';
+import busHeroCityArt from '../assets/real/bus_hero_city_clean.png';
 import noCoverArt from '../assets/real/no_active_cover_clean.png';
 import iconCoverPlan from '../assets/pack/icons/cover-daily.svg';
 import iconClaimMedical from '../assets/pack/icons/claim-medical.svg';
@@ -319,23 +319,23 @@ export default function CoverScreen({
             className="cover-hero cover-hero--active cover-flow-hero cover-flow-hero--active"
             aria-label="Active cover"
           >
-            <div className="cover-hero__bg" aria-hidden="true" />
+            <div className="cover-hero__wash" aria-hidden="true" />
             <img
               className="cover-hero__bus cover-flow-hero__art"
-              src={protectedBusHeroArt}
+              src={busHeroCityArt}
               alt=""
               aria-hidden="true"
             />
             <div className="cover-hero__copy">
-              <span className="cover-hero__pill cover-flow-pill cover-flow-pill--active">
+              <div className="cover-hero__pill cover-flow-pill cover-flow-pill--active">
                 <ShieldCheck size={15} strokeWidth={2.5} aria-hidden="true" />
                 Active cover
-              </span>
-              <h2 className="cover-hero__title">You're covered</h2>
+              </div>
+              <h1 className="cover-hero__title">You're covered</h1>
               <p className="cover-hero__subtitle">Your SAFE cover is active for this trip.</p>
             </div>
-            <dl className="cover-hero__stats-panel cover-flow-hero__details">
-              <div className="cover-hero__stat-item">
+            <dl className="cover-hero__stats cover-flow-hero__details">
+              <div className="cover-hero__stat">
                 <dt>
                   <span className="cover-hero__stat-icon" aria-hidden="true">
                     <img src={iconCoverPlan} alt="" />
@@ -344,16 +344,17 @@ export default function CoverScreen({
                 </dt>
                 <dd>{activeCover.planName}</dd>
               </div>
-              <div className="cover-hero__stat-item">
+              <div className="cover-hero__stat">
                 <dt>
                   <span className="cover-hero__stat-icon" aria-hidden="true">
                     <Clock3 size={16} strokeWidth={2.25} />
                   </span>
-                  <span className="cover-hero__stat-label">Time remaining</span>
+                  <span className="cover-hero__stat-label">Remaining</span>
+                  <span className="cover-hero__stat-qa">Time remaining</span>
                 </dt>
                 <dd aria-live="polite">{countdown || '—'}</dd>
               </div>
-              <div className="cover-hero__stat-item">
+              <div className="cover-hero__stat">
                 <dt>
                   <span className="cover-hero__stat-icon" aria-hidden="true">
                     <Calendar size={16} strokeWidth={2.25} />
@@ -378,7 +379,7 @@ export default function CoverScreen({
                 className="cover-hero__btn cover-hero__btn--primary"
                 onClick={() => setScreen('viewPolicy')}
               >
-                <span>View policy</span>
+                View policy
                 <ChevronRight size={17} strokeWidth={2.5} aria-hidden="true" />
               </button>
               <button
@@ -387,7 +388,7 @@ export default function CoverScreen({
                 onClick={() => openClaimFlow(1)}
               >
                 <Shield size={15} strokeWidth={2.25} aria-hidden="true" />
-                <span>Start claim</span>
+                Start claim
               </button>
             </div>
             <div className="cover-hero__note">
@@ -417,7 +418,7 @@ export default function CoverScreen({
                 </button>
               </div>
             </div>
-            <img className="cover-hero__bus cover-flow-hero__art" src={protectedBusHeroArt} alt="" aria-hidden="true" />
+            <img className="cover-hero__bus cover-flow-hero__art" src={busHeroCityArt} alt="" aria-hidden="true" />
           </section>
         ) : null}
 
@@ -434,7 +435,7 @@ export default function CoverScreen({
                 </button>
               </div>
             </div>
-            <img className="cover-hero__bus cover-flow-hero__art" src={protectedBusHeroArt} alt="" aria-hidden="true" />
+            <img className="cover-hero__bus cover-flow-hero__art" src={busHeroCityArt} alt="" aria-hidden="true" />
           </section>
         ) : null}
 
@@ -464,7 +465,7 @@ export default function CoverScreen({
         ) : null}
 
         {showDetails ? (
-          <>
+          <div className="cover-details-section">
             <h2 className="cover-details__title">Cover details</h2>
             <section className="cover-details-card" aria-label="Cover details">
               {policyId ? (
@@ -563,32 +564,32 @@ export default function CoverScreen({
                 </article>
               ))}
             </section>
-          </>
-        ) : null}
 
-        {importantNote ? (
-          importantNote.static ? (
-            <div className="cover-important-note cover-important-note--static" role="note">
-              <span className="cover-important-note__icon" aria-hidden="true">
-                !
-              </span>
-              <div>
-                <p className="cover-important-note__title">{importantNote.title}</p>
-                <p className="cover-important-note__sub">{importantNote.sub}</p>
-              </div>
-            </div>
-          ) : (
-            <button type="button" className="cover-important-note" onClick={importantNote.action}>
-              <span className="cover-important-note__icon" aria-hidden="true">
-                !
-              </span>
-              <div>
-                <p className="cover-important-note__title">{importantNote.title}</p>
-                <p className="cover-important-note__sub">{importantNote.sub}</p>
-              </div>
-              <ChevronRight size={18} className="cover-important-note__chevron" aria-hidden="true" />
-            </button>
-          )
+            {importantNote ? (
+              importantNote.static ? (
+                <div className="cover-important-note cover-important-note--static" role="note">
+                  <span className="cover-important-note__icon" aria-hidden="true">
+                    !
+                  </span>
+                  <div>
+                    <p className="cover-important-note__title">{importantNote.title}</p>
+                    <p className="cover-important-note__sub">{importantNote.sub}</p>
+                  </div>
+                </div>
+              ) : (
+                <button type="button" className="cover-important-note" onClick={importantNote.action}>
+                  <span className="cover-important-note__icon" aria-hidden="true">
+                    !
+                  </span>
+                  <div>
+                    <p className="cover-important-note__title">{importantNote.title}</p>
+                    <p className="cover-important-note__sub">{importantNote.sub}</p>
+                  </div>
+                  <ChevronRight size={18} className="cover-important-note__chevron" aria-hidden="true" />
+                </button>
+              )
+            ) : null}
+          </div>
         ) : null}
 
         {pending && !active ? (
