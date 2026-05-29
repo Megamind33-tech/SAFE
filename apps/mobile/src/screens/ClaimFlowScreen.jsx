@@ -4,6 +4,7 @@ import claimDocumentIcon from '../assets/pack/icons/claim-document.svg';
 import policeReportIcon from '../assets/pack/icons/police-report.svg';
 import claimMedicalIcon from '../assets/pack/icons/claim-medical.svg';
 import claimUploadPhotoIcon from '../assets/pack/icons/claim-upload-photo.svg';
+import coverVerificationArt from '../assets/real/cover_verification_clean.png';
 import {
   createClaimDraft,
   getClaimDuplicateCheck,
@@ -229,6 +230,8 @@ export default function ClaimFlowScreen({
             <span className="claim-submitted-header__spacer" aria-hidden="true" />
           </header>
 
+          <img className="claim-submitted-art" src={coverVerificationArt} alt="" aria-hidden="true" />
+
           <section className="claim-submitted-hero" aria-label="Claim submitted">
             <div className="claim-submitted-hero__icon" aria-hidden="true">
               <img src={claimDocumentIcon} alt="" />
@@ -351,7 +354,8 @@ export default function ClaimFlowScreen({
         <section className="claim-flow-panel">
           <h2 className="claim-flow-panel__title">Eligible cover</h2>
           {eligibility.covers.length === 0 ? (
-            <article className="claims-empty-card">
+            <article className="claims-empty-card claims-empty-card--in-panel">
+              <img className="claims-empty-card__art" src={coverVerificationArt} alt="" aria-hidden="true" />
               <h3 className="claims-empty-card__title">No eligible cover found</h3>
               <p className="claims-empty-card__body">
                 You need an active or recently eligible SAFE cover to submit a claim.

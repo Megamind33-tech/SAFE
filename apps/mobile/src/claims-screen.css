@@ -335,12 +335,19 @@
 }
 
 .claims-summary-card__label {
-  margin: 0 0 8px;
-  font-size: 12px;
-  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: rgba(16, 24, 32, 0.56);
+  letter-spacing: 0.06em;
+  color: #007a3d;
+  background: rgba(0, 122, 61, 0.09);
+  border: 1px solid rgba(0, 122, 61, 0.18);
 }
 
 .claims-summary-card__meta,
@@ -466,23 +473,42 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(16, 24, 32, 0.06);
 }
 
 .claims-list-card__ref {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 900;
   color: #101820;
+  letter-spacing: -0.01em;
 }
 
 .claims-list-card__row {
-  margin: 8px 0 0;
+  margin: 10px 0 0;
   font-size: 12px;
+  line-height: 17px;
   color: rgba(16, 24, 32, 0.62);
 }
 
 .claims-list-card__cta {
-  margin-top: 14px;
+  margin-top: 16px;
   width: 100%;
+}
+
+/* Status-tinted left border for active/pending list items */
+.claims-list-card:has(.claims-pill--review),
+.claims-list-card:has(.claims-pill--submitted) {
+  border-left: 3px solid rgba(234, 179, 8, 0.55);
+}
+
+.claims-list-card:has(.claims-pill--action) {
+  border-left: 3px solid rgba(239, 68, 68, 0.5);
+}
+
+.claims-list-card:has(.claims-pill--approved),
+.claims-list-card:has(.claims-pill--paid) {
+  border-left: 3px solid rgba(0, 122, 61, 0.45);
 }
 
 /* Bottom nav — match Home / Cover premium dock (Claims hub + Claim Flow) */

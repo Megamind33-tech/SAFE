@@ -28,6 +28,17 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* Art illustration above the submitted hero card */
+.claim-submitted-art {
+  width: min(200px, 58%);
+  height: auto;
+  display: block;
+  margin: 20px auto 0;
+  opacity: 0.96;
+  pointer-events: none;
+  filter: drop-shadow(0 14px 28px rgba(0, 50, 30, 0.14));
+}
+
 .claim-submitted-header {
   display: flex;
   align-items: center;

@@ -1066,6 +1066,36 @@ button.claim-flow-upload-option:disabled {
   background: #006633;
 }
 
+/* Compact step indicator — 4 items (Cover / Accident / Documents / Review) */
+.claim-flow-steps__list--compact .claim-flow-steps__item {
+  width: 25%;
+}
+
+.claim-flow-steps__list--compact .claim-flow-steps__circle {
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+}
+
+.claim-flow-steps__list--compact .claim-flow-steps__label {
+  font-size: 10px;
+  line-height: 13px;
+}
+
+/* No-cover empty state inside a panel — remove double-card shadow */
+.claim-flow-panel > .claims-empty-card--in-panel {
+  margin-top: 8px;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  padding: 12px 0;
+}
+
+.claim-flow-panel > .claims-empty-card--in-panel .claims-empty-card__art {
+  width: min(200px, 80%);
+  margin-bottom: 16px;
+}
+
 @media (max-width: 374px) {
   .claim-flow-screen.claim-flow-screen--describe {
     --cf-pad-x: 18px;
