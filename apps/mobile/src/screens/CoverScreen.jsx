@@ -15,7 +15,6 @@ import {
 import PaymentBrandIcon from '../components/PaymentBrandIcon.jsx';
 import {
   formatCoverEnds,
-  formatCoverPeriod,
   formatTimeRemaining,
   isCoverActive,
   isCoverExpired,
@@ -70,6 +69,28 @@ function formatTimeRemainingDisplay(endsAt) {
   const label = formatTimeRemaining(endsAt);
   if (!label) return 'Ending soon';
   return label.replace(/\s+left$/i, '');
+}
+
+/** Two-line cover period for details row */
+function formatCoverPeriodLines(startsAt, endsAt) {
+  const fmt = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+  const start = fmt(startsAt);
+  const end = fmt(endsAt);
+  if (start && end) return { line1: start, line2: `to ${end}` };
+  if (start) return { line1: start, line2: null };
+  if (end) return { line1: end, line2: null };
+  return null;
 }
 
 /** Compact two-line “Ends” value for hero stats panel */
@@ -289,7 +310,10 @@ export default function CoverScreen({
 
   const showDetails = active && activeCover;
   const policyId = policyNumberLabel(activeCover);
-  const period = formatCoverPeriod(activeCover?.startsAt, activeCover?.endsAt);
+  const periodLines =
+    activeCover?.startsAt || activeCover?.endsAt
+      ? formatCoverPeriodLines(activeCover?.startsAt, activeCover?.endsAt)
+      : null;
   const endsCompact = activeCover?.endsAt ? formatCoverEndsCompact(activeCover.endsAt) : null;
 
   return (
@@ -320,19 +344,22 @@ export default function CoverScreen({
             aria-label="Active cover"
           >
             <div className="cover-hero__wash" aria-hidden="true" />
-            <img
-              className="cover-hero__bus cover-flow-hero__art"
-              src={busHeroCityArt}
-              alt=""
-              aria-hidden="true"
-            />
-            <div className="cover-hero__copy">
-              <div className="cover-hero__pill cover-flow-pill cover-flow-pill--active">
-                <ShieldCheck size={15} strokeWidth={2.5} aria-hidden="true" />
-                Active cover
+            <div className="cover-hero__top">
+              <div className="cover-hero__copy">
+                <div className="cover-hero__pill cover-flow-pill cover-flow-pill--active">
+                  <ShieldCheck size={15} strokeWidth={2.5} aria-hidden="true" />
+                  Active cover
+                </div>
+                <h1 className="cover-hero__title">You're covered</h1>
+                <p className="cover-hero__subtitle">Your SAFE cover is active for this trip.</p>
               </div>
-              <h1 className="cover-hero__title">You're covered</h1>
-              <p className="cover-hero__subtitle">Your SAFE cover is active for this trip.</p>
+              <div className="cover-hero__visual" aria-hidden="true">
+                <img
+                  className="cover-hero__bus cover-flow-hero__art"
+                  src={busHeroCityArt}
+                  alt=""
+                />
+              </div>
             </div>
             <dl className="cover-hero__stats cover-flow-hero__details">
               <div className="cover-hero__stat">
@@ -516,14 +543,19 @@ export default function CoverScreen({
                 </div>
               </div>
 
-              {period ? (
-                <div className="cover-detail-row">
+              {periodLines ? (
+                <div className="cover-detail-row cover-detail-row--period">
                   <div className="cover-detail-row__icon">
                     <Calendar size={18} aria-hidden="true" />
                   </div>
                   <span className="cover-detail-row__label">Cover period</span>
-                  <div className="cover-detail-row__value-wrap cover-detail-row__value-wrap--stack">
-                    <span className="cover-detail-row__value">{period}</span>
+                  <div className="cover-detail-row__value-wrap cover-detail-row__value-wrap--stack cover-detail-row__value-wrap--period">
+                    <span className="cover-detail-row__value">{periodLines.line1}</span>
+                    {periodLines.line2 ? (
+                      <span className="cover-detail-row__value cover-detail-row__value--sub">
+                        {periodLines.line2}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               ) : null}
