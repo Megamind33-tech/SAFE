@@ -6,7 +6,6 @@ import mapStartIcon from '../assets/pack/icons/map-start-marker.svg';
 import mapDestIcon from '../assets/pack/icons/map-destination-pin.svg';
 import mapBusIcon from '../assets/pack/icons/map-bus-marker.svg';
 import mapFallbackArt from '../assets/pack/backgrounds/home-map-fallback.png';
-import offlineMapArt from '../assets/pack/map/offline-map-placeholder.png';
 import routeFallbackArt from '../assets/real/route_map_bus_hero_clean.png';
 import busStopArt from '../assets/transport/safe_and_calm_bus_stop_vignette_transparent.png';
 import { tripStaleness } from '../utils/tripStaleness.js';
@@ -221,7 +220,7 @@ export default function LiveRouteMap({
   if (requireDeviceLocation && locationState === 'denied') {
     return (
       <div className={`live-trip-map live-trip-map--empty live-trip-map--${compact ? 'compact' : 'full'}`}>
-        <img className="live-trip-map__art" src={offlineMapArt} alt="" aria-hidden="true" />
+        <img className="live-trip-map__art" src={mapFallbackArt} alt="" aria-hidden="true" />
         <strong>Location is turned off</strong>
         <p>You can still use SAFE cover, but live trip tracking will not update.</p>
         {onOpenSettings ? (
