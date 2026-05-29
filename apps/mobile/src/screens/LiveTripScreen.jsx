@@ -1,6 +1,8 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Share2 } from 'lucide-react';
 import HomeMapPreview from '../components/HomeMapPreview.jsx';
+import BottomScrollSpacer from '../components/BottomScrollSpacer.jsx';
 import { useLiveTrip } from '../hooks/useLiveTrip.js';
+import routeMapArt from '../assets/real/route_map_bus_hero_clean.png';
 
 export default function LiveTripScreen({ setScreen, goCover }) {
   const {
@@ -42,6 +44,15 @@ export default function LiveTripScreen({ setScreen, goCover }) {
     await refresh();
   };
 
+  const isActiveTrip =
+    (trip?.status === 'active' || trip?.status === 'pending') && !trip?.coverExpired;
+  const hasActiveCoverNoTrip =
+    !trip && activeCover?.trackable && !loading && !loadError;
+
+  const startedTime = trip?.startedAt
+    ? new Date(trip.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : null;
+
   return (
     <main className="screen live-trip-screen">
       <header className="live-trip-screen__header">
@@ -57,39 +68,134 @@ export default function LiveTripScreen({ setScreen, goCover }) {
         <span className="live-trip-screen__spacer" aria-hidden="true" />
       </header>
 
-      <HomeMapPreview
-        trip={trip}
-        activeCover={activeCover}
-        loading={loading}
-        loadError={loadError}
-        syncWarning={syncWarning}
-        locationState={locationState}
-        mapTileError={mapTileError}
-        onRetry={() => {
-          setMapTileError(false);
-          refresh();
-        }}
-        onEnableLocation={requestLocationPermission}
-        onOpenSettings={() => {
-          if (typeof window !== 'undefined') window.alert('Enable location in your device settings for SAFE.');
-        }}
-        onStartTracking={handleStart}
-        onBuyCover={goCover}
-        onMapTileError={() => setMapTileError(true)}
-        compact={false}
-        requireDeviceLocation
-      />
+      <div className="live-trip-screen__scroll">
+        {/* Ready-to-start hero: shown above the map when cover is active but no trip started */}
+        {hasActiveCoverNoTrip ? (
+          <section className="live-trip-screen__intro">
+            <img
+              className="live-trip-screen__intro-art"
+              src={routeMapArt}
+              alt=""
+              aria-hidden="true"
+            />
+            <div className="live-trip-screen__intro-body">
+              <span className="live-trip-screen__status-pill live-trip-screen__status-pill--ready">
+                Ready to start
+              </span>
+              <h2 className="live-trip-screen__intro-title">Start live tracking</h2>
+              <p className="live-trip-screen__intro-sub">
+                Share your journey with trusted contacts when you begin your trip.
+              </p>
+              <div className="live-trip-screen__intro-actions">
+                <button
+                  type="button"
+                  className="live-trip-screen__cta live-trip-screen__cta--primary"
+                  onClick={handleStart}
+                >
+                  Start live trip
+                </button>
+                <button
+                  type="button"
+                  className="live-trip-screen__cta live-trip-screen__cta--secondary"
+                  onClick={goCover}
+                >
+                  View cover
+                </button>
+              </div>
+              <p className="live-trip-screen__safety-note">
+                Location updates depend on network availability.
+              </p>
+            </div>
+          </section>
+        ) : null}
 
-      {trip?.policyId ? (
-        <p className="live-trip-screen__meta">
-          Policy: <strong>{trip.policyId}</strong>
-        </p>
-      ) : null}
-      {trip?.vehicle?.plateNumber ? (
-        <p className="live-trip-screen__meta">
-          Vehicle: <strong>{trip.vehicle.plateNumber}</strong>
-        </p>
-      ) : null}
+        {/* Active trip status pill */}
+        {isActiveTrip && !loading ? (
+          <div className="live-trip-screen__status-row">
+            <span className="live-trip-screen__status-pill live-trip-screen__status-pill--live">
+              <i className="live-trip-screen__status-dot" aria-hidden="true" />
+              Live trip active
+            </span>
+          </div>
+        ) : null}
+
+        {/* Map — always rendered; keeps all capture guards working */}
+        <HomeMapPreview
+          trip={trip}
+          activeCover={activeCover}
+          loading={loading}
+          loadError={loadError}
+          syncWarning={syncWarning}
+          locationState={locationState}
+          mapTileError={mapTileError}
+          onRetry={() => {
+            setMapTileError(false);
+            refresh();
+          }}
+          onEnableLocation={requestLocationPermission}
+          onOpenSettings={() => {
+            if (typeof window !== 'undefined')
+              window.alert('Enable location in your device settings for SAFE.');
+          }}
+          onStartTracking={handleStart}
+          onBuyCover={goCover}
+          onMapTileError={() => setMapTileError(true)}
+          compact={false}
+          requireDeviceLocation
+        />
+
+        {/* Active trip summary card */}
+        {isActiveTrip ? (
+          <section className="live-trip-screen__summary-card">
+            {trip?.vehicle?.plateNumber ? (
+              <div className="live-trip-screen__summary-row">
+                <span className="live-trip-screen__summary-label">Vehicle</span>
+                <strong className="live-trip-screen__summary-value">
+                  {trip.vehicle.plateNumber}
+                </strong>
+              </div>
+            ) : null}
+            {trip?.vehicle?.routeName ? (
+              <div className="live-trip-screen__summary-row">
+                <span className="live-trip-screen__summary-label">Route</span>
+                <strong className="live-trip-screen__summary-value">
+                  {trip.vehicle.routeName}
+                </strong>
+              </div>
+            ) : null}
+            {startedTime ? (
+              <div className="live-trip-screen__summary-row">
+                <span className="live-trip-screen__summary-label">Started</span>
+                <strong className="live-trip-screen__summary-value">{startedTime}</strong>
+              </div>
+            ) : null}
+            {trip?.policyId ? (
+              <div className="live-trip-screen__summary-row live-trip-screen__summary-row--last">
+                <span className="live-trip-screen__summary-label">Policy</span>
+                <strong className="live-trip-screen__summary-value">{trip.policyId}</strong>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+
+        {/* Active trip CTAs */}
+        {isActiveTrip ? (
+          <div className="live-trip-screen__actions">
+            <button type="button" className="live-trip-screen__cta live-trip-screen__cta--primary">
+              <Share2 size={17} aria-hidden="true" />
+              Share trip
+            </button>
+            <button
+              type="button"
+              className="live-trip-screen__cta live-trip-screen__cta--secondary live-trip-screen__cta--emergency"
+            >
+              Emergency help
+            </button>
+          </div>
+        ) : null}
+
+        <BottomScrollSpacer height={160} />
+      </div>
     </main>
   );
 }

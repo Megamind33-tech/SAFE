@@ -3072,13 +3072,9 @@ button {
 }
 
 .screen.live-trip-screen {
-  padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px));
-  overflow-x: hidden;
-}
-
-.live-trip-screen__meta strong {
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .live-trip-map--full {
@@ -3107,10 +3103,6 @@ button {
 
   .live-trip-screen__header {
     padding: 12px 12px 8px;
-  }
-
-  .live-trip-screen__meta {
-    margin: 12px 12px 0;
   }
 
   .live-trip-map--full {

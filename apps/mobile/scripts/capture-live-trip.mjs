@@ -10,6 +10,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+// Minimal 1×1 transparent PNG — used to stub OSM tile responses so the sandbox
+// network policy (which blocks tile CDN requests) does not collapse the Leaflet
+// canvas into the tile-error fallback state during QA captures.
+const STUB_TILE_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+  'base64',
+);
 const BASE_URL = process.env.MOBILE_URL || 'http://127.0.0.1:5173';
 const API_BASE = process.env.API_BASE || 'http://127.0.0.1:8080';
 const OUTPUT_DIR = process.env.OUTPUT_DIR || '/opt/cursor/artifacts/screenshots';
@@ -156,6 +163,13 @@ async function loginUI(page, { denyGeo = false } = {}) {
   await page.waitForSelector('.home-screen', { timeout: 30000 });
 }
 
+/** Stub OSM tile requests so tile errors never fire in sandbox environments. */
+async function mockOsmTiles(ctx) {
+  await ctx.route('**://*.tile.openstreetmap.org/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'image/png', body: STUB_TILE_PNG }),
+  );
+}
+
 async function openLiveTrip(page) {
   await page.goto(`${BASE_URL}/#liveTrip`, { waitUntil: 'networkidle' });
   await page.waitForSelector('.live-trip-screen', { timeout: 20000 });
@@ -180,6 +194,7 @@ async function main() {
   runSeed('active-route');
   {
     const ctx = await browser.newContext();
+    await mockOsmTiles(ctx);
     const page = await ctx.newPage();
     await loginUI(page);
     await openLiveTrip(page);
@@ -194,6 +209,7 @@ async function main() {
   runSeed('active-no-route');
   {
     const ctx = await browser.newContext();
+    await mockOsmTiles(ctx);
     const page = await ctx.newPage();
     await loginUI(page);
     await openLiveTrip(page);
@@ -272,6 +288,7 @@ async function main() {
   runSeed('active-route');
   {
     const ctx = await browser.newContext();
+    await mockOsmTiles(ctx);
     const page = await ctx.newPage();
     const bundle = await api('/api/mobile/active-trip', {
       headers: { authorization: `Bearer ${token}` },
@@ -306,6 +323,7 @@ async function main() {
   runSeed('stale');
   {
     const ctx = await browser.newContext();
+    await mockOsmTiles(ctx);
     const page = await ctx.newPage();
     await page.route('**/api/mobile/trips/*/location', (route) => route.abort());
     await loginUI(page);
