@@ -6,6 +6,7 @@ import './styles.css';
 import './home-screen.css';
 import './cover-screen.css';
 import './cover-flow-screen.css';
+import './cover-hub-screen.css';
 import './view-policy-screen.css';
 import './claims-screen.css';
 import './claim-flow-screen.css';
