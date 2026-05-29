@@ -56,8 +56,11 @@ export default function VehicleVerifiedScreen({
           <img className="qr-verified-hero" src={verifiedVehicleArt} alt="" aria-hidden="true" />
           <span className="qr-verified-badge">
             <BadgeCheck size={14} aria-hidden="true" />
-            Verified
+            {eligibility?.canStartTripTracking ? 'Vehicle verified' : 'SAFE approved'}
           </span>
+          {eligibility?.canStartTripTracking ? (
+            <p className="qr-verified-cover-note">Your SAFE cover is active for this vehicle.</p>
+          ) : null}
           <dl className="qr-verified-details">
             <div>
               <dt>Registration</dt>
@@ -89,17 +92,24 @@ export default function VehicleVerifiedScreen({
 
           <div className="qr-actions">
             {eligibility?.canStartTripTracking ? (
-              <button type="button" className="qr-btn qr-btn--primary" onClick={handleStartTrip}>
-                Start trip tracking
-              </button>
+              <>
+                <button type="button" className="qr-btn qr-btn--primary" onClick={handleStartTrip}>
+                  Start trip tracking
+                </button>
+                <button type="button" className="qr-btn qr-btn--secondary" onClick={() => setScreen('active')}>
+                  View cover
+                </button>
+              </>
             ) : (
-              <button type="button" className="qr-btn qr-btn--primary" onClick={handleBuyCover}>
-                Continue to cover
-              </button>
+              <>
+                <button type="button" className="qr-btn qr-btn--primary" onClick={handleBuyCover}>
+                  Buy cover for this trip
+                </button>
+                <button type="button" className="qr-btn qr-btn--secondary" onClick={() => setScreen('qrScanner')}>
+                  Scan another vehicle
+                </button>
+              </>
             )}
-            <button type="button" className="qr-btn qr-btn--secondary" onClick={() => setScreen('qrScanner')}>
-              Scan another QR
-            </button>
           </div>
           {eligibility?.reason ? <p className="qr-status-card">{eligibility.reason}</p> : null}
         </section>

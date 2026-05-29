@@ -4,7 +4,7 @@ import { ArrowLeft, CameraOff } from 'lucide-react';
 import { normalizeManualCode, verifyQrCode } from '../services/qr.js';
 import qrOverlay from '../assets/pack/backgrounds/qr-camera-overlay.png';
 import coverVerificationArt from '../assets/real/cover_verification_clean.png';
-import travelRouteArt from '../assets/transport/travel_route_with_bus_and_markers_transparent.png';
+import safeShieldArt from '../assets/real/safe_shield_clean.png';
 
 const READER_ID = 'qr-reader';
 
@@ -140,8 +140,8 @@ export default function QRScannerScreen({
   }
 
   if (invalidState && invalidState.status !== 'verified') {
-    let title = 'This vehicle code could not be verified';
-    let body = 'Check the sticker and try again, or enter the code manually.';
+    let title = 'This QR code could not be verified';
+    let body = 'Check the code on the SAFE sticker and try again, or enter it manually.';
     let qrVerificationText = 'This QR code could not be verified.'; // For Playwright test compatibility
 
     if (invalidState.status === 'network_error') {
@@ -217,48 +217,59 @@ export default function QRScannerScreen({
             <ArrowLeft size={16} aria-hidden="true" />
             Back
           </button>
-          <h1 className="qr-header__title">{mode === 'manual' ? 'Enter vehicle code' : 'Scan vehicle QR'}</h1>
+          <h1 className="qr-header__title">{mode === 'manual' ? 'Enter vehicle code' : 'Verify vehicle'}</h1>
         </header>
 
         {mode === 'scan' ? (
           <>
-            <h2 className="qr-intro__title">Scan vehicle QR</h2>
-            <p className="qr-intro__sub">Scan the SAFE QR inside the vehicle to verify your trip.</p>
-            <div className="qr-scanner-frame" aria-label="QR scanner">
-              {permission === 'prompt' || permission === 'checking' ? (
-                <div className="qr-scanner-placeholder">
-                  <CameraOff size={36} aria-hidden="true" />
-                  <p>Camera permission needed</p>
-                  <p>Allow camera access to scan the vehicle QR code.</p>
-                  <img className="qr-scanner-placeholder__art" src={travelRouteArt} alt="" aria-hidden="true" />
-                </div>
-              ) : null}
-              {permission === 'denied' || permission === 'unsupported' ? (
-                <div className="qr-scanner-placeholder">
-                  <CameraOff size={36} aria-hidden="true" />
-                  <p>{permission === 'denied' ? 'Camera access denied' : 'Camera not available'}</p>
-                  <p>Use manual entry to verify your vehicle code.</p>
-                  <img className="qr-scanner-placeholder__art" src={travelRouteArt} alt="" aria-hidden="true" />
-                  <button type="button" className="qr-btn qr-btn--secondary" onClick={() => setMode('manual')}>
+            <h2 className="qr-intro__title">Scan the SAFE QR code</h2>
+            <p className="qr-intro__sub">Point your camera at the QR sticker inside the vehicle before boarding.</p>
+
+            {(permission === 'denied' || permission === 'unsupported') ? (
+              <div className="qr-permission-card">
+                <img className="qr-permission-art" src={safeShieldArt} alt="" aria-hidden="true" />
+                <h2 className="qr-permission-title">Camera access needed</h2>
+                <p className="qr-permission-body">
+                  {permission === 'denied'
+                    ? 'Camera access is turned off. Enable it in your device settings to scan the QR code, or enter the vehicle code manually.'
+                    : 'A camera is not available on this device. Use manual entry to verify your vehicle.'}
+                </p>
+                <div className="qr-actions">
+                  <button type="button" className="qr-btn qr-btn--primary" onClick={() => setMode('manual')}>
                     Enter vehicle code
                   </button>
                 </div>
-              ) : null}
-              <div id={READER_ID} />
-              {permission === 'granted' ? (
-                <img className="qr-scanner-overlay" src={qrOverlay} alt="" aria-hidden="true" />
-              ) : null}
-            </div>
+              </div>
+            ) : (
+              <div className="qr-scanner-frame" aria-label="QR scanner">
+                <div className="qr-scanner-corner qr-scanner-corner--tl" aria-hidden="true" />
+                <div className="qr-scanner-corner qr-scanner-corner--tr" aria-hidden="true" />
+                <div className="qr-scanner-corner qr-scanner-corner--bl" aria-hidden="true" />
+                <div className="qr-scanner-corner qr-scanner-corner--br" aria-hidden="true" />
+                {(permission === 'prompt' || permission === 'checking') ? (
+                  <div className="qr-scanner-placeholder">
+                    <CameraOff size={36} aria-hidden="true" />
+                    <p>Camera permission needed</p>
+                    <p>Allow camera access to scan the vehicle QR code.</p>
+                  </div>
+                ) : null}
+                <div id={READER_ID} />
+                {permission === 'granted' ? (
+                  <img className="qr-scanner-overlay" src={qrOverlay} alt="" aria-hidden="true" />
+                ) : null}
+              </div>
+            )}
+
             <div className="qr-link-row">
               <button type="button" className="qr-btn qr-btn--text" onClick={() => { setMode('manual'); setError(''); }}>
-                Enter vehicle code
+                Enter vehicle code manually
               </button>
             </div>
           </>
         ) : (
           <>
             <h2 className="qr-intro__title">Enter vehicle code</h2>
-            <p className="qr-intro__sub">Type the code shown on the SAFE sticker inside the vehicle.</p>
+            <p className="qr-intro__sub">Use this if the QR code cannot be scanned. Enter the code from the SAFE sticker inside the vehicle.</p>
             <img className="qr-manual-art" src={coverVerificationArt} alt="" aria-hidden="true" />
             <form
               className="qr-manual-form"
@@ -281,7 +292,7 @@ export default function QRScannerScreen({
                 Verify code
               </button>
               <button type="button" className="qr-btn qr-btn--text" onClick={() => { setMode('scan'); setError(''); }}>
-                Back to scanner
+                Scan QR instead
               </button>
             </form>
           </>
