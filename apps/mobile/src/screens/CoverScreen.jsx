@@ -344,6 +344,12 @@ export default function CoverScreen({
             aria-label="Active cover"
           >
             <div className="cover-hero__wash" aria-hidden="true" />
+            <img
+              className="cover-hero__bus cover-flow-hero__art"
+              src={busHeroCityArt}
+              alt=""
+              aria-hidden="true"
+            />
             <div className="cover-hero__top">
               <div className="cover-hero__copy">
                 <div className="cover-hero__pill cover-flow-pill cover-flow-pill--active">
@@ -353,42 +359,32 @@ export default function CoverScreen({
                 <h1 className="cover-hero__title">You're covered</h1>
                 <p className="cover-hero__subtitle">Your SAFE cover is active for this trip.</p>
               </div>
-              <div className="cover-hero__visual" aria-hidden="true">
-                <img
-                  className="cover-hero__bus cover-flow-hero__art"
-                  src={busHeroCityArt}
-                  alt=""
-                />
-              </div>
+              <div className="cover-hero__visual" aria-hidden="true" />
             </div>
             <dl className="cover-hero__stats cover-flow-hero__details">
               <div className="cover-hero__stat">
-                <dt>
-                  <span className="cover-hero__stat-icon" aria-hidden="true">
-                    <img src={iconCoverPlan} alt="" />
-                  </span>
-                  <span className="cover-hero__stat-label">Plan</span>
-                </dt>
-                <dd>{activeCover.planName}</dd>
+                <span className="cover-hero__stat-icon" aria-hidden="true">
+                  <img src={iconCoverPlan} alt="" />
+                </span>
+                <span className="cover-hero__stat-label">Plan</span>
+                <dd className="cover-hero__stat-value">{activeCover.planName}</dd>
               </div>
               <div className="cover-hero__stat">
-                <dt>
-                  <span className="cover-hero__stat-icon" aria-hidden="true">
-                    <Clock3 size={16} strokeWidth={2.25} />
-                  </span>
-                  <span className="cover-hero__stat-label">Remaining</span>
-                  <span className="cover-hero__stat-qa">Time remaining</span>
-                </dt>
-                <dd aria-live="polite">{countdown || '—'}</dd>
+                <span className="cover-hero__stat-icon" aria-hidden="true">
+                  <Clock3 size={16} strokeWidth={2.25} />
+                </span>
+                <span className="cover-hero__stat-label">Remaining</span>
+                <dt className="cover-hero__stat-qa">Time remaining</dt>
+                <dd className="cover-hero__stat-value" aria-live="polite">
+                  {countdown || '—'}
+                </dd>
               </div>
               <div className="cover-hero__stat">
-                <dt>
-                  <span className="cover-hero__stat-icon" aria-hidden="true">
-                    <Calendar size={16} strokeWidth={2.25} />
-                  </span>
-                  <span className="cover-hero__stat-label">Ends</span>
-                </dt>
-                <dd className="cover-hero__stat-value--ends">
+                <span className="cover-hero__stat-icon" aria-hidden="true">
+                  <Calendar size={16} strokeWidth={2.25} />
+                </span>
+                <span className="cover-hero__stat-label">Ends</span>
+                <dd className="cover-hero__stat-value cover-hero__stat-value--ends">
                   {endsCompact ? (
                     <>
                       <span>{endsCompact.line1}</span>
