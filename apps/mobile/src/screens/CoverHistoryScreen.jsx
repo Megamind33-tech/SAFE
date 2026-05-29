@@ -11,7 +11,7 @@
 import { useMemo, useState } from 'react';
 import { ArrowLeft, FileText, ShieldCheck } from 'lucide-react';
 import BottomScrollSpacer from '../components/BottomScrollSpacer.jsx';
-import noTripsArt from '../assets/pack/empty-states/no-trips.png';
+import noTripsArt from '../assets/real/no_active_cover_clean.png';
 import {
   buildCoverHistoryItems,
   filterCoverHistoryItems,
