@@ -121,16 +121,18 @@ export default function CoverPurchaseStatusScreen({
               title="Payment failed"
               subtitle="Your cover was not activated. Try again or choose another method."
             />
-            <button type="button" className="cover-flow-btn cover-flow-btn--primary" onClick={onRetryPayment}>
-              Retry payment
-            </button>
-            <button
-              type="button"
-              className="cover-flow-btn cover-flow-btn--secondary"
-              onClick={() => setScreen('coverPay')}
-            >
-              Change payment method
-            </button>
+            <div className="cover-flow-status-actions">
+              <button type="button" className="cover-flow-btn cover-flow-btn--primary" onClick={onRetryPayment}>
+                Retry payment
+              </button>
+              <button
+                type="button"
+                className="cover-flow-btn cover-flow-btn--secondary"
+                onClick={() => setScreen('coverPay')}
+              >
+                Change payment method
+              </button>
+            </div>
           </section>
         </div>
       </main>
@@ -174,20 +176,22 @@ export default function CoverPurchaseStatusScreen({
                 </div>
               ) : null}
             </dl>
-            <button
-              type="button"
-              className="cover-flow-btn cover-flow-btn--primary"
-              onClick={() => onComplete({ purchase, cover })}
-            >
-              View cover
-            </button>
-            <button
-              type="button"
-              className="cover-flow-btn cover-flow-btn--secondary"
-              onClick={() => setScreen('active')}
-            >
-              Done
-            </button>
+            <div className="cover-flow-status-actions">
+              <button
+                type="button"
+                className="cover-flow-btn cover-flow-btn--primary"
+                onClick={() => onComplete({ purchase, cover })}
+              >
+                View cover
+              </button>
+              <button
+                type="button"
+                className="cover-flow-btn cover-flow-btn--secondary"
+                onClick={() => setScreen('active')}
+              >
+                Done
+              </button>
+            </div>
           </section>
         </div>
       </main>
@@ -219,16 +223,18 @@ export default function CoverPurchaseStatusScreen({
               {checkError}
             </p>
           ) : null}
-          <button type="button" className="cover-flow-btn cover-flow-btn--primary" onClick={poll}>
-            Check status
-          </button>
-          <button
-            type="button"
-            className="cover-flow-btn cover-flow-btn--secondary"
-            onClick={() => setScreen('coverPay')}
-          >
-            Change payment method
-          </button>
+          <div className="cover-flow-status-actions">
+            <button type="button" className="cover-flow-btn cover-flow-btn--primary" onClick={poll}>
+              Check status
+            </button>
+            <button
+              type="button"
+              className="cover-flow-btn cover-flow-btn--secondary"
+              onClick={() => setScreen('coverPay')}
+            >
+              Change payment method
+            </button>
+          </div>
         </section>
       </div>
     </main>

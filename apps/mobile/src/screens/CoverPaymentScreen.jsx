@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import PaymentBrandIcon from '../components/PaymentBrandIcon.jsx';
-import { getPaymentBrandAsset, getPaymentBrandLabel, resolvePaymentProviderKey } from '../assets/paymentAssets.ts';
+import { getPaymentBrandLabel, resolvePaymentProviderKey } from '../assets/paymentAssets.ts';
 import {
   getPaymentMethods,
   providerDisplayName,
@@ -9,7 +9,6 @@ import {
 } from '../services/paymentMethods.js';
 import { formatPrice, purchaseCover } from '../services/cover.js';
 import { loadToken } from '../api/safeApi.js';
-import paymentSecureBg from '../assets/pack/backgrounds/payment-secure-bg.png';
 import securePaymentBanner from '../assets/real/safe_shield_clean.png';
 
 
@@ -92,7 +91,7 @@ export default function CoverPaymentScreen({
           <p className="cover-flow-review-card__price">{formatPrice(selectedPlan)}</p>
         </section>
 
-        <section className="cover-flow-payment-hero" style={{ backgroundImage: `url(${paymentSecureBg})` }}>
+        <section className="cover-flow-payment-hero">
           <img className="cover-flow-payment-hero__banner" src={securePaymentBanner} alt="" aria-hidden="true" />
           <div className="cover-flow-payment-hero__copy">
             <strong>Secure payment</strong>
