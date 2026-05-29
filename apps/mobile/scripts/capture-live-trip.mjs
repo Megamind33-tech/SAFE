@@ -141,6 +141,11 @@ async function captureFrame(page, name) {
   if (staleChipLive) {
     throw new Error('Live label must not appear when location is stale');
   }
+  // Live Trip must not fall through to Profile as the active nav tab.
+  const activeNav = await page.locator('.nav-item.active').first().innerText().catch(() => '');
+  if (/profile/i.test(activeNav)) {
+    throw new Error(`Live Trip screen must not show Profile as active nav tab (got: ${activeNav.trim()})`);
+  }
   await page.locator('.phone-frame').screenshot({ path: path.join(OUTPUT_DIR, name) });
 }
 

@@ -622,7 +622,7 @@ function App() {
 }
 
 function navState(screen) {
-  if (screen === 'home') return 'home';
+  if (['home', 'liveTrip'].includes(screen)) return 'home';
   if (['choose', 'payment', 'active', 'viewPolicy', 'coverPlans', 'coverReview', 'coverPay', 'coverStatus'].includes(screen)) return 'cover';
   if (['qrScanner', 'vehicleVerified'].includes(screen)) return 'verify';
   if (['claim', 'claimFlow', 'claimDetail'].includes(screen)) return 'claims';
