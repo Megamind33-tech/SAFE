@@ -346,7 +346,7 @@
   align-items: flex-end;
   justify-content: space-around;
   grid-template-columns: unset;
-  z-index: 100;
+  z-index: 50;
   background: #ffffff;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;

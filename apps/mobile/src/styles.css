@@ -263,7 +263,8 @@ button {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 100;
+  /* Below bottom-sheet/modal overlays (z 70–80) so modals stack above the nav. */
+  z-index: 50;
   height: calc(72px + env(safe-area-inset-bottom, 0px));
   display: flex;
   align-items: flex-end;
