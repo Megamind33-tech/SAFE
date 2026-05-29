@@ -668,6 +668,26 @@
   box-shadow: 0 10px 28px rgba(16, 24, 32, 0.06);
 }
 
+.cover-screen-board .cover-hub-start__title {
+  margin: 12px 0 6px;
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--cover-ink);
+}
+
+.cover-screen-board .cover-hub-start__sub {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--cover-muted);
+}
+
+.cover-screen-board .cover-hub-start__actions {
+  margin-top: 16px;
+  display: grid;
+  gap: 12px;
+}
+
 /* Bottom nav */
 .phone-frame:has(.cover-screen-board) .bottom-nav {
   position: absolute;
