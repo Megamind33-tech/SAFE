@@ -285,7 +285,7 @@
 }
 
 :has(.qr-screen) .bottom-nav {
-  background: rgba(248, 250, 249, 0.96);
+  background: #ffffff;
 }
 
 .qr-screen__scroll--centered {

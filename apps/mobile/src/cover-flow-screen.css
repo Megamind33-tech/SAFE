@@ -716,50 +716,55 @@
 }
 
 /* Cover tab bottom nav — preserve dock on cover-flow screens */
+/* Bottom nav — unified SAFE standard (white bar, green active), matches Home. */
 .phone-frame:has(.cover-flow) .bottom-nav {
-  left: 16px;
-  right: 16px;
-  bottom: 16px;
-  height: 82px;
-  border-radius: 30px;
-  padding: 10px 12px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(72px + env(safe-area-inset-bottom, 0px));
+  border-radius: 0;
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  z-index: 50;
-  background: linear-gradient(180deg, rgba(17, 28, 42, 0.86) 0%, rgba(10, 18, 28, 0.92) 100%);
-  backdrop-filter: blur(18px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.34);
+  align-items: flex-end;
+  justify-content: space-around;
+  z-index: 100;
+  background: #ffffff;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: none;
+  border-top: 1px solid rgba(16, 24, 32, 0.08);
+  box-shadow: 0 -4px 24px rgba(16, 24, 32, 0.06);
 }
 
 .phone-frame:has(.cover-flow) .bottom-nav .nav-item {
-  width: 72px;
-  min-height: 60px;
-  border-radius: 22px;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 12px;
+  flex: 1;
+  max-width: 76px;
+  min-height: 56px;
+  border-radius: 12px;
+  color: rgba(16, 24, 32, 0.48);
+  font-size: 11px;
   font-weight: 600;
 }
 
 .phone-frame:has(.cover-flow) .bottom-nav .nav-item.active {
-  color: #ffc612;
+  color: #007a3d;
   font-weight: 700;
-  background: linear-gradient(180deg, rgba(255, 198, 18, 0.16) 0%, rgba(255, 198, 18, 0.1) 100%);
-  border: 1px solid rgba(255, 198, 18, 0.24);
+  background: transparent;
+  border: none;
 }
 
 .phone-frame:has(.cover-flow) .bottom-nav .nav-item img,
 .phone-frame:has(.cover-flow) .bottom-nav .nav-item svg {
-  opacity: 0.58;
-  filter: brightness(0) saturate(100%) invert(100%);
+  opacity: 0.45;
+  filter: brightness(0) saturate(100%) invert(8%) sepia(12%) saturate(1200%) hue-rotate(169deg)
+    brightness(95%) contrast(95%);
 }
 
 .phone-frame:has(.cover-flow) .bottom-nav .nav-item.active img,
 .phone-frame:has(.cover-flow) .bottom-nav .nav-item.active svg {
   opacity: 1;
-  filter: brightness(0) saturate(100%) invert(84%) sepia(68%) saturate(620%) hue-rotate(359deg)
-    brightness(103%) contrast(101%);
+  filter: brightness(0) saturate(100%) invert(28%) sepia(98%) saturate(1200%) hue-rotate(118deg)
+    brightness(90%) contrast(101%);
 }
 
 .cover-flow-review-card__payment-missing {
