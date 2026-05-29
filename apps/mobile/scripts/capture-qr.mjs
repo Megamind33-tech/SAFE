@@ -6,6 +6,12 @@ import { execSync } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// apps/mobile/scripts → apps/mobile → apps → repo root
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 
 const BASE_URL = process.env.MOBILE_URL || 'http://127.0.0.1:5173';
 const API_BASE = process.env.API_BASE || 'http://127.0.0.1:8080';
@@ -67,7 +73,7 @@ const QA_USERS = {
 function assertLockedScreensUnchanged() {
   const existing = LOCKED_SCREEN_FILES.filter((f) => {
     try {
-      execSync(`git cat-file -e origin/main:${f}`, { stdio: 'ignore' });
+      execSync(`git cat-file -e origin/main:${f}`, { stdio: 'ignore', cwd: REPO_ROOT });
       return true;
     } catch {
       return false;
@@ -76,6 +82,7 @@ function assertLockedScreensUnchanged() {
   if (existing.length === 0) return;
   const diff = execSync(`git diff --name-only origin/main -- ${existing.join(' ')}`, {
     encoding: 'utf8',
+    cwd: REPO_ROOT,
   }).trim();
   if (diff) {
     throw new Error(`Locked screen layout files modified:\n${diff}`);
@@ -114,7 +121,7 @@ async function verifyQr(token, code) {
 
 async function seedQrStates() {
   execSync('npx tsx apps/backend/scripts/qaQrStates.mjs seed-all', {
-    cwd: process.cwd(),
+    cwd: REPO_ROOT,
     stdio: 'inherit',
   });
 }
