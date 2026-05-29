@@ -374,8 +374,16 @@ async function main() {
     await page.fill('input[type="time"]', accidentTime);
     await page.fill('input[placeholder*="Street"]', 'Cairo Road, Lusaka');
     await page.fill('textarea', 'Sudden braking caused injury during the minibus trip home.');
-    await page.getByRole('radio', { name: 'Yes' }).first().click();
-    await page.getByRole('radio', { name: 'Yes' }).nth(1).click();
+    // "Were you injured?" / "Was the vehicle involved?" render as selectable
+    // buttons (with sr-only radios for a11y); click the visible Yes in each group.
+    await page
+      .locator('.claim-fieldset', { hasText: 'Were you injured?' })
+      .getByRole('button', { name: 'Yes' })
+      .click();
+    await page
+      .locator('.claim-fieldset', { hasText: 'Was the vehicle involved?' })
+      .getByRole('button', { name: 'Yes' })
+      .click();
     await page.getByRole('button', { name: /next: documents/i }).click();
     await page.waitForSelector('.claim-flow-panel__title', { hasText: 'Documents' });
     if (!uploadEnabled) {
@@ -428,8 +436,16 @@ async function main() {
     await fillAccidentFields(page, token);
     await page.fill('input[placeholder*="Street"]', 'Kafue Road');
     await page.fill('textarea', 'Testing duplicate claim warning with similar incident details.');
-    await page.getByRole('radio', { name: 'Yes' }).first().click();
-    await page.getByRole('radio', { name: 'Yes' }).nth(1).click();
+    // "Were you injured?" / "Was the vehicle involved?" render as selectable
+    // buttons (with sr-only radios for a11y); click the visible Yes in each group.
+    await page
+      .locator('.claim-fieldset', { hasText: 'Were you injured?' })
+      .getByRole('button', { name: 'Yes' })
+      .click();
+    await page
+      .locator('.claim-fieldset', { hasText: 'Was the vehicle involved?' })
+      .getByRole('button', { name: 'Yes' })
+      .click();
     await page.getByRole('button', { name: /next: documents/i }).click();
     await page.getByLabel(/police reference/i).fill('POL-TEST-99001');
     await page.getByRole('button', { name: /next: review/i }).click();

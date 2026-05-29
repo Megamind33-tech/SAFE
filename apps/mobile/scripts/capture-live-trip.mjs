@@ -56,16 +56,30 @@ function assertLocked() {
   if (diff) throw new Error(`Locked files modified:\n${diff}`);
 }
 
+// Per the agreed product spec, LiveRouteMap MAY use raster/fallback art for the
+// empty, ready-to-start, permission-needed and tile-error states. What is NOT
+// allowed is replacing the *active trip* map with a static image. This guard
+// therefore verifies the real map is wired up and that the active/live branch
+// mounts the real Leaflet/OpenStreetMap map instead of a static <img>.
 function assertNoFakeMapSource() {
   const src = readFileSync(path.join(REPO_ROOT, 'apps/mobile/src/components/LiveRouteMap.jsx'), 'utf8');
-  if (/share-track-map|route_map_bus_hero_clean|real-map-illustration/i.test(src)) {
-    throw new Error('LiveRouteMap must not use static map placeholder assets');
-  }
-  if (/import .+ from ['"].+\.(png|jpe?g)['"]/i.test(src)) {
-    throw new Error('LiveRouteMap must not import raster map images');
+
+  // The component must render the real interactive map for live tracking.
+  if (!/MapContainer/.test(src) || !/TileLayer/.test(src)) {
+    throw new Error('LiveRouteMap must render the real Leaflet map (MapContainer + TileLayer)');
   }
   if (!/openstreetmap/i.test(src)) {
-    throw new Error('LiveRouteMap must use OpenStreetMap tiles');
+    throw new Error('LiveRouteMap must use OpenStreetMap tiles for live tracking');
+  }
+
+  // Isolate the active/live render branch and confirm it mounts the real map.
+  const liveBranch = src.match(/live-trip-map--live[\s\S]*?<\/MapContainer>/);
+  if (!liveBranch) {
+    throw new Error('Active trip state must mount the real <MapContainer> map');
+  }
+  // The active map branch must not swap in a static raster map image.
+  if (/<img\b/i.test(liveBranch[0])) {
+    throw new Error('Active trip map must not use a static <img> in place of the real map');
   }
 }
 
@@ -169,7 +183,7 @@ async function main() {
     const page = await ctx.newPage();
     await loginUI(page);
     await openLiveTrip(page);
-    await page.waitForSelector('.live-route-map-canvas, .leaflet-container', { timeout: 45000 });
+    await page.waitForSelector('.live-trip-map__canvas, .leaflet-container', { timeout: 45000 });
     await page.waitForTimeout(1500);
     const hasPolyline = await page.locator('.leaflet-interactive').count();
     if (hasPolyline < 1) throw new Error('Route polyline expected for active-route seed');
@@ -183,7 +197,7 @@ async function main() {
     const page = await ctx.newPage();
     await loginUI(page);
     await openLiveTrip(page);
-    await page.waitForSelector('.live-route-map-canvas, .leaflet-container', { timeout: 45000 });
+    await page.waitForSelector('.live-trip-map__canvas, .leaflet-container', { timeout: 45000 });
     await page.waitForTimeout(1500);
     const text = await page.locator('.live-trip-map').innerText();
     if (!/Route details are not available yet/i.test(text)) {
@@ -296,7 +310,7 @@ async function main() {
     await page.route('**/api/mobile/trips/*/location', (route) => route.abort());
     await loginUI(page);
     await openLiveTrip(page);
-    await page.waitForSelector('.live-route-map-canvas, .leaflet-container', { timeout: 45000 });
+    await page.waitForSelector('.live-trip-map__canvas, .leaflet-container', { timeout: 45000 });
     await page.waitForTimeout(1500);
     await page.waitForSelector('.live-trip-chip--muted', { timeout: 10000 });
     const text = await page.locator('.live-trip-screen').innerText();

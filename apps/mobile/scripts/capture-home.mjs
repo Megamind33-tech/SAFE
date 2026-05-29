@@ -318,7 +318,7 @@ async function main() {
     await enableHardRefresh(context);
     const page = await context.newPage();
     await loginInBrowser(page, PHONE_EMPTY, PASS);
-    await page.waitForSelector('.home-map-preview--empty', { timeout: 20000 });
+    await page.waitForSelector('.home-map-preview--empty, .home-map-preview--idle', { timeout: 20000 });
     await captureHome(page, 'home-no-active-trip.png');
     await context.close();
   }
@@ -328,7 +328,7 @@ async function main() {
     await enableHardRefresh(context);
     const page = await context.newPage();
     await loginInBrowser(page, PHONE_CLAIM, PASS);
-    await page.waitForSelector('.home-claim-card', { timeout: 20000 });
+    await page.waitForSelector('.home-mini-card--claims .home-mini-card__btn--light', { timeout: 20000 });
     await captureHome(page, 'home-latest-claim.png');
     await context.close();
   }
@@ -338,7 +338,7 @@ async function main() {
     await enableHardRefresh(context);
     const page = await context.newPage();
     await loginInBrowser(page, PHONE_EMPTY, PASS);
-    await page.waitForSelector('.home-empty-card', { timeout: 20000 });
+    await page.waitForSelector('.home-mini-card--claims .home-mini-card__btn--claim', { timeout: 20000 });
     await captureHome(page, 'home-no-claim.png');
     await context.close();
   }
