@@ -17,7 +17,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   padding: calc(6px + env(safe-area-inset-top, 0px)) var(--cover-pad-x)
-    calc(190px + env(safe-area-inset-bottom, 0px));
+    calc(220px + env(safe-area-inset-bottom, 0px));
   -webkit-overflow-scrolling: touch;
 }
 
@@ -59,14 +59,16 @@
 .cover-screen-board .cover-hero.cover-hero--active.cover-flow-hero--active {
   position: relative;
   margin: 0;
-  min-height: 400px;
+  min-height: 410px;
   border-radius: 30px;
   padding: 22px 20px 16px;
   display: grid;
-  grid-template-rows: 148px auto 52px 44px;
+  grid-template-rows: 165px 96px 52px 44px;
   row-gap: 12px;
   overflow: hidden;
-  background: linear-gradient(135deg, #f7fff9 0%, #eef8f1 58%, #fbfffc 100%);
+  background:
+    radial-gradient(circle at 82% 28%, rgba(0, 122, 61, 0.12), transparent 34%),
+    linear-gradient(135deg, #fbfffc 0%, #eef8f1 55%, #ffffff 100%);
   border: 1px solid rgba(0, 107, 63, 0.1);
   box-shadow: 0 18px 45px rgba(0, 45, 28, 0.1);
 }
@@ -76,31 +78,34 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: linear-gradient(105deg, rgba(255, 255, 255, 0.5) 0%, transparent 50%);
+  background:
+    linear-gradient(105deg, rgba(255, 255, 255, 0.55) 0%, transparent 48%),
+    url('./assets/pack/backgrounds/cover-hero-bg.png') right 12% / 72% auto no-repeat;
+  opacity: 0.42;
 }
 
 .cover-hero__top {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 52% 48%;
+  grid-template-columns: 50% 50%;
   align-items: start;
-  min-height: 148px;
+  min-height: 165px;
   grid-row: 1;
 }
 
 .cover-hero__copy {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   min-width: 0;
-  padding-right: 6px;
+  padding-right: 4px;
 }
 
 .cover-hero__pill.cover-flow-pill--active {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 34px;
+  height: 36px;
   padding: 0 12px;
   border-radius: 999px;
   font-size: 12px;
@@ -111,7 +116,7 @@
 
 .cover-hero__title {
   margin: 10px 0 0;
-  font-size: 31px;
+  font-size: 33px;
   line-height: 1.05;
   letter-spacing: -0.04em;
   font-weight: 800;
@@ -129,21 +134,24 @@
 .cover-hero__visual {
   position: relative;
   min-width: 0;
-  height: 148px;
+  height: 165px;
   overflow: visible;
 }
 
-.cover-screen-board .cover-hero__bus.cover-flow-hero__art {
+.cover-screen-board .cover-hero--active .cover-hero__bus.cover-flow-hero__art {
   position: absolute;
-  right: -18px;
-  top: 8px;
-  width: 118%;
-  max-width: 270px;
+  right: -36px;
+  top: 18px;
+  width: 145%;
+  min-width: 240px;
+  max-width: 320px;
   height: auto;
   object-fit: contain;
-  object-position: right top;
+  object-position: right center;
   pointer-events: none;
-  filter: drop-shadow(0 14px 28px rgba(16, 24, 32, 0.12));
+  z-index: 2;
+  opacity: 1;
+  filter: drop-shadow(0 16px 24px rgba(0, 65, 36, 0.16));
 }
 
 /* Stats — flow row, not overlay */
@@ -154,12 +162,12 @@
   margin: 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  min-height: 86px;
+  min-height: 92px;
   padding: 12px 8px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(0, 107, 63, 0.08);
-  box-shadow: 0 4px 16px rgba(16, 24, 32, 0.04);
+  box-shadow: 0 10px 25px rgba(0, 45, 28, 0.06);
 }
 
 .cover-screen-board .cover-hero__stats.cover-flow-hero__details > .cover-hero__stat {
@@ -663,8 +671,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: calc(64px + env(safe-area-inset-bottom, 0px));
-  padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px));
+  max-height: calc(76px + env(safe-area-inset-bottom, 0px));
+  height: calc(68px + env(safe-area-inset-bottom, 0px));
+  padding: 4px 10px calc(4px + env(safe-area-inset-bottom, 0px));
   border-radius: 0;
   background: #fff;
   border: none;
@@ -729,6 +738,6 @@
   }
 
   .cover-screen-board .cover-hero.cover-hero--active {
-    grid-template-rows: 148px auto auto 44px;
+    grid-template-rows: 165px auto auto 44px;
   }
 }
