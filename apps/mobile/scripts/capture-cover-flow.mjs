@@ -640,7 +640,7 @@ async function main() {
   await goCoverTab(page);
   await buyFlowToPayment(page, tokenNotCfg);
   await page.getByRole('button', { name: /confirm purchase/i }).click();
-  await page.waitForSelector('text=Payment provider is not connected yet', { timeout: 25000 });
+  await page.waitForSelector('text=/Payment provider not connected/i', { timeout: 25000 });
   await assertNoActiveCoverHero(page);
   const { data: activeRes } = await apiRequest('/api/mobile/cover/active', { token: tokenNotCfg });
   if (activeRes.cover) throw new Error('not_configured must not create active cover');

@@ -16,17 +16,14 @@ import PaymentBrandIcon from '../components/PaymentBrandIcon.jsx';
 import {
   formatCoverEnds,
   formatCoverPeriod,
+  formatTimeRemaining,
   isCoverActive,
   isCoverExpired,
   loadCoverScreenBundle,
   readCachedCoverScreen,
   writeCachedCoverScreen,
 } from '../services/cover.js';
-import {
-  deriveHomeLiveTripState,
-  formatCountdownClock,
-  isPaymentPending,
-} from '../services/home.js';
+import { deriveHomeLiveTripState, isPaymentPending } from '../services/home.js';
 import { providerDisplayName } from '../services/paymentMethods.js';
 import busHeroCityArt from '../assets/real/bus_hero_city_clean.png';
 import noCoverArt from '../assets/real/no_active_cover_clean.png';
@@ -66,6 +63,13 @@ function policyNumberLabel(cover) {
 
 function vehiclePrimary(cover) {
   return cover?.vehicle?.plateNumber || null;
+}
+
+function formatTimeRemainingDisplay(endsAt) {
+  if (!endsAt) return '—';
+  const label = formatTimeRemaining(endsAt);
+  if (!label) return 'Ending soon';
+  return label.replace(/\s+left$/i, '');
 }
 
 function vehicleSecondary(cover) {
@@ -186,7 +190,7 @@ export default function CoverScreen({
       setCountdown(null);
       return undefined;
     }
-    const tick = () => setCountdown(formatCountdownClock(activeCover.endsAt));
+    const tick = () => setCountdown(formatTimeRemainingDisplay(activeCover.endsAt));
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
@@ -208,10 +212,9 @@ export default function CoverScreen({
     if (active) {
       if (liveTripState === 'active_trip_live') {
         return {
-          title: 'Live trip active',
-          sub: 'Your journey is being tracked. View live trip for real-time protection updates.',
-          action: () => openLiveTrip?.(),
-          static: false,
+          title: 'Live trip tracking is active.',
+          sub: 'Your journey is being tracked with real-time protection updates.',
+          static: true,
         };
       }
       if (liveTripState === 'trip_completed_cover_active') {
@@ -271,8 +274,8 @@ export default function CoverScreen({
   const period = formatCoverPeriod(activeCover?.startsAt, activeCover?.endsAt);
 
   return (
-    <main className="screen cover-flow cover-screen-board">
-      <div className="cover-flow__scroll">
+    <main className="screen cover-flow cover-screen cover-screen-board">
+      <div className="cover-flow__scroll cover-scroll">
         {syncWarning ? (
           <p className="cover-flow-sync-warning" role="status">
             {syncWarning}
@@ -293,61 +296,70 @@ export default function CoverScreen({
         </header>
 
         {active ? (
-          <section className="cover-flow-hero cover-flow-hero--active" aria-label="Active cover">
-            <div className="cover-hub-hero__content">
-              <span className="cover-flow-pill cover-flow-pill--active">
-                <ShieldCheck size={14} strokeWidth={2.5} aria-hidden="true" />
-                Active cover
-              </span>
-              <h2 className="cover-hub-hero__title">You're covered</h2>
-              <p className="cover-hub-hero__sub">Your SAFE cover is active for this trip.</p>
-              <dl className="cover-flow-hero__details cover-hub-hero__details">
-                <div>
-                  <dt>
-                    <img src={iconCoverPlan} alt="" className="cover-hub-hero__detail-icon cover-hub-hero__detail-icon--img" />
-                    Plan
-                  </dt>
-                  <dd>{activeCover.planName}</dd>
+          <section className="cover-hero cover-flow-hero cover-flow-hero--active" aria-label="Active cover">
+            <div className="cover-hero__wash" aria-hidden="true" />
+            <img className="cover-hero__art cover-flow-hero__art" src={busHeroCityArt} alt="" aria-hidden="true" />
+            <div className="cover-hero__inner">
+              <div className="cover-hero__main">
+                <span className="cover-hero__pill cover-flow-pill cover-flow-pill--active">
+                  <ShieldCheck size={15} strokeWidth={2.5} aria-hidden="true" />
+                  Active cover
+                </span>
+                <h2 className="cover-hero__title">You're covered</h2>
+                <p className="cover-hero__subtitle">Your SAFE cover is active for this trip.</p>
+                <dl className="cover-hero__stats cover-flow-hero__details">
+                  <div className="cover-hero__stat">
+                    <dt>
+                      <span className="cover-hero__stat-icon" aria-hidden="true">
+                        <img src={iconCoverPlan} alt="" />
+                      </span>
+                      Plan
+                    </dt>
+                    <dd>{activeCover.planName}</dd>
+                  </div>
+                  <div className="cover-hero__stat">
+                    <dt>
+                      <span className="cover-hero__stat-icon" aria-hidden="true">
+                        <Clock3 size={15} strokeWidth={2.25} />
+                      </span>
+                      Time remaining
+                    </dt>
+                    <dd aria-live="polite">{countdown || '—'}</dd>
+                  </div>
+                  <div className="cover-hero__stat">
+                    <dt>
+                      <span className="cover-hero__stat-icon" aria-hidden="true">
+                        <Calendar size={15} strokeWidth={2.25} />
+                      </span>
+                      Cover ends
+                    </dt>
+                    <dd>{formatCoverEnds(activeCover.endsAt)}</dd>
+                  </div>
+                </dl>
+                <div className="cover-hero__actions cover-flow-hero__actions">
+                  <button
+                    type="button"
+                    className="cover-hero__btn cover-hero__btn--primary"
+                    onClick={() => setScreen('viewPolicy')}
+                  >
+                    <span>View policy details</span>
+                    <ChevronRight size={18} strokeWidth={2.5} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className="cover-hero__btn cover-hero__btn--secondary"
+                    onClick={() => openClaimFlow(1)}
+                  >
+                    <Shield size={16} strokeWidth={2.25} aria-hidden="true" />
+                    <span>Start claim</span>
+                  </button>
                 </div>
-                <div>
-                  <dt>
-                    <Clock3 size={16} className="cover-hub-hero__detail-icon" aria-hidden="true" />
-                    Time remaining
-                  </dt>
-                  <dd aria-live="polite">{countdown || '00:00:00'}</dd>
-                </div>
-                <div>
-                  <dt>
-                    <Calendar size={16} className="cover-hub-hero__detail-icon" aria-hidden="true" />
-                    Cover ends
-                  </dt>
-                  <dd>{formatCoverEnds(activeCover.endsAt)}</dd>
-                </div>
-              </dl>
-              <div className="cover-hub-hero__actions">
-                <button
-                  type="button"
-                  className="cover-hub-btn cover-hub-btn--primary"
-                  onClick={() => setScreen('viewPolicy')}
-                >
-                  View policy details
-                  <ChevronRight size={18} aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className="cover-hub-btn cover-hub-btn--secondary"
-                  onClick={() => openClaimFlow(1)}
-                >
-                  <Shield size={16} aria-hidden="true" />
-                  Start claim
-                </button>
               </div>
-              <p className="cover-hub-hero__protected">
+              <div className="cover-hero__protected-note">
                 <ShieldCheck size={16} strokeWidth={2.5} aria-hidden="true" />
-                Protected for the current journey
-              </p>
+                <span>Protected for the current journey</span>
+              </div>
             </div>
-            <img className="cover-flow-hero__art cover-hub-hero__art" src={busHeroCityArt} alt="" aria-hidden="true" />
           </section>
         ) : null}
 
@@ -419,21 +431,19 @@ export default function CoverScreen({
 
         {showDetails ? (
           <>
-            <h2 className="cover-hub-section-title">Cover details</h2>
-            <section className="cover-hub-details-card" aria-label="Cover details">
+            <h2 className="cover-details__title">Cover details</h2>
+            <section className="cover-details-card" aria-label="Cover details">
               {policyId ? (
-                <div className="cover-hub-details-row">
-                  <div className="cover-hub-details-row__icon">
+                <div className="cover-detail-row">
+                  <div className="cover-detail-row__icon">
                     <Shield size={18} aria-hidden="true" />
                   </div>
-                  <div>
-                    <p className="cover-hub-details-row__label">Policy number</p>
-                    <p className="cover-hub-details-row__value">{policyId}</p>
-                  </div>
-                  <div className="cover-hub-details-row__aside">
+                  <span className="cover-detail-row__label">Policy number</span>
+                  <div className="cover-detail-row__value-wrap">
+                    <span className="cover-detail-row__value">{policyId}</span>
                     <button
                       type="button"
-                      className="cover-hub-copy-btn"
+                      className="cover-detail-row__copy"
                       aria-label={copiedPolicy ? 'Copied' : 'Copy policy number'}
                       onClick={copyPolicy}
                     >
@@ -443,79 +453,79 @@ export default function CoverScreen({
                 </div>
               ) : null}
 
-              <div className="cover-hub-details-row">
-                <div className="cover-hub-details-row__icon">
+              <div className="cover-detail-row">
+                <div className="cover-detail-row__icon">
                   <Bus size={18} aria-hidden="true" />
                 </div>
-                <div>
-                  <p className="cover-hub-details-row__label">Vehicle</p>
-                  <p className="cover-hub-details-row__value">
+                <span className="cover-detail-row__label">Vehicle</span>
+                <div className="cover-detail-row__value-wrap cover-detail-row__value-wrap--stack">
+                  <span className="cover-detail-row__value">
                     {vehiclePrimary(activeCover) || 'Not linked yet'}
-                  </p>
+                  </span>
                   {vehicleSecondary(activeCover) ? (
-                    <p className="cover-hub-details-row__meta">{vehicleSecondary(activeCover)}</p>
+                    <span className="cover-detail-row__meta">{vehicleSecondary(activeCover)}</span>
                   ) : null}
                 </div>
               </div>
 
-              <div className="cover-hub-details-row">
-                <div className="cover-hub-details-row__icon">
+              <div className="cover-detail-row">
+                <div className="cover-detail-row__icon">
                   <User size={18} aria-hidden="true" />
                 </div>
-                <div>
-                  <p className="cover-hub-details-row__label">Covered passenger</p>
-                  <p className="cover-hub-details-row__value">
+                <span className="cover-detail-row__label">Covered</span>
+                <div className="cover-detail-row__value-wrap cover-detail-row__value-wrap--stack">
+                  <span className="cover-detail-row__value">
                     {formatPassengerLabel(passengerName) || 'Policyholder'}
-                  </p>
-                  <p className="cover-hub-details-row__meta">Policyholder</p>
+                  </span>
+                  <span className="cover-detail-row__meta">Policyholder</span>
                 </div>
               </div>
 
               {period ? (
-                <div className="cover-hub-details-row">
-                  <div className="cover-hub-details-row__icon">
+                <div className="cover-detail-row">
+                  <div className="cover-detail-row__icon">
                     <Calendar size={18} aria-hidden="true" />
                   </div>
-                  <div>
-                    <p className="cover-hub-details-row__label">Cover period</p>
-                    <p className="cover-hub-details-row__value">{period}</p>
+                  <span className="cover-detail-row__label">Cover period</span>
+                  <div className="cover-detail-row__value-wrap cover-detail-row__value-wrap--stack">
+                    <span className="cover-detail-row__value">{period}</span>
                   </div>
                 </div>
               ) : null}
 
-              <div className="cover-hub-details-row">
-                <div className="cover-hub-details-row__icon">
+              <div className="cover-detail-row">
+                <div className="cover-detail-row__icon">
                   {defaultPaymentMethod ? (
-                    <PaymentBrandIcon type={defaultPaymentMethod.provider} className="cover-hub-payment-brand" />
+                    <PaymentBrandIcon type={defaultPaymentMethod.provider} className="cover-detail-row__brand" />
                   ) : (
                     <CreditCard size={18} aria-hidden="true" />
                   )}
                 </div>
-                <div>
-                  <p className="cover-hub-details-row__label">Payment method</p>
-                  <p className="cover-hub-details-row__value">
+                <span className="cover-detail-row__label">Payment method</span>
+                <div className="cover-detail-row__value-wrap">
+                  <span className="cover-detail-row__value">
                     {defaultPaymentMethod
                       ? `${providerDisplayName(defaultPaymentMethod.provider)}${defaultPaymentMethod.maskedValue || defaultPaymentMethod.maskedPhone ? ` ${defaultPaymentMethod.maskedValue || defaultPaymentMethod.maskedPhone}` : ''}`
-                      : 'Not saved yet'}
-                  </p>
+                      : 'Not selected'}
+                  </span>
                 </div>
               </div>
             </section>
 
-            <div className="cover-hub-section-title">
-              <span>What's covered</span>
-              <button type="button" className="cover-hub-section-title__link" onClick={() => setScreen('viewPolicy')}>
+            <div className="cover-benefits__head">
+              <h2 className="cover-benefits__title">What's covered</h2>
+              <button type="button" className="cover-benefits__link" onClick={() => setScreen('viewPolicy')}>
                 View all
               </button>
             </div>
-            <section className="cover-hub-benefits" aria-label="What's covered">
+            <section className="cover-benefit-grid" aria-label="What's covered">
               {planBenefits.map((item) => (
-                <article key={item.title} className="cover-hub-benefit-card">
-                  <span className="cover-hub-benefit-card__icon">
+                <article key={item.title} className="cover-benefit-card">
+                  <span className="cover-benefit-card__icon">
                     <img src={item.icon} alt="" aria-hidden="true" />
                   </span>
-                  <h3 className="cover-hub-benefit-card__title">{item.title}</h3>
-                  <p className="cover-hub-benefit-card__value">{item.value}</p>
+                  <h3 className="cover-benefit-card__title">{item.title}</h3>
+                  <p className="cover-benefit-card__value">{item.value}</p>
                 </article>
               ))}
             </section>
@@ -524,25 +534,25 @@ export default function CoverScreen({
 
         {importantNote ? (
           importantNote.static ? (
-            <div className="cover-hub-important cover-hub-important--static" role="note">
-              <span className="cover-hub-important__icon" aria-hidden="true">
+            <div className="cover-important-note cover-important-note--static" role="note">
+              <span className="cover-important-note__icon" aria-hidden="true">
                 !
               </span>
               <div>
-                <p className="cover-hub-important__title">{importantNote.title}</p>
-                <p className="cover-hub-important__sub">{importantNote.sub}</p>
+                <p className="cover-important-note__title">{importantNote.title}</p>
+                <p className="cover-important-note__sub">{importantNote.sub}</p>
               </div>
             </div>
           ) : (
-            <button type="button" className="cover-hub-important" onClick={importantNote.action}>
-              <span className="cover-hub-important__icon" aria-hidden="true">
+            <button type="button" className="cover-important-note" onClick={importantNote.action}>
+              <span className="cover-important-note__icon" aria-hidden="true">
                 !
               </span>
               <div>
-                <p className="cover-hub-important__title">{importantNote.title}</p>
-                <p className="cover-hub-important__sub">{importantNote.sub}</p>
+                <p className="cover-important-note__title">{importantNote.title}</p>
+                <p className="cover-important-note__sub">{importantNote.sub}</p>
               </div>
-              <ChevronRight size={18} className="cover-hub-important__chevron" aria-hidden="true" />
+              <ChevronRight size={18} className="cover-important-note__chevron" aria-hidden="true" />
             </button>
           )
         ) : null}
@@ -560,14 +570,15 @@ export default function CoverScreen({
           </p>
         ) : null}
 
-        <button
-          type="button"
-          className="cover-hub-btn cover-hub-btn--secondary cover-hub-btn--wide"
-          style={{ marginTop: 16 }}
-          onClick={() => openHistory('active')}
-        >
-          Cover history
-        </button>
+        {active ? (
+          <button
+            type="button"
+            className="cover-history-link"
+            onClick={() => openHistory('active')}
+          >
+            Cover history
+          </button>
+        ) : null}
       </div>
     </main>
   );
