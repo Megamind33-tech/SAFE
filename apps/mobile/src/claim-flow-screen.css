@@ -755,20 +755,20 @@ button.claim-flow-upload-option:disabled {
 .claim-flow-screen.claim-flow-screen--review {
   --cf-pad-x: 22px;
   --cf-content-width: 346px;
-  --cf-scroll-clearance: calc(260px + env(safe-area-inset-bottom, 0px));
+  --cf-bottom-clearance: calc(130px + env(safe-area-inset-bottom, 0px));
   --cf-scroll-margin-bottom: 180px;
   position: relative;
-  height: 100dvh;
-  min-height: 100dvh;
-  overflow: hidden;
-  padding: 0;
+  /* Scroll the review summary + submit CTA like the other steps, with enough
+     bottom clearance that the CTA is never hidden behind the bottom nav. */
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 var(--cf-pad-x) var(--cf-bottom-clearance);
   background: linear-gradient(180deg, #f4fff9 0%, #edf7f2 48%, #f8faf9 100%);
 }
 
 .screen.claim-flow-screen.claim-flow-screen--review {
-  height: 100dvh;
-  overflow: hidden;
-  padding-bottom: 0;
+  padding-bottom: var(--cf-bottom-clearance);
   background: transparent;
 }
 
