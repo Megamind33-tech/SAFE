@@ -10,7 +10,7 @@ import {
 import { formatPrice, purchaseCover } from '../services/cover.js';
 import { loadToken } from '../api/safeApi.js';
 import paymentSecureBg from '../assets/pack/backgrounds/payment-secure-bg.png';
-import securePaymentBanner from '../assets/pack/payment/secure-payment-banner.png';
+import securePaymentBanner from '../assets/real/safe_shield_clean.png';
 
 
 export default function CoverPaymentScreen({
@@ -123,7 +123,6 @@ export default function CoverPaymentScreen({
               const isSelected = method.id === selectedPaymentMethodId;
               const resolvedProvider =
                 resolvePaymentProviderKey(method.provider) ?? (method.type === 'card' ? 'visa_mastercard' : method.provider);
-              const tile = getPaymentBrandAsset(resolvedProvider, 'tile');
               const label = getPaymentBrandLabel(resolvedProvider);
               return (
                 <button
@@ -132,7 +131,6 @@ export default function CoverPaymentScreen({
                   className={`cover-flow-method-card${isSelected ? ' cover-flow-method-card--selected' : ''}`}
                   aria-pressed={isSelected}
                   onClick={() => onSelectPaymentMethod(method)}
-                  style={tile ? { backgroundImage: `linear-gradient(180deg, rgba(8, 18, 39, 0.02), rgba(8, 18, 39, 0.06)), url(${tile})` } : undefined}
                 >
                   <PaymentBrandIcon
                     type={resolvedProvider}
