@@ -25,6 +25,7 @@ import {
 import { deriveHomeLiveTripState, isPaymentPending } from '../services/home.js';
 import { providerDisplayName } from '../services/paymentMethods.js';
 import busHeroCityArt from '../assets/real/bus_hero_city_clean.png';
+import greenBusHeroArt from '../assets/transport/green_bus_with_protective_emblem_transparent.png';
 import noCoverArt from '../assets/real/no_active_cover_clean.png';
 import iconCoverPlan from '../assets/pack/icons/cover-daily.svg';
 import iconClaimMedical from '../assets/pack/icons/claim-medical.svg';
@@ -344,13 +345,7 @@ export default function CoverScreen({
             aria-label="Active cover"
           >
             <div className="cover-hero__wash" aria-hidden="true" />
-            <img
-              className="cover-hero__bus cover-flow-hero__art"
-              src={busHeroCityArt}
-              alt=""
-              aria-hidden="true"
-            />
-            <div className="cover-hero__top">
+            <div className="cover-hero__head">
               <div className="cover-hero__copy">
                 <div className="cover-hero__pill cover-flow-pill cover-flow-pill--active">
                   <ShieldCheck size={15} strokeWidth={2.5} aria-hidden="true" />
@@ -359,7 +354,13 @@ export default function CoverScreen({
                 <h1 className="cover-hero__title">You're covered</h1>
                 <p className="cover-hero__subtitle">Your SAFE cover is active for this trip.</p>
               </div>
-              <div className="cover-hero__visual" aria-hidden="true" />
+            </div>
+            <div className="cover-hero__bus-row" aria-hidden="true">
+              <img
+                className="cover-hero__bus cover-flow-hero__art"
+                src={greenBusHeroArt}
+                alt=""
+              />
             </div>
             <dl className="cover-hero__stats cover-flow-hero__details">
               <div className="cover-hero__stat">
@@ -463,17 +464,22 @@ export default function CoverScreen({
         ) : null}
 
         {!active && !pending && !expired ? (
-          <section className="cover-flow-start" aria-label="Get covered">
-            <img className="cover-flow-start__art" src={noCoverArt} alt="" aria-hidden="true" />
-            <h2 className="cover-hub-start__title">No active cover</h2>
-            <p className="cover-hub-start__sub">Buy SAFE cover before your next trip.</p>
+          <section className="cover-flow-start safe-visual-hero" aria-label="Get covered">
+            <div className="cover-hero__copy">
+              <span className="cover-flow-pill cover-flow-pill--muted">Not covered</span>
+              <h2 className="cover-hub-start__title">You&apos;re not covered yet</h2>
+              <p className="cover-hub-start__sub">Protect your next journey today.</p>
+            </div>
+            <div className="safe-visual-hero__art-row">
+              <img className="cover-flow-start__art safe-visual-hero__art" src={noCoverArt} alt="" aria-hidden="true" />
+            </div>
             <div className="cover-hub-start__actions">
               <button
                 type="button"
                 className="cover-hub-btn cover-hub-btn--primary cover-hub-btn--wide"
                 onClick={onBuyCover}
               >
-                Choose cover
+                Buy cover
               </button>
               <button
                 type="button"

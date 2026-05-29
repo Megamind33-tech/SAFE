@@ -5,6 +5,7 @@ import paymentPendingIcon from '../assets/pack/icons/payment-pending.svg';
 import paymentSuccessIcon from '../assets/pack/icons/payment-success.svg';
 import paymentFailedIcon from '../assets/pack/icons/payment-failed.svg';
 import paymentProcessingArt from '../assets/pack/empty-states/payment-processing.png';
+import verifiedVehicleArt from '../assets/real/verified_vehicle_clean.png';
 
 const POLL_MS = 4000;
 const POLL_TIMEOUT_MS = 90000;
@@ -151,6 +152,7 @@ export default function CoverPurchaseStatusScreen({
               icon={paymentSuccessIcon}
               title="Cover activated"
               subtitle="Your SAFE cover is now active."
+              art={verifiedVehicleArt}
             />
             <dl className="cover-flow-hero__details">
               {cover.policyId ? (
