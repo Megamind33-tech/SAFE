@@ -32,17 +32,18 @@
 
 .profile-screen-board__title {
   margin: 0;
-  font-size: 30px;
-  line-height: 34px;
+  font-size: 34px;
+  line-height: 38px;
   font-weight: 900;
   color: #101820;
+  letter-spacing: -0.02em;
 }
 
 .profile-screen-board__subtitle {
   margin: 6px 0 0;
-  font-size: 13px;
-  line-height: 18px;
-  color: rgba(16, 24, 32, 0.62);
+  font-size: 14px;
+  line-height: 19px;
+  color: rgba(16, 24, 32, 0.58);
 }
 
 .profile-identity-card {
@@ -61,15 +62,16 @@
 
 .profile-identity-card__avatar {
   flex-shrink: 0;
-  width: 66px;
-  height: 66px;
-  border-radius: 24px;
-  background: #007a3d;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #009948 0%, #006630 100%);
   color: #ffffff;
   font-size: 26px;
   font-weight: 900;
   display: grid;
   place-items: center;
+  box-shadow: 0 4px 14px rgba(0, 122, 61, 0.28);
 }
 
 .profile-identity-card__body {
@@ -133,10 +135,11 @@
 }
 
 .profile-stat-card__value {
-  font-size: 24px;
-  line-height: 28px;
+  font-size: 26px;
+  line-height: 30px;
   font-weight: 900;
   color: #101820;
+  letter-spacing: -0.02em;
 }
 
 .profile-stat-card__label {
@@ -144,7 +147,8 @@
   font-size: 11px;
   line-height: 14px;
   font-weight: 700;
-  color: rgba(16, 24, 32, 0.56);
+  color: rgba(16, 24, 32, 0.52);
+  text-align: center;
 }
 
 .profile-menu-list {
@@ -172,10 +176,10 @@
 
 .profile-menu-card__icon {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 14px;
-  background: #eafbf2;
+  background: rgba(0, 135, 72, 0.09);
   display: grid;
   place-items: center;
 }
@@ -198,7 +202,7 @@
 .profile-menu-card__subtitle {
   font-size: 12px;
   line-height: 16px;
-  color: rgba(16, 24, 32, 0.56);
+  color: rgba(16, 24, 32, 0.52);
 }
 
 .profile-menu-card__chevron {
