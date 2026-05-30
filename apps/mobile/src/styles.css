@@ -346,19 +346,17 @@ button {
   color: #fff;
   background: #030a1c;
   overflow: hidden;
-  height: 100%;
+  min-height: 100dvh;
 }
 
 .splash-road {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 52%;
-  background-position: bottom center;
+  inset: 0;
+  height: 100%;
+  background-position: center center;
   background-size: cover;
   background-repeat: no-repeat;
-  opacity: 0.9;
+  opacity: 0.92;
   pointer-events: none;
   z-index: 1;
 }
@@ -366,12 +364,12 @@ button {
 .splash-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, 
-    #030a1c 0%, 
-    rgba(3, 10, 28, 0.92) 32%, 
-    rgba(3, 10, 28, 0.35) 60%, 
-    rgba(3, 10, 28, 0.85) 85%,
-    #030a1c 100%);
+  background: linear-gradient(180deg,
+    rgba(3, 10, 28, 0.90) 0%,
+    rgba(3, 10, 28, 0.72) 30%,
+    rgba(3, 10, 28, 0.22) 52%,
+    rgba(3, 10, 28, 0.55) 72%,
+    rgba(3, 10, 28, 0.88) 100%);
   pointer-events: none;
   z-index: 2;
 }
@@ -382,14 +380,14 @@ button {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 100%;
+  min-height: 100dvh;
   width: 100%;
-  padding: calc(16px + var(--safe-top)) 28px calc(24px + var(--safe-bottom));
+  padding: calc(var(--safe-top) + clamp(20px, 6dvh, 48px)) 28px calc(var(--safe-bottom) + clamp(20px, 4dvh, 36px));
   box-sizing: border-box;
 }
 
 .splash-top-bar-placeholder {
-  height: 24px;
+  height: 16px;
 }
 
 .splash-brand-section {
@@ -397,15 +395,15 @@ button {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  margin-top: 10px;
   flex-grow: 1;
-  justify-content: flex-start;
+  justify-content: center;
+  padding-bottom: clamp(16px, 4dvh, 32px);
 }
 
 .splash-logo-container {
-  width: min(220px, 50vw);
-  height: min(220px, 50vw);
-  margin-bottom: 20px;
+  width: clamp(150px, 44vw, 210px);
+  height: clamp(150px, 44vw, 210px);
+  margin-bottom: clamp(16px, 3dvh, 24px);
   display: flex;
   align-items: center;
   justify-content: center;
