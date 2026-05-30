@@ -174,7 +174,9 @@ button {
   height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
-  padding-bottom: 88px;
+  /* Include safe-area-inset-bottom so content clears the bottom nav on Android
+     gesture navigation (where the gesture bar adds 20–34px below the nav). */
+  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
   background: var(--surface);
 }
 
@@ -183,7 +185,7 @@ button {
 }
 
 .screen.padded {
-  padding: 10px 12px 84px;
+  padding: 10px 12px calc(84px + env(safe-area-inset-bottom, 0px));
 }
 
 .top-bar,

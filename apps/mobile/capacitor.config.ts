@@ -5,7 +5,10 @@ const config: CapacitorConfig = {
   appName: 'SAFE',
   webDir: 'dist',
   android: {
-    allowMixedContent: false,
+    // Required: Capacitor serves from https://localhost; API calls to http://
+    // (local dev, emulator 10.0.2.2) are mixed content and blocked without this.
+    // Production builds should point VITE_API_BASE_URL at an HTTPS endpoint.
+    allowMixedContent: true,
   },
 };
 

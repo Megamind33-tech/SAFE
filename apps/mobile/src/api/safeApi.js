@@ -1,4 +1,22 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8080';
+// On Android native, 127.0.0.1/localhost refers to the device itself, not the
+// dev machine. The emulator reaches the host via 10.0.2.2. Physical devices
+// need VITE_API_BASE_URL set to a LAN IP or staging/production HTTPS URL.
+// Capacitor injects the global `Capacitor` object synchronously before any JS runs.
+const API_BASE = (() => {
+  const configured = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8080';
+  if (
+    typeof globalThis !== 'undefined' &&
+    globalThis.Capacitor?.getPlatform?.() === 'android' &&
+    /127\.0\.0\.1|localhost/.test(configured)
+  ) {
+    console.warn(
+      '[SAFE] Android emulator: substituting 10.0.2.2 for localhost. ' +
+        'Set VITE_API_BASE_URL to a staging/LAN URL for physical device builds.'
+    );
+    return configured.replace(/127\.0\.0\.1|localhost/, '10.0.2.2');
+  }
+  return configured;
+})();
 
 function sanitizeErrorMessage(msg) {
   const raw = String(msg || '').trim();
