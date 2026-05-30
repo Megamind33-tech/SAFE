@@ -204,7 +204,7 @@ async function main() {
         startLabel: 'Matero',
         currentLat: -15.395,
         currentLng: 28.281,
-        currentRecordedAt: new Date(now.getTime() - 5 * 60 * 1000), // 5 min ago
+        currentRecordedAt: new Date(now.getTime() - 60 * 1000), // 1 min ago → live on first load
         endLat: -15.4164,
         endLng: 28.2822,
         endLabel: 'Town',
