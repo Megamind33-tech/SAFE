@@ -24,6 +24,7 @@ import {
 } from '../lib/dashboardSerializers.js';
 import { loadDashboardClaimDetail, updateClaimAdminStatus } from '../lib/claimAdmin.js';
 import { applyPaymentWebhookUpdate, paymentWebhookPlaceholderInfo } from '../lib/paymentWebhook.js';
+import { activateCoverFromPayment } from '../lib/coverPurchase.js';
 import {
   buildReadinessReport,
   loadDashboardMetrics,
@@ -527,7 +528,7 @@ dashboardRouter.get('/payments', requireDashboardPermission('payments.view'), as
     ];
   }
 
-  const payments = await prisma.payment.findMany({
+  const payments = await (prisma.payment as any).findMany({
     where: Object.keys(where).length ? where : undefined,
     orderBy: { createdAt: 'desc' },
     take: 200,
@@ -557,7 +558,7 @@ dashboardRouter.get('/payments/config', requireDashboardPermission('payments.vie
 });
 
 dashboardRouter.get('/payments/:paymentId', requireDashboardPermission('payments.view'), async (req, res) => {
-  const payment = await prisma.payment.findUnique({
+  const payment = await (prisma.payment as any).findUnique({
     where: { id: String(req.params.paymentId) },
     include: {
       tripCover: {
@@ -581,6 +582,48 @@ dashboardRouter.get('/payments/:paymentId', requireDashboardPermission('payments
     },
   });
 });
+
+const adminOverrideSchema = z.object({
+  reason: z.string().min(10, 'Reason must be at least 10 characters'),
+  category: z.enum([
+    'payment_confirmed_offline',
+    'provider_webhook_failed',
+    'testing_or_demo',
+    'dispute_resolved',
+    'other',
+  ]),
+});
+
+dashboardRouter.post(
+  '/payments/:paymentId/admin-override',
+  requireDashboardPermission('payments.admin_override'),
+  async (req, res) => {
+    const parsed = adminOverrideSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid request', details: parsed.error.flatten() });
+      return;
+    }
+
+    const actor = getAuthed(req);
+    const adminNote = `[${parsed.data.category}] ${parsed.data.reason}`;
+
+    const result = await activateCoverFromPayment(
+      String(req.params.paymentId),
+      'manual_admin_override',
+      { actorUserId: actor.user.id, adminNote },
+    );
+
+    res.json({
+      ok: true,
+      payment: { id: result.payment.id, status: (result.payment as Record<string, unknown>).status },
+      cover: {
+        id: result.cover.id,
+        status: result.cover.status,
+        activationSource: (result.cover as Record<string, unknown>).activationSource,
+      },
+    });
+  },
+);
 
 dashboardRouter.get('/claims', requireDashboardPermission('claims.view'), async (req, res) => {
   const status = req.query.status ? String(req.query.status) : undefined;

@@ -2,12 +2,21 @@ import type { Payment, TripCover } from '@prisma/client';
 import { prisma } from './prisma.js';
 import { env } from './env.js';
 import { getCoverPlanById } from './coverPlans.js';
+import { ensureUniquePaymentReference } from './paymentReference.js';
 
 type CoverWithPayment = TripCover & {
   payment: Payment | null;
   vehicle?: { plateNumber: string; busId: string | null; route: { origin: string; destination: string } | null } | null;
   route?: { origin: string; destination: string } | null;
 };
+
+type ExtPayment = Payment & {
+  internalReference?: string | null;
+  providerReference?: string | null;
+  confirmedAt?: Date | null;
+  reversedAt?: Date | null;
+};
+type ExtCover = TripCover & { activationSource?: string | null };
 
 export function shortenPolicyId(coverId: string, createdAt?: Date) {
   const date = createdAt ? createdAt.toISOString().slice(0, 10).replace(/-/g, '') : '';
@@ -27,9 +36,26 @@ export function serializeActiveCover(cover: CoverWithPayment | null) {
   if (!cover) return null;
   const now = Date.now();
   const endsMs = cover.endsAt.getTime();
+  const extPayment = cover.payment as ExtPayment | null;
+  const extCover = cover as ExtCover;
+
   let status: 'active' | 'expired' | 'pending' = 'active';
-  if (cover.payment?.status === 'pending') status = 'pending';
-  else if (endsMs <= now || cover.status === 'expired' || cover.status === 'cancelled') status = 'expired';
+  if (
+    extCover.activationSource == null &&
+    (cover.status === 'pending_payment' || cover.payment?.status === 'pending')
+  ) {
+    status = 'pending';
+  } else if (cover.status === 'pending_payment' || cover.payment?.status === 'pending') {
+    status = 'pending';
+  } else if (
+    endsMs <= now ||
+    cover.status === 'expired' ||
+    cover.status === 'cancelled'
+  ) {
+    status = 'expired';
+  }
+
+  const trackable = status === 'active' && endsMs > now;
 
   return {
     id: cover.id,
@@ -37,10 +63,13 @@ export function serializeActiveCover(cover: CoverWithPayment | null) {
     planId: cover.plan,
     planName: formatPlanName(cover.plan),
     status,
+    trackable,
+    activationSource: extCover.activationSource ?? null,
     startsAt: cover.startedAt.toISOString(),
     endsAt: cover.endsAt.toISOString(),
     paymentStatus: cover.payment?.status ?? null,
-    paymentReference: cover.payment?.reference ?? cover.payment?.id ?? null,
+    paymentReference:
+      extPayment?.internalReference ?? cover.payment?.reference ?? cover.payment?.id ?? null,
     amount: cover.amount,
     currency: cover.currency,
     route: cover.route
@@ -76,7 +105,10 @@ export async function loadPendingCoverForUser(userId: string) {
   return prisma.tripCover.findFirst({
     where: {
       passengerUserId: userId,
-      payment: { status: 'pending' },
+      OR: [
+        { status: 'pending_payment' },
+        { payment: { status: 'pending' } },
+      ],
     },
     orderBy: { createdAt: 'desc' },
     include: {
@@ -87,7 +119,6 @@ export async function loadPendingCoverForUser(userId: string) {
   });
 }
 
-/** Most recent ended cover (for hub expired state when nothing is active). */
 export async function loadLastEndedCoverForUser(userId: string) {
   const now = new Date();
   return prisma.tripCover.findFirst({
@@ -112,6 +143,72 @@ export function coverCapabilities() {
     allowCoverStacking: env.allowCoverStacking,
     allowCoverExtension: env.allowCoverExtension,
   };
+}
+
+/**
+ * The ONLY function that may transition a cover from pending_payment → active.
+ * All cover activations must go through here so they are audited and sourced.
+ */
+export async function activateCoverFromPayment(
+  paymentId: string,
+  source: 'provider_webhook' | 'simulate_dev' | 'manual_admin_override',
+  opts: { actorUserId?: string; adminNote?: string } = {},
+): Promise<{ payment: Payment; cover: TripCover }> {
+  const now = new Date();
+
+  const payment = await prisma.payment.findUnique({
+    where: { id: paymentId },
+    include: { tripCover: true },
+  });
+  if (!payment) throw new Error('Payment not found.');
+  if (!payment.tripCover) throw new Error('Cover not found for payment.');
+
+  // Idempotent — already activated.
+  if (payment.status === 'succeeded' && payment.tripCover.status === 'active') {
+    return { payment, cover: payment.tripCover };
+  }
+
+  if (payment.status === 'reversed' || payment.status === 'disputed') {
+    throw new Error(`Cannot activate cover: payment is ${payment.status}.`);
+  }
+
+  const plan = getCoverPlanById(payment.tripCover.plan);
+  const endsAt = plan
+    ? new Date(now.getTime() + plan.durationMinutes * 60_000)
+    : payment.tripCover.endsAt;
+
+  const [updatedPayment, updatedCover] = await prisma.$transaction([
+    prisma.payment.update({
+      where: { id: paymentId },
+      data: { status: 'succeeded', confirmedAt: now } as Parameters<typeof prisma.payment.update>[0]['data'],
+    }),
+    prisma.tripCover.update({
+      where: { id: payment.tripCoverId },
+      data: {
+        status: 'active',
+        startedAt: now,
+        endsAt,
+        activationSource: source,
+      } as Parameters<typeof prisma.tripCover.update>[0]['data'],
+    }),
+    prisma.auditLog.create({
+      data: {
+        actorUserId: opts.actorUserId ?? null,
+        action: `payment.activated.${source}`,
+        entityType: 'Payment',
+        entityId: paymentId,
+        meta: JSON.stringify({
+          source,
+          coverId: payment.tripCoverId,
+          adminNote: opts.adminNote ?? null,
+          amount: payment.amount,
+          currency: payment.currency,
+        }),
+      },
+    }),
+  ]);
+
+  return { payment: updatedPayment, cover: updatedCover };
 }
 
 export async function startCoverPurchase(
@@ -177,15 +274,18 @@ export async function startCoverPurchase(
     }
   }
 
-  const endsAt = new Date(Date.now() + plan.durationMinutes * 60_000);
+  // Provisional end time — recalculated from actual confirmation time in activateCoverFromPayment.
+  const provisionalEndsAt = new Date(Date.now() + plan.durationMinutes * 60_000);
+  const internalReference = await ensureUniquePaymentReference();
 
   const cover = await prisma.tripCover.create({
     data: {
       passengerUserId: userId,
       plan: plan.id,
+      status: 'pending_payment',
       amount: plan.price,
       currency: 'ZMW',
-      endsAt,
+      endsAt: provisionalEndsAt,
       vehicleId: vehicle?.id ?? null,
       routeId: input.routeId ?? vehicle?.routeId ?? null,
       payment: {
@@ -194,8 +294,8 @@ export async function startCoverPurchase(
           currency: 'ZMW',
           method: savedMethod.type,
           status: 'pending',
-          reference: savedMethod.id,
-        },
+          internalReference,
+        } as Parameters<typeof prisma.payment.create>[0]['data'],
       },
     },
     include: {
@@ -205,11 +305,29 @@ export async function startCoverPurchase(
     },
   });
 
+  await prisma.auditLog.create({
+    data: {
+      actorUserId: userId,
+      action: 'payment.initiated',
+      entityType: 'Payment',
+      entityId: cover.payment!.id,
+      meta: JSON.stringify({
+        coverId: cover.id,
+        planId: plan.id,
+        amount: plan.price,
+        currency: 'ZMW',
+        method: savedMethod.type,
+        internalReference,
+      }),
+    },
+  });
+
   return {
     purchase: {
       id: cover.payment!.id,
       status: 'pending' as const,
       paymentStatus: 'pending',
+      internalReference,
       message: 'Complete the payment request on your phone to activate cover.',
     },
     cover: serializeActiveCover(cover),
@@ -230,20 +348,27 @@ export async function getPurchaseStatus(userId: string, purchaseId: string) {
     },
   });
 
-  if (!payment?.tripCover) {
-    return null;
-  }
+  if (!payment?.tripCover) return null;
 
+  // Dev-only simulate: runs after 2 s, writes full audit trail.
   if (
     env.paymentSimulateSuccess &&
     payment.status === 'pending' &&
     Date.now() - payment.createdAt.getTime() > 2000
   ) {
-    await prisma.payment.update({
+    await activateCoverFromPayment(payment.id, 'simulate_dev', { actorUserId: userId });
+    const refreshed = await prisma.payment.findUnique({
       where: { id: payment.id },
-      data: { status: 'succeeded' },
+      include: {
+        tripCover: {
+          include: { vehicle: { include: { route: true } }, route: true, payment: true },
+        },
+      },
     });
-    payment.status = 'succeeded';
+    if (refreshed) {
+      payment.status = refreshed.status as typeof payment.status;
+      if (refreshed.tripCover) Object.assign(payment.tripCover, refreshed.tripCover);
+    }
   }
 
   const cover = payment.tripCover;
@@ -251,8 +376,15 @@ export async function getPurchaseStatus(userId: string, purchaseId: string) {
     'pending';
 
   if (payment.status === 'succeeded') purchaseStatus = 'succeeded';
-  else if (payment.status === 'failed') purchaseStatus = 'failed';
+  else if (
+    payment.status === 'failed' ||
+    payment.status === 'reversed' ||
+    payment.status === 'disputed'
+  ) {
+    purchaseStatus = 'failed';
+  }
 
+  const extPayment = payment as ExtPayment;
   const serialized =
     payment.status === 'succeeded' ? serializeActiveCover(cover as CoverWithPayment) : null;
 
@@ -261,6 +393,7 @@ export async function getPurchaseStatus(userId: string, purchaseId: string) {
       id: payment.id,
       status: purchaseStatus,
       paymentStatus: payment.status,
+      internalReference: extPayment.internalReference ?? null,
       message:
         purchaseStatus === 'succeeded'
           ? 'Your SAFE cover is now active.'

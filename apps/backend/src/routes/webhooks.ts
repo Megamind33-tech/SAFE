@@ -11,8 +11,10 @@ webhooksRouter.get('/payment', (_req, res) => {
 const paymentWebhookSchema = z.object({
   paymentId: z.string().optional(),
   reference: z.string().optional(),
-  status: z.enum(['pending', 'succeeded', 'failed']),
-  providerEventId: z.string().optional(),
+  providerReference: z.string().optional(),
+  status: z.enum(['pending', 'succeeded', 'failed', 'reversed', 'disputed']),
+  amount: z.number().int().positive().optional(),
+  currency: z.string().length(3).optional(),
 });
 
 webhooksRouter.post('/payment', async (req, res) => {
@@ -22,25 +24,43 @@ webhooksRouter.post('/payment', async (req, res) => {
     return;
   }
 
-  if (!parsed.data.paymentId && !parsed.data.reference) {
-    res.status(400).json({ error: 'paymentId or reference is required' });
+  if (!parsed.data.paymentId && !parsed.data.reference && !parsed.data.providerReference) {
+    res.status(400).json({ error: 'paymentId, reference, or providerReference is required' });
     return;
   }
 
-  const result = await applyPaymentWebhookUpdate(parsed.data);
-  if (!result.ok || !result.payment) {
-    const status = result.reason === 'payment_not_found' ? 404 : 409;
-    res.status(status).json({ error: result.reason });
+  // 'pending' status has no effect on our side — only terminal transitions matter.
+  if (parsed.data.status === 'pending') {
+    res.json({ ok: true, note: 'pending status acknowledged; no action taken' });
     return;
   }
 
-  const payment = result.payment;
+  const result = await applyPaymentWebhookUpdate({
+    paymentId: parsed.data.paymentId,
+    reference: parsed.data.reference,
+    providerReference: parsed.data.providerReference,
+    status: parsed.data.status as 'succeeded' | 'failed' | 'reversed' | 'disputed',
+    amount: parsed.data.amount,
+    currency: parsed.data.currency,
+  });
+
+  if (!result.ok) {
+    const httpStatus =
+      result.reason === 'payment_not_found' ? 404
+      : result.reason === 'amount_mismatch' || result.reason === 'currency_mismatch' ? 422
+      : 409;
+    res.status(httpStatus).json({ error: result.reason });
+    return;
+  }
+
+  const p = result.payment as Record<string, unknown>;
   res.json({
     ok: true,
+    idempotent: (result as Record<string, unknown>).idempotent ?? false,
     payment: {
-      id: payment.id,
-      status: payment.status,
-      tripCoverId: payment.tripCoverId,
+      id: p.id,
+      status: p.status,
+      tripCoverId: p.tripCoverId,
     },
   });
 });

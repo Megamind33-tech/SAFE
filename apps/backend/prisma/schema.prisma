@@ -24,6 +24,7 @@ enum Role {
 }
 
 enum TripCoverStatus {
+  pending_payment
   active
   expired
   cancelled
@@ -39,6 +40,8 @@ enum PaymentStatus {
   pending
   succeeded
   failed
+  reversed
+  disputed
 }
 
 enum ClaimStatus {
@@ -310,7 +313,7 @@ model TripCover {
   route     Route? @relation(fields: [routeId], references: [id])
 
   plan      String
-  status    TripCoverStatus @default(active)
+  status    TripCoverStatus @default(pending_payment)
 
   amount    Int
   currency  String @default("ZMW")
@@ -318,8 +321,11 @@ model TripCover {
   startedAt DateTime @default(now())
   endsAt    DateTime
 
-  payment   Payment?
-  claims    Claim[]
+  /// How this cover was activated: 'provider_webhook' | 'simulate_dev' | 'manual_admin_override'
+  activationSource String?
+
+  payment      Payment?
+  claims       Claim[]
   tripTracking TripTracking?
 }
 
@@ -364,7 +370,17 @@ model Payment {
 
   amount    Int
   currency  String @default("ZMW")
-  reference String?
+
+  /// Human-readable internal reference shown to user — generated at purchase time.
+  internalReference String? @unique
+  /// Provider's external reference — stored at webhook confirmation for idempotency.
+  providerReference String? @unique
+  /// Legacy/fallback reference field (previously held savedMethod.id).
+  reference         String?
+
+  confirmedAt DateTime?
+  failedAt    DateTime?
+  reversedAt  DateTime?
 }
 
 model Claim {
