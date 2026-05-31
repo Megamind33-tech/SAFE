@@ -462,6 +462,7 @@ function App() {
             openHistory={openHistory}
             openClaimFlow={openClaimFlow}
             openLiveTrip={openLiveTrip}
+            countdown={countdown}
             onBuyCover={() => setScreen('coverPlans')}
             onCheckPendingPurchase={(pending) => {
               setCoverFlow((f) => ({

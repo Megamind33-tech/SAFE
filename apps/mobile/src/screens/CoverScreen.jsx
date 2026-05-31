@@ -136,13 +136,13 @@ export default function CoverScreen({
   onBuyCover,
   onCheckPendingPurchase,
   capabilities: capabilitiesProp,
+  countdown: countdownProp,
 }) {
   const cached = readCachedCoverScreen();
   const [bundle, setBundle] = useState(cached);
   const [loading, setLoading] = useState(() => !cached);
   const [loadError, setLoadError] = useState('');
   const [syncWarning, setSyncWarning] = useState('');
-  const [countdown, setCountdown] = useState(null);
   const [copiedPolicy, setCopiedPolicy] = useState(false);
 
   const bundleRef = useRef(bundle);
@@ -224,16 +224,7 @@ export default function CoverScreen({
     loadBundle();
   }, [loadBundle]);
 
-  useEffect(() => {
-    if (!activeCover?.endsAt || !active) {
-      setCountdown(null);
-      return undefined;
-    }
-    const tick = () => setCountdown(formatTimeRemainingDisplay(activeCover.endsAt));
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [activeCover?.endsAt, active]);
+  const countdown = countdownProp ?? null;
 
   const copyPolicy = async () => {
     const value = policyNumberLabel(activeCover);
