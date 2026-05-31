@@ -70,6 +70,41 @@ export default function ClaimFlowScreen({
 
   const token = session?.token || '';
 
+  // Restore draft from localStorage on mount (persists across app close/reload)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('safe_claim_draft');
+      if (saved) {
+        const d = JSON.parse(saved);
+        if (d.step && d.step > 1 && d.step < 5) {
+          setStep(d.step);
+          if (d.selectedCoverId) setSelectedCoverId(d.selectedCoverId);
+          if (d.accidentDate) setAccidentDate(d.accidentDate);
+          if (d.accidentTime) setAccidentTime(d.accidentTime);
+          if (d.location) setLocation(d.location);
+          if (d.description) setDescription(d.description);
+          if (d.injured !== undefined) setInjured(d.injured);
+          if (d.vehicleInvolved !== undefined) setVehicleInvolved(d.vehicleInvolved);
+          if (d.policeReference) setPoliceReference(d.policeReference);
+          if (d.medicalReference) setMedicalReference(d.medicalReference);
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Save draft to localStorage on every field/step change
+  useEffect(() => {
+    if (step >= 5) { localStorage.removeItem('safe_claim_draft'); return; }
+    try {
+      localStorage.setItem('safe_claim_draft', JSON.stringify({
+        step, selectedCoverId, accidentDate, accidentTime,
+        location, description, injured, vehicleInvolved,
+        policeReference, medicalReference,
+      }));
+    } catch {}
+  }, [step, selectedCoverId, accidentDate, accidentTime, location,
+      description, injured, vehicleInvolved, policeReference, medicalReference]);
+
   useEffect(() => {
     if (!isClaimsQaCapture || !qaSubmittedClaimId || !token) return;
     getClaimDetail(token, qaSubmittedClaimId)
@@ -144,9 +179,8 @@ export default function ClaimFlowScreen({
     const incident = new Date(`${accidentDate}T${accidentTime}:00`);
     if (Number.isNaN(incident.getTime())) return 'Enter a valid date and time.';
     if (incident > new Date()) return 'Date and time cannot be in the future.';
-    if (injured == null || vehicleInvolved == null) {
-      return 'Answer whether you were injured and if a vehicle was involved.';
-    }
+    if (injured == null) return "Please select Yes or No for 'Were you injured?'";
+    if (vehicleInvolved == null) return "Please select Yes or No for 'Was the vehicle involved?'";
     return '';
   };
 
@@ -196,6 +230,7 @@ export default function ClaimFlowScreen({
       }
       setSubmittedClaim(claim);
       if (dupWarn?.duplicate) setDuplicate(dupWarn);
+      localStorage.removeItem('safe_claim_draft');
       setStep(5);
       onClaimsChanged?.();
     } catch (e) {

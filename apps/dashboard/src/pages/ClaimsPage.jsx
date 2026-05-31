@@ -15,9 +15,10 @@ import {
   FilterTabs,
   LoadingBlock,
   PageHeader,
+  SearchInput,
   StatusBadge,
 } from '../components/admin/ui.jsx';
-import { fmtDateTime } from '../lib/format.js';
+import { filterRows, fmtDateTime } from '../lib/format.js';
 import { useDashboardSession } from '../context/DashboardSessionContext.jsx';
 
 const STATUS_TABS = [
@@ -36,6 +37,7 @@ export default function ClaimsPage() {
   const [detail, setDetail] = useState(null);
   const [selectedId, setSelectedId] = useState(searchParams.get('selected') || null);
   const [tab, setTab] = useState(searchParams.get('status') || 'all');
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -121,11 +123,14 @@ export default function ClaimsPage() {
         </div>
       ) : null}
 
-      <FilterTabs value={tab} onChange={setTab} options={STATUS_TABS} />
+      <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+        <SearchInput value={search} onChange={setSearch} placeholder="Search reference, passenger, phone…" />
+        <FilterTabs value={tab} onChange={setTab} options={STATUS_TABS} />
+      </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <Card className="xl:col-span-2" padding={false}>
-          {loading ? <LoadingBlock /> : <DataTable columns={columns} rows={claims} onRowClick={(c) => openClaim(c.id)} emptyTitle="No claims in this queue" />}
+          {loading ? <LoadingBlock /> : <DataTable columns={columns} rows={filterRows(claims, search, ['reference', 'passengerUser.passengerProfile.fullName', 'passengerUser.phone'])} onRowClick={(c) => openClaim(c.id)} emptyTitle="No claims in this queue" />}
         </Card>
 
         {!detail ? (

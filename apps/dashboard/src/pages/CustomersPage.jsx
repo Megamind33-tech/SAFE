@@ -28,7 +28,7 @@ export default function CustomersPage() {
   // Form states
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('password123');
+  const [password, setPassword] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
   const [plateNumber, setPlateNumber] = useState('');
   const [formBusy, setFormBusy] = useState(false);
