@@ -122,16 +122,29 @@ export function serializePaymentRow(payment: {
   amount: number;
   currency: string;
   reference: string | null;
+  internalReference?: string | null;
+  providerReference?: string | null;
+  confirmedAt?: Date | null;
+  reversedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
   tripCover: {
     id: string;
     plan: string;
     status: string;
+    activationSource?: string | null;
     passengerUser: { id: string; phone: string | null; passengerProfile: { fullName: string | null } | null };
     vehicle: { plateNumber: string } | null;
   };
 }) {
+  const fraudAlerts: string[] = [];
+  if (payment.tripCover.status === 'active' && payment.status !== 'succeeded') {
+    fraudAlerts.push('cover_active_without_confirmed_payment');
+  }
+  if ((payment.status === 'reversed' || payment.status === 'disputed') && payment.tripCover.status === 'active') {
+    fraudAlerts.push('reversed_payment_linked_to_active_cover');
+  }
+
   return {
     id: payment.id,
     status: payment.status,
@@ -139,9 +152,15 @@ export function serializePaymentRow(payment: {
     amount: payment.amount,
     currency: payment.currency,
     reference: payment.reference,
+    internalReference: payment.internalReference ?? null,
+    providerReference: payment.providerReference ?? null,
+    confirmedAt: payment.confirmedAt?.toISOString() ?? null,
+    reversedAt: payment.reversedAt?.toISOString() ?? null,
     coverId: payment.tripCover.id,
     plan: payment.tripCover.plan,
     coverStatus: payment.tripCover.status,
+    activationSource: payment.tripCover.activationSource ?? null,
+    fraudAlerts,
     passenger: {
       id: payment.tripCover.passengerUser.id,
       phone: payment.tripCover.passengerUser.phone,

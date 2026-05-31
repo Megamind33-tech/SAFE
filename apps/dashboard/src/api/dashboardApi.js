@@ -167,6 +167,14 @@ export async function dashboardPaymentsConfig(token) {
   return request('/api/dashboard/payments/config', { token });
 }
 
+export async function adminOverridePayment(token, paymentId, { reason, category }) {
+  return request(`/api/dashboard/payments/${paymentId}/admin-override`, {
+    method: 'POST',
+    token,
+    body: { reason, category },
+  });
+}
+
 export async function dashboardClaims(token, status) {
   return request(`/api/dashboard/claims${qs({ status })}`, { token });
 }
