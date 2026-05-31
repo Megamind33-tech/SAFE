@@ -159,11 +159,6 @@ export default function ProfileScreen({
           <div className="profile-identity-card__body">
             <h2 className="profile-identity-card__name">{displayName}</h2>
             <p className="profile-identity-card__phone">{formatPhoneDisplay(phone)}</p>
-            <span
-              className={`profile-identity-card__pill${verified ? '' : ' profile-identity-card__pill--muted'}`}
-            >
-              {verified ? 'Verified' : 'Not verified'}
-            </span>
           </div>
         </article>
 

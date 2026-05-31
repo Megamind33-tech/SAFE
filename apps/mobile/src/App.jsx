@@ -604,7 +604,7 @@ function App() {
             refreshPassengerData={refreshPassengerData}
           />
         )}
-        {screen === 'chat' && <ChatScreen {...screenProps} />}
+        {screen === 'chat' && (() => { setScreen('helpSafety'); return null; })()}
         {screen === 'offline' && <OfflineScreen {...screenProps} />}
         {showBottomNav && (
           <BottomNav
@@ -887,7 +887,7 @@ function LoginScreen({ setScreen, setSession, auth, refreshPassengerData }) {
         </form>
 
         <div className="auth-footer-actions">
-          <button className="auth-forgot-password-link" type="button" disabled={busy}>Forgot password?</button>
+          <a className="auth-forgot-password-link" href="mailto:support@safe.co.zm?subject=Password reset request">Forgot password? Contact support</a>
           <p className="auth-switch-prompt">
             New to SAFE? <button type="button" className="auth-switch-action-btn" onClick={() => setScreen('signup')} disabled={busy}>Create account</button>
           </p>
@@ -952,14 +952,15 @@ function SignupScreen({ setScreen, setSession, auth }) {
               <span>Mobile number</span>
               <div className="auth-input-wrapper">
                 <Smartphone className="auth-input-icon" size={20} />
-                <input 
-                  value={phone} 
-                  onChange={(event) => setPhone(event.target.value)} 
-                  placeholder="+260 97 000 0000" 
+                <input
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  placeholder="+260 97 000 0000"
                   disabled={busy}
                   className="auth-field-input"
                 />
               </div>
+              <span className="auth-field-hint">Zambian number starting with +260</span>
             </label>
             <label className="auth-field-label">
               <span>Password</span>

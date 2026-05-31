@@ -254,6 +254,10 @@ export default function NotificationsScreen({ session, setScreen }) {
           </p>
         </section>
 
+        <div className="notifications-coming-soon-banner" role="note">
+          Push notifications are coming soon. Your preferences are saved and will take effect when push delivery is enabled.
+        </div>
+
         {showSkeleton ? <LoadingSkeleton /> : null}
 
         {syncWarning ? (

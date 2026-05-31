@@ -4,6 +4,14 @@ import BottomScrollSpacer from '../components/BottomScrollSpacer.jsx';
 import { useLiveTrip } from '../hooks/useLiveTrip.js';
 import routeMapArt from '../assets/real/route_map_bus_hero_clean.png';
 
+async function shareTrip(trip) {
+  const text = `I'm on a SAFE-covered trip. Policy: ${trip?.policyId ?? 'N/A'}. Vehicle: ${trip?.vehiclePlate ?? 'N/A'}.`;
+  if (navigator.share) {
+    try { await navigator.share({ title: 'My SAFE trip', text }); return; } catch {}
+  }
+  try { await navigator.clipboard.writeText(text); } catch {}
+}
+
 export default function LiveTripScreen({ setScreen, goCover }) {
   const {
     trip,
@@ -181,13 +189,14 @@ export default function LiveTripScreen({ setScreen, goCover }) {
         {/* Active trip CTAs */}
         {isActiveTrip ? (
           <div className="live-trip-screen__actions">
-            <button type="button" className="live-trip-screen__cta live-trip-screen__cta--primary">
+            <button type="button" className="live-trip-screen__cta live-trip-screen__cta--primary" onClick={() => shareTrip(trip)}>
               <Share2 size={17} aria-hidden="true" />
               Share trip
             </button>
             <button
               type="button"
               className="live-trip-screen__cta live-trip-screen__cta--secondary live-trip-screen__cta--emergency"
+              onClick={() => setScreen('helpSafety')}
             >
               Emergency help
             </button>
