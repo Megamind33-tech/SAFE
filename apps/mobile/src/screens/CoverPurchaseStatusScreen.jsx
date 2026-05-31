@@ -215,7 +215,7 @@ export default function CoverPurchaseStatusScreen({
           />
           {timedOut ? (
             <p className="cover-flow-note">
-              We couldn’t confirm payment yet. Check again in a moment.
+              We couldn’t confirm your payment yet. If money was deducted from your account, don’t worry — your cover will activate automatically once we receive confirmation. Tap "Check status" to try again or contact support if the issue persists.
             </p>
           ) : null}
           {checkError ? (

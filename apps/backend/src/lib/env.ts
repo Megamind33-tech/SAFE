@@ -29,12 +29,13 @@ if (isProduction && process.env.SAFE_PAYMENT_SIMULATE_SUCCESS === 'true') {
 }
 
 if (isProduction && (process.env.JWT_SECRET ?? 'dev-secret-change-me') === 'dev-secret-change-me') {
-  console.warn('[safe-backend] JWT_SECRET is still the dev default in production.');
+  throw new Error('[safe-backend] JWT_SECRET must be set to a strong secret in production. Refusing to start.');
 }
 
 export const env = {
   port: Number.parseInt(process.env.PORT ?? '8080', 10),
   jwtSecret: process.env.JWT_SECRET ?? 'dev-secret-change-me',
+  webhookSecret: process.env.SAFE_WEBHOOK_SECRET ?? '',
   corsOrigins: splitCsv(process.env.CORS_ORIGINS).length
     ? splitCsv(process.env.CORS_ORIGINS)
     : ['http://127.0.0.1:5173', 'http://127.0.0.1:5174'],
@@ -56,7 +57,7 @@ export const env = {
     ? false
     : process.env.SAFE_PAYMENT_SIMULATE_SUCCESS === 'true',
   allowDevVehicleAutoCreate:
-    !isProduction && process.env.SAFE_ALLOW_DEV_VEHICLE_AUTO_CREATE !== 'false',
+    !isProduction && process.env.SAFE_ALLOW_DEV_VEHICLE_AUTO_CREATE === 'true',
   cardPaymentsEnabled: process.env.SAFE_CARD_PAYMENTS_ENABLED === 'true',
   allowCoverStacking: process.env.SAFE_ALLOW_COVER_STACKING === 'true',
   allowCoverExtension: process.env.SAFE_ALLOW_COVER_EXTENSION === 'true',

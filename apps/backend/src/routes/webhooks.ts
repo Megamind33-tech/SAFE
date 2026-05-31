@@ -1,8 +1,28 @@
+import crypto from 'crypto';
 import { Router } from 'express';
 import { z } from 'zod';
 import { applyPaymentWebhookUpdate, paymentWebhookPlaceholderInfo } from '../lib/paymentWebhook.js';
+import { env } from '../lib/env.js';
 
 export const webhooksRouter = Router();
+
+function verifyWebhookSignature(req: import('express').Request, res: import('express').Response, next: import('express').NextFunction) {
+  if (!env.webhookSecret) return next();
+  const sig = req.headers['x-safe-webhook-signature'];
+  if (!sig || typeof sig !== 'string') {
+    res.status(401).json({ error: 'Missing webhook signature' });
+    return;
+  }
+  const expected = crypto
+    .createHmac('sha256', env.webhookSecret)
+    .update(JSON.stringify(req.body))
+    .digest('hex');
+  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
+    res.status(401).json({ error: 'Invalid webhook signature' });
+    return;
+  }
+  next();
+}
 
 webhooksRouter.get('/payment', (_req, res) => {
   res.json(paymentWebhookPlaceholderInfo());
@@ -17,7 +37,7 @@ const paymentWebhookSchema = z.object({
   currency: z.string().length(3).optional(),
 });
 
-webhooksRouter.post('/payment', async (req, res) => {
+webhooksRouter.post('/payment', verifyWebhookSignature, async (req, res) => {
   const parsed = paymentWebhookSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid webhook payload', details: parsed.error.flatten() });
