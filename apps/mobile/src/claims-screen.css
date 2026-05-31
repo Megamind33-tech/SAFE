@@ -1,5 +1,25 @@
 ﻿/* SAFE Claims — reporting center (390px master) */
 
+/* Loading skeleton */
+.claims-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.claims-skeleton__card {
+  height: 80px;
+  border-radius: 16px;
+  background-color: #e9f0ec;
+  animation: claims-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes claims-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
 .claims-screen.claims-screen-board {
   --claims-pad-x: 24px;
   --claims-content-width: 346px;

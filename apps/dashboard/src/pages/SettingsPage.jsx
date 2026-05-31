@@ -76,6 +76,11 @@ export default function SettingsPage() {
             />
             <ConfigRow label="Card payments" configured={readiness.cardPaymentsEnabled} />
             <ConfigRow
+              label="Webhook signature (HMAC)"
+              configured={readiness.webhookSecretConfigured}
+              detail={readiness.webhookSecretConfigured ? 'Configured' : 'Not set — set SAFE_WEBHOOK_SECRET'}
+            />
+            <ConfigRow
               label="QR public base URL"
               configured={readiness.qrPublicBaseUrlConfigured}
               detail={readiness.qrPublicBaseUrlConfigured ? readiness.qrPublicBaseUrl : 'Using default — set SAFE_QR_PUBLIC_BASE_URL'}

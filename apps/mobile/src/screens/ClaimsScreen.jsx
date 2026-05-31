@@ -127,9 +127,11 @@ export default function ClaimsScreen({
       </section>
 
       {loading && !claims.length ? (
-        <article className="claims-state-card" aria-busy="true">
-          <p className="claims-state-card__body">Loading your claims…</p>
-        </article>
+        <div className="claims-skeleton" aria-busy="true" aria-live="polite">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="claims-skeleton__card" />
+          ))}
+        </div>
       ) : null}
 
       {summaryClaim && isActiveClaimStatus(summaryClaim.status) ? (

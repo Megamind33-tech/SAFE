@@ -401,10 +401,19 @@ export function buildReadinessReport() {
     });
   }
 
+  if (!env.webhookSecret) {
+    warnings.push({
+      id: 'webhook-secret',
+      severity: env.isProduction ? 'critical' : 'warning',
+      message: 'SAFE_WEBHOOK_SECRET is not set — payment webhooks are accepted without signature verification.',
+    });
+  }
+
   return {
     appEnv: env.appEnv,
     isProduction: env.isProduction,
     databaseType: 'sqlite',
+    webhookSecretConfigured: Boolean(env.webhookSecret),
     supportPhoneConfigured: Boolean(env.supportPhone),
     supportEmailConfigured: Boolean(env.supportEmail),
     legalUrls: {

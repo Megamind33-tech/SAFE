@@ -4,8 +4,8 @@ import { dashboardLogin, saveDashboardToken } from '../api/dashboardApi.js';
 
 export default function DashboardLoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('admin@safe.local');
-  const [password, setPassword] = useState('admin1234');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
