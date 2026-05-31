@@ -226,3 +226,15 @@ export async function dashboardDrivers(token) {
 export async function onboardDriver(token, driverData) {
   return request('/api/dashboard/drivers', { method: 'POST', token, body: driverData });
 }
+
+export async function dashboardAnalytics(token) {
+  return request('/api/dashboard/analytics', { token });
+}
+
+export async function dashboardFraudFlags(token) {
+  return request('/api/dashboard/fraud/flags', { token });
+}
+
+export async function dashboardDocuments(token, params = {}) {
+  return request(`/api/dashboard/documents${qs(params)}`, { token });
+}
