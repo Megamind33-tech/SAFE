@@ -116,6 +116,80 @@ export async function loadDashboardMetrics() {
   };
 }
 
+export async function loadAnalyticsData() {
+  const now = new Date();
+  const todayStart = startOfTodayUtc();
+
+  const weekStart = new Date(now);
+  weekStart.setUTCDate(weekStart.getUTCDate() - 7);
+  weekStart.setUTCHours(0, 0, 0, 0);
+
+  const monthStart = new Date(now);
+  monthStart.setUTCDate(monthStart.getUTCDate() - 30);
+  monthStart.setUTCHours(0, 0, 0, 0);
+
+  const [
+    coversToday, coversWeek, coversMonth, coversTotal,
+    passengersToday, passengersTotal,
+    paymentSucceeded, paymentFailed, paymentPending, paymentReversed,
+    claimsSubmitted, claimsApproved, claimsRejected, claimsPaid,
+    revenueToday, revenueWeek, revenueMonth, revenueTotal,
+    scansToday, scansWeek, scansTotal,
+    fraudFlagsTotal, fraudFlagsWeek,
+    activeCovers,
+  ] = await Promise.all([
+    prisma.tripCover.count({ where: { createdAt: { gte: todayStart }, payment: { status: 'succeeded' } } }),
+    prisma.tripCover.count({ where: { createdAt: { gte: weekStart }, payment: { status: 'succeeded' } } }),
+    prisma.tripCover.count({ where: { createdAt: { gte: monthStart }, payment: { status: 'succeeded' } } }),
+    prisma.tripCover.count({ where: { payment: { status: 'succeeded' } } }),
+    prisma.user.count({ where: { role: 'passenger', createdAt: { gte: todayStart } } }),
+    prisma.user.count({ where: { role: 'passenger' } }),
+    prisma.payment.count({ where: { status: 'succeeded' } }),
+    prisma.payment.count({ where: { status: 'failed' } }),
+    prisma.payment.count({ where: { status: 'pending' } }),
+    prisma.payment.count({ where: { status: 'reversed' } }),
+    prisma.claim.count({ where: { status: { not: 'draft' } } }),
+    prisma.claim.count({ where: { status: 'approved' } }),
+    prisma.claim.count({ where: { status: 'rejected' } }),
+    prisma.claim.count({ where: { status: 'paid' } }),
+    prisma.payment.aggregate({ where: { status: 'succeeded', createdAt: { gte: todayStart } }, _sum: { amount: true } }),
+    prisma.payment.aggregate({ where: { status: 'succeeded', createdAt: { gte: weekStart } }, _sum: { amount: true } }),
+    prisma.payment.aggregate({ where: { status: 'succeeded', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
+    prisma.payment.aggregate({ where: { status: 'succeeded' }, _sum: { amount: true } }),
+    prisma.qrScanLog.count({ where: { scannedAt: { gte: todayStart } } }),
+    prisma.qrScanLog.count({ where: { scannedAt: { gte: weekStart } } }),
+    prisma.qrScanLog.count(),
+    prisma.fraudFlag.count(),
+    prisma.fraudFlag.count({ where: { createdAt: { gte: weekStart } } }),
+    prisma.tripCover.count({ where: { status: 'active', endsAt: { gt: now }, payment: { status: 'succeeded' } } }),
+  ]);
+
+  const totalPayments = paymentSucceeded + paymentFailed + paymentPending + paymentReversed;
+  const paymentSuccessRate = totalPayments > 0 ? Math.round((paymentSucceeded / totalPayments) * 100) : null;
+
+  return {
+    covers: { today: coversToday, week: coversWeek, month: coversMonth, total: coversTotal, active: activeCovers },
+    passengers: { today: passengersToday, total: passengersTotal },
+    payments: {
+      succeeded: paymentSucceeded,
+      failed: paymentFailed,
+      pending: paymentPending,
+      reversed: paymentReversed,
+      successRate: paymentSuccessRate,
+    },
+    claims: { total: claimsSubmitted, approved: claimsApproved, rejected: claimsRejected, paid: claimsPaid },
+    revenue: {
+      todayZmw: revenueToday._sum.amount ?? 0,
+      weekZmw: revenueWeek._sum.amount ?? 0,
+      monthZmw: revenueMonth._sum.amount ?? 0,
+      totalZmw: revenueTotal._sum.amount ?? 0,
+    },
+    scans: { today: scansToday, week: scansWeek, total: scansTotal },
+    fraudFlags: { total: fraudFlagsTotal, week: fraudFlagsWeek },
+    generatedAt: now.toISOString(),
+  };
+}
+
 export async function loadOverviewPanels() {
   const now = new Date();
 

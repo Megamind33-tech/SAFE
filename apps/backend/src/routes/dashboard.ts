@@ -27,6 +27,7 @@ import { applyPaymentWebhookUpdate, paymentWebhookPlaceholderInfo } from '../lib
 import { activateCoverFromPayment } from '../lib/coverPurchase.js';
 import {
   buildReadinessReport,
+  loadAnalyticsData,
   loadDashboardMetrics,
   loadOverviewPanels,
   serializeDashboardTripRow,
@@ -928,8 +929,84 @@ dashboardRouter.get('/users/:userId', requireDashboardPermission('users.sensitiv
 });
 
 dashboardRouter.get('/fraud/flags', requireDashboardPermission('overview.view'), async (_req, res) => {
-  const flags = await prisma.fraudFlag.findMany({ orderBy: { createdAt: 'desc' }, take: 50 });
-  res.json({ flags });
+  const now = new Date();
+  const [flags, totalCovers, activeCovers, reversedPayments] = await Promise.all([
+    prisma.fraudFlag.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      include: { user: { include: { passengerProfile: true } } },
+    }),
+    prisma.tripCover.count({ where: { payment: { status: 'succeeded' } } }),
+    prisma.tripCover.count({ where: { status: 'active', endsAt: { gt: now }, payment: { status: 'succeeded' } } }),
+    prisma.payment.count({ where: { status: { in: ['reversed', 'disputed'] } } }),
+  ]);
+  res.json({
+    flags: flags.map((f) => ({
+      id: f.id,
+      severity: f.severity,
+      reason: f.reason,
+      createdAt: f.createdAt.toISOString(),
+      userId: f.userId,
+      claimId: f.claimId,
+      passengerName: f.user?.passengerProfile?.fullName ?? null,
+      passengerPhone: f.user?.phone ? maskPhoneNumber(f.user.phone) : null,
+    })),
+    stats: {
+      totalFlags: flags.length,
+      criticalFlags: flags.filter((f) => f.severity === 'critical' || f.severity === 'high').length,
+      totalCoversIssued: totalCovers,
+      activeCovers,
+      reversedPayments,
+      complianceRate: totalCovers > 0 ? Math.round(((totalCovers - reversedPayments) / totalCovers) * 100) : 100,
+    },
+  });
+});
+
+dashboardRouter.get('/analytics', requireDashboardPermission('overview.view'), async (_req, res) => {
+  const data = await loadAnalyticsData();
+  res.json({ analytics: data });
+});
+
+dashboardRouter.get('/documents', requireDashboardPermission('claims.view'), async (req, res) => {
+  const type = req.query.type ? String(req.query.type) : undefined;
+  const status = req.query.status ? String(req.query.status) : undefined;
+
+  const docs = await prisma.claimDocument.findMany({
+    where: {
+      ...(type ? { type: type as import('@prisma/client').ClaimDocumentType } : {}),
+      ...(status ? { status: status as import('@prisma/client').ClaimDocumentStatus } : {}),
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 200,
+    include: {
+      claim: {
+        select: {
+          id: true,
+          reference: true,
+          status: true,
+          passengerUser: { include: { passengerProfile: true } },
+        },
+      },
+    },
+  });
+
+  res.json({
+    documents: docs.map((d) => ({
+      id: d.id,
+      type: d.type,
+      filename: d.filename,
+      status: d.status,
+      createdAt: d.createdAt.toISOString(),
+      claimId: d.claimId,
+      claimReference: d.claim.reference,
+      claimStatus: d.claim.status,
+      passengerName: d.claim.passengerUser.passengerProfile?.fullName ?? null,
+      passengerPhone: d.claim.passengerUser.phone
+        ? maskPhoneNumber(d.claim.passengerUser.phone)
+        : null,
+    })),
+    total: docs.length,
+  });
 });
 
 dashboardRouter.get('/payouts', requireDashboardPermission('payments.view'), async (_req, res) => {
