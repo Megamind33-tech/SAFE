@@ -10,4 +10,17 @@ export default defineConfig({
     host: '127.0.0.1',
   },
   appType: 'spa',
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-leaflet': ['leaflet', 'react-leaflet'],
+          'vendor-lucide': ['lucide-react'],
+          'vendor-qr': ['html5-qrcode'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
+  },
 });

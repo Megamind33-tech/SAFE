@@ -1,0 +1,125 @@
+name: Android APK Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/android-build.yml'
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'debug'
+        type: choice
+        options: [debug, release]
+
+env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '22'
+
+jobs:
+  build-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ── Checkout ────────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Node.js ─────────────────────────────────────────────────────────────
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # ── Java ────────────────────────────────────────────────────────────────
+      - name: Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      # ── Android SDK ─────────────────────────────────────────────────────────
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK platform and build-tools
+        run: |
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+
+      # ── npm install ──────────────────────────────────────────────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ── Build web bundle ─────────────────────────────────────────────────────
+      - name: Build Vite web bundle
+        working-directory: apps/mobile
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'https://api.safe.co.zm' }}
+          VITE_CLAIMS_QA_CAPTURE: 'false'
+          VITE_QR_QA_CAPTURE: 'false'
+        run: npm run build
+
+      # ── Capacitor sync ───────────────────────────────────────────────────────
+      - name: Capacitor sync Android
+        working-directory: apps/mobile
+        run: npx cap sync android
+
+      # ── Gradle build ─────────────────────────────────────────────────────────
+      - name: Make gradlew executable
+        working-directory: apps/mobile/android
+        run: chmod +x ./gradlew
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('apps/mobile/android/**/*.gradle*', 'apps/mobile/android/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
+      - name: Build debug APK
+        if: ${{ github.event.inputs.build_type != 'release' }}
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Build release APK (unsigned)
+        if: ${{ github.event.inputs.build_type == 'release' }}
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleRelease --no-daemon
+
+      # ── Upload APK artifact ──────────────────────────────────────────────────
+      - name: Upload debug APK
+        if: ${{ github.event.inputs.build_type != 'release' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: safe-android-debug-${{ github.sha }}
+          path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Upload release APK
+        if: ${{ github.event.inputs.build_type == 'release' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: safe-android-release-${{ github.sha }}
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          retention-days: 90
+
+      # ── Summary ──────────────────────────────────────────────────────────────
+      - name: Build summary
+        run: |
+          echo "## SAFE Android Build" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| App ID | zm.co.safe.app |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | $(grep versionName apps/mobile/android/app/build.gradle | head -1 | tr -d ' \"') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build type | ${{ github.event.inputs.build_type || 'debug' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| API URL | ${{ secrets.VITE_API_BASE_URL || 'https://api.safe.co.zm' }} |" >> $GITHUB_STEP_SUMMARY
