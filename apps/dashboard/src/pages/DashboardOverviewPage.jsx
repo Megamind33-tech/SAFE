@@ -12,6 +12,13 @@ import {
 } from '../components/admin/ui.jsx';
 import { fmtDateTime } from '../lib/format.js';
 
+function metricValue(metrics, key) {
+  const value = metrics?.[key];
+  if (typeof value === 'number' && Number.isFinite(value)) return value.toLocaleString();
+  if (typeof value === 'string' && value.trim()) return value;
+  return '0';
+}
+
 export default function DashboardOverviewPage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -41,17 +48,17 @@ export default function DashboardOverviewPage() {
       {!loading && m ? (
         <>
           <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-            <MetricCard label="Covers sold today" value={String(m.coversSoldToday)} sub="Succeeded payments" to="/covers?status=active" />
-            <MetricCard label="Active covers" value={String(m.activeCovers)} sub="Paid & in force" to="/covers?status=active" />
-            <MetricCard label="Pending payments" value={String(m.pendingPayments)} sub="Awaiting gateway" to="/payments?status=pending" />
-            <MetricCard label="Failed payments" value={String(m.failedPayments)} sub="Needs follow-up" to="/payments?status=failed" />
-            <MetricCard label="Active claims" value={String(m.activeClaims)} sub="Open pipeline" to="/claims" />
-            <MetricCard label="Claims needing action" value={String(m.claimsNeedingAction)} sub="Submitted / needs action" to="/claims?status=needs_action" />
-            <MetricCard label="Open support reports" value={String(m.openSupport)} sub="Passenger issues" to="/support?status=open" />
-            <MetricCard label="Vehicles with QR" value={String(m.vehiclesWithQr)} sub="Active QR codes" to="/vehicles?qrStatus=active" />
-            <MetricCard label="Recent QR scans (24h)" value={String(m.recentScans)} sub="Scan log activity" to="/qr-scans" />
-            <MetricCard label="Active trips" value={String(m.activeTrips)} sub="Trip tracking records" to="/live-trips?bucket=active" />
-            <MetricCard label="Registered passengers" value={String(m.registeredPassengers)} sub="Passenger accounts" to="/users" />
+            <MetricCard label="Covers sold today" value={metricValue(m, 'coversSoldToday')} sub="Succeeded payments" to="/covers?status=active" />
+            <MetricCard label="Active covers" value={metricValue(m, 'activeCovers')} sub="Paid & in force" to="/covers?status=active" />
+            <MetricCard label="Pending payments" value={metricValue(m, 'pendingPayments')} sub="Awaiting gateway" to="/payments?status=pending" />
+            <MetricCard label="Failed payments" value={metricValue(m, 'failedPayments')} sub="Needs follow-up" to="/payments?status=failed" />
+            <MetricCard label="Active claims" value={metricValue(m, 'activeClaims')} sub="Open pipeline" to="/claims" />
+            <MetricCard label="Claims needing action" value={metricValue(m, 'claimsNeedingAction')} sub="Submitted / needs action" to="/claims?status=needs_action" />
+            <MetricCard label="Open support reports" value={metricValue(m, 'openSupport')} sub="Passenger issues" to="/support?status=open" />
+            <MetricCard label="Vehicles with QR" value={metricValue(m, 'vehiclesWithQr')} sub="Active QR codes" to="/vehicles?qrStatus=active" />
+            <MetricCard label="Recent QR scans (24h)" value={metricValue(m, 'recentScans')} sub="Scan log activity" to="/qr-scans" />
+            <MetricCard label="Active trips" value={metricValue(m, 'activeTrips')} sub="Trip tracking records" to="/live-trips?bucket=active" />
+            <MetricCard label="Registered passengers" value={metricValue(m, 'registeredPassengers')} sub="Passenger accounts" to="/users" />
           </section>
 
           <section className="grid grid-cols-1 xl:grid-cols-2 gap-4">

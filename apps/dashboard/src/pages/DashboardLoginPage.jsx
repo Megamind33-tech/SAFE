@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { dashboardLogin, saveDashboardToken } from '../api/dashboardApi.js';
 import { useDashboardSession } from '../context/DashboardSessionContext.jsx';
+import safeAppIcon from '../assets/brand/safe-app-icon.png';
+import safeLogoFull from '../assets/brand/safe-logo-full.png';
 
 export default function DashboardLoginPage() {
   const navigate = useNavigate();
@@ -30,10 +32,22 @@ export default function DashboardLoginPage() {
   };
 
   return (
-    <div className="min-h-screen grid place-items-center bg-slate-50 px-4">
-      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_18px_60px_rgba(2,6,23,0.08)]">
-        <div className="text-sm font-extrabold tracking-wide text-safe-ink">SAFE Dashboard</div>
-        <div className="mt-1 text-2xl font-black tracking-tight text-safe-ink">Admin login</div>
+    <div className="grid min-h-screen place-items-center overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(0,197,107,0.18),transparent_34%),linear-gradient(135deg,#f8fafc_0%,#eef7f1_100%)] px-4">
+      <div className="w-full max-w-md rounded-[2rem] border border-white/80 bg-white/95 p-6 shadow-[0_24px_80px_rgba(2,6,23,0.12)] backdrop-blur">
+        <div className="flex items-center gap-4">
+          <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+            <img src={safeAppIcon} alt="SAFE" className="h-full w-full object-cover" />
+          </div>
+          <div className="min-w-0">
+            <img src={safeLogoFull} alt="SAFE Dashboard" className="h-10 w-auto object-contain" />
+            <div className="-mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500">Operations dashboard</div>
+          </div>
+        </div>
+
+        <div className="mt-7 text-2xl font-black tracking-tight text-safe-ink">Admin login</div>
+        <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
+          Sign in to monitor SAFE covers, linked vehicles, claims, payments, and live operations.
+        </p>
 
         <form onSubmit={submit} className="mt-6 space-y-4">
           <label className="block">

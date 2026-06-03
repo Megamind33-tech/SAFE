@@ -140,10 +140,14 @@ export function FilterTabs({ options, value, onChange }) {
 }
 
 export function MetricCard({ label, value, sub, to, onClick }) {
+  const displayValue =
+    value === undefined || value === null || value === '' || String(value).toLowerCase() === 'undefined'
+      ? '0'
+      : value;
   const inner = (
     <>
       <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</div>
-      <div className="mt-2 text-3xl font-black tracking-tight text-safe-ink">{value ?? '—'}</div>
+      <div className="mt-2 text-3xl font-black tracking-tight text-safe-ink">{displayValue}</div>
       {sub ? <div className="mt-1.5 text-xs font-semibold text-slate-500">{sub}</div> : null}
     </>
   );

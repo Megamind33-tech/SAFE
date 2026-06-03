@@ -20,6 +20,8 @@ import { clearDashboardToken, loadDashboardToken } from '../api/dashboardApi.js'
 import { useDashboardSession } from '../context/DashboardSessionContext.jsx';
 import { NAV_ITEMS } from '../lib/dashboardPermissions.js';
 import { hasPermission } from '../lib/dashboardPermissions.js';
+import safeAppIcon from '../assets/brand/safe-app-icon.png';
+import safeLogoFull from '../assets/brand/safe-logo-full.png';
 
 const ICONS = {
   Overview: BarChart3,
@@ -29,6 +31,7 @@ const ICONS = {
   Claims: FileText,
   Payments: WalletCards,
   'Live trips': MapPinned,
+  'Live ops': MapPinned,
   'QR scans': QrCode,
   Support: LifeBuoy,
   Passengers: Users,
@@ -36,6 +39,22 @@ const ICONS = {
   Settings: SlidersHorizontal,
   Drivers: Users,
 };
+
+function SafeBrand({ compact = false }) {
+  return (
+    <div className={`flex items-center ${compact ? 'justify-center' : 'gap-3'}`}>
+      <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+        <img src={safeAppIcon} alt="SAFE" className="h-full w-full object-cover" />
+      </div>
+      {!compact ? (
+        <div className="min-w-0">
+          <div className="text-base font-black leading-none tracking-tight text-safe-ink">SAFE</div>
+          <div className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500">Operations</div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 function NavItems({ onNavigate, compact = false, permissions }) {
   const visible = NAV_ITEMS.filter((item) => hasPermission(permissions, item.permission));
@@ -115,15 +134,7 @@ export default function DashboardShell() {
           />
           <aside className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-slate-200 bg-white shadow-xl md:hidden">
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4">
-              <div className="flex items-center gap-3">
-                <div className="grid h-10 w-10 place-items-center rounded-xl bg-safe-ink text-safe-cloud shadow-sm">
-                  <span className="font-black tracking-wide text-safe-electric">S</span>
-                </div>
-                <div>
-                  <div className="text-sm font-semibold tracking-wide text-safe-ink">SAFE</div>
-                  <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">Operations</div>
-                </div>
-              </div>
+              <SafeBrand />
               <button
                 type="button"
                 onClick={closeMobileNav}
@@ -143,14 +154,11 @@ export default function DashboardShell() {
       <div className="flex">
         <aside className="hidden md:flex w-16 xl:w-64 shrink-0 flex-col border-r border-slate-200 bg-white">
           <div className="border-b border-slate-100 px-3 py-4 xl:px-4">
-            <div className="flex items-center justify-center gap-3 xl:justify-start">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-safe-ink text-safe-cloud shadow-sm">
-                <span className="font-black tracking-wide text-safe-electric">S</span>
-              </div>
-              <div className="hidden xl:block">
-                <div className="text-sm font-semibold tracking-wide text-safe-ink">SAFE</div>
-                <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">Operations</div>
-              </div>
+            <div className="hidden xl:block">
+              <SafeBrand />
+            </div>
+            <div className="xl:hidden">
+              <SafeBrand compact />
             </div>
           </div>
 
@@ -172,7 +180,10 @@ export default function DashboardShell() {
                   <Menu size={20} />
                 </button>
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-semibold text-safe-ink">SAFE Control Room</div>
+                  <div className="flex items-center gap-2">
+                    <img src={safeAppIcon} alt="" className="h-6 w-6 rounded-lg object-cover md:hidden" />
+                    <div className="truncate text-sm font-semibold text-safe-ink">SAFE Control Room</div>
+                  </div>
                   <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                     {user?.role ? `${user.role.replace(/_/g, ' ')}` : 'Pilot operations dashboard'}
                   </div>
