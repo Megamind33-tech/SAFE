@@ -7,6 +7,7 @@ const DashboardSessionContext = createContext({
   permissions: [],
   loading: true,
   error: '',
+  errorCode: '',
   refresh: async () => {},
   can: () => false,
 });
@@ -16,6 +17,7 @@ export function DashboardSessionProvider({ children }) {
   const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState('');
 
   const refresh = useCallback(async () => {
     const token = loadDashboardToken();
@@ -23,6 +25,8 @@ export function DashboardSessionProvider({ children }) {
       setUser(null);
       setPermissions([]);
       setLoading(false);
+      setError('');
+      setErrorCode('');
       return;
     }
     setLoading(true);
@@ -31,10 +35,12 @@ export function DashboardSessionProvider({ children }) {
       setUser(data.user ?? null);
       setPermissions(data.permissions ?? []);
       setError('');
+      setErrorCode('');
     } catch (e) {
       setUser(null);
       setPermissions([]);
       setError(e?.message || 'Failed to load session');
+      setErrorCode(e?.code || '');
     } finally {
       setLoading(false);
     }
@@ -47,8 +53,8 @@ export function DashboardSessionProvider({ children }) {
   const can = useCallback((permission) => hasPermission(permissions, permission), [permissions]);
 
   const value = useMemo(
-    () => ({ user, permissions, loading, error, refresh, can }),
-    [user, permissions, loading, error, refresh, can],
+    () => ({ user, permissions, loading, error, errorCode, refresh, can }),
+    [user, permissions, loading, error, errorCode, refresh, can],
   );
 
   return <DashboardSessionContext.Provider value={value}>{children}</DashboardSessionContext.Provider>;

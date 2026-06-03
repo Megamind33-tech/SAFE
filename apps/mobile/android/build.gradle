@@ -17,6 +17,17 @@ buildscript {
 
 apply from: "variables.gradle"
 
+def SAFE_JAVA_COMPAT = JavaVersion.VERSION_17
+
+subprojects { project ->
+    project.afterEvaluate {
+        if (project.hasProperty('android')) {
+            project.android.compileOptions.sourceCompatibility = SAFE_JAVA_COMPAT
+            project.android.compileOptions.targetCompatibility = SAFE_JAVA_COMPAT
+        }
+    }
+}
+
 allprojects {
     repositories {
         google()

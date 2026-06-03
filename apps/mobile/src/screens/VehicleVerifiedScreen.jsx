@@ -1,6 +1,6 @@
-import { ArrowLeft, BadgeCheck } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowLeft, BadgeCheck, ImageIcon } from 'lucide-react';
 import { formatVerifiedTime, toCoverVehicleContext } from '../services/qr.js';
-import verifiedVehicleArt from '../assets/real/verified_vehicle_clean.png';
 
 export default function VehicleVerifiedScreen({
   session,
@@ -12,6 +12,45 @@ export default function VehicleVerifiedScreen({
 }) {
   const verified = qrResult?.status === 'verified' ? qrResult : null;
   const eligibility = verified?.coverEligibility;
+  const [vehiclePhotoFailed, setVehiclePhotoFailed] = useState(false);
+
+  const operatorName = verified?.partner?.name || verified?.vehicle?.operatorName || '—';
+  const verifiedVehicle = verified
+    ? {
+        registrationNumber: verified.vehicle?.plateNumber ?? '—',
+        route: verified.route ? `${verified.route.originLabel} → ${verified.route.destinationLabel}` : null,
+        operatorName,
+        safeStickerId: verified.code || verified.qrCodeId || null,
+        verificationTime: verified.verifiedAt,
+        vehiclePhotoUrl:
+          verified.vehiclePhotoUrl ||
+          verified.vehicle?.vehiclePhotoUrl ||
+          verified.vehicle?.photoUrl ||
+          verified.vehicle?.imageUrl ||
+          verified.vehicle?.photo ||
+          verified.vehicle?.image ||
+          null,
+        vehicleImage: verified.vehicleImage || verified.vehicle?.vehicleImage || null,
+        vehicleType: verified.vehicle?.vehicleType || verified.vehicleType || null,
+        vehicleColor: verified.vehicle?.vehicleColor || verified.vehicleColor || null,
+        driverName: verified.driver?.fullName || verified.driverName || null,
+        driverPhotoUrl: verified.driver?.photoUrl || verified.driverPhotoUrl || null,
+        status: eligibility?.canStartTripTracking ? 'Vehicle verified' : 'SAFE approved',
+      }
+    : null;
+
+  const vehiclePhotoSrc =
+    typeof verifiedVehicle?.vehiclePhotoUrl === 'string' && verifiedVehicle.vehiclePhotoUrl.trim()
+      ? verifiedVehicle.vehiclePhotoUrl.trim()
+      : typeof verifiedVehicle?.vehicleImage === 'string' && verifiedVehicle.vehicleImage.trim()
+        ? verifiedVehicle.vehicleImage.trim()
+        : null;
+
+  useEffect(() => {
+    setVehiclePhotoFailed(false);
+  }, [vehiclePhotoSrc]);
+
+  const canShowVehiclePhoto = Boolean(vehiclePhotoSrc) && !vehiclePhotoFailed;
 
   if (!verified) {
     return (
@@ -39,8 +78,6 @@ export default function VehicleVerifiedScreen({
     openLiveTrip?.();
   };
 
-  const operatorName = verified.partner?.name || verified.vehicle?.operatorName || '—';
-
   return (
     <main className="screen qr-screen">
       <div className="qr-screen__scroll">
@@ -53,10 +90,51 @@ export default function VehicleVerifiedScreen({
         </header>
 
         <section className="qr-verified-card" aria-label="Verified vehicle details">
-          <img className="qr-verified-hero" src={verifiedVehicleArt} alt="" aria-hidden="true" />
+          <div
+            className="qr-verified-hero"
+            style={{
+              aspectRatio: '16 / 9',
+              borderRadius: 18,
+              overflow: 'hidden',
+              background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.04) 0%, rgba(15, 23, 42, 0.02) 100%)',
+              border: '1px solid rgba(15, 23, 42, 0.08)',
+            }}
+            aria-label="Verified vehicle photo"
+          >
+            {canShowVehiclePhoto ? (
+              <img
+                src={vehiclePhotoSrc}
+                alt={`Vehicle photo for ${verifiedVehicle.registrationNumber}`}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                loading="eager"
+                onError={(event) => {
+                  setVehiclePhotoFailed(true);
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 10,
+                  color: '#64748b',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  padding: 12,
+                  textAlign: 'center',
+                }}
+              >
+                <ImageIcon size={18} aria-hidden="true" />
+                <span>Vehicle photo unavailable</span>
+              </div>
+            )}
+          </div>
           <span className="qr-verified-badge">
             <BadgeCheck size={14} aria-hidden="true" />
-            {eligibility?.canStartTripTracking ? 'Vehicle verified' : 'SAFE approved'}
+            {verifiedVehicle.status}
           </span>
           {eligibility?.canStartTripTracking ? (
             <p className="qr-verified-cover-note">Your SAFE cover is active for this vehicle.</p>
@@ -64,29 +142,66 @@ export default function VehicleVerifiedScreen({
           <dl className="qr-verified-details">
             <div>
               <dt>Registration</dt>
-              <dd>{verified.vehicle.plateNumber}</dd>
+              <dd>{verifiedVehicle.registrationNumber}</dd>
             </div>
-            {verified.route ? (
+            {verifiedVehicle.route ? (
               <div>
                 <dt>Route</dt>
-                <dd>
-                  {verified.route.originLabel} → {verified.route.destinationLabel}
-                </dd>
+                <dd>{verifiedVehicle.route}</dd>
               </div>
             ) : null}
             <div>
               <dt>Operator/company</dt>
-              <dd>{operatorName}</dd>
+              <dd>{verifiedVehicle.operatorName}</dd>
             </div>
-            {(verified.code || verified.qrCodeId) ? (
+            {verifiedVehicle.vehicleType ? (
+              <div>
+                <dt>Vehicle type</dt>
+                <dd>{verifiedVehicle.vehicleType}</dd>
+              </div>
+            ) : null}
+            {verifiedVehicle.vehicleColor ? (
+              <div>
+                <dt>Vehicle color</dt>
+                <dd>{verifiedVehicle.vehicleColor}</dd>
+              </div>
+            ) : null}
+            {verifiedVehicle.driverName ? (
+              <div>
+                <dt>Driver</dt>
+                <dd style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {verifiedVehicle.driverPhotoUrl ? (
+                    <img
+                      src={verifiedVehicle.driverPhotoUrl}
+                      alt=""
+                      aria-hidden="true"
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '1px solid rgba(15, 23, 42, 0.12)',
+                        flex: '0 0 auto',
+                      }}
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : null}
+                  <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{verifiedVehicle.driverName}</span>
+                </dd>
+              </div>
+            ) : null}
+            {verifiedVehicle.safeStickerId ? (
               <div>
                 <dt>SAFE sticker ID</dt>
-                <dd>{verified.code || verified.qrCodeId}</dd>
+                <dd>{verifiedVehicle.safeStickerId}</dd>
               </div>
             ) : null}
             <div>
               <dt>Verification time</dt>
-              <dd>{formatVerifiedTime(verified.verifiedAt)}</dd>
+              <dd>{formatVerifiedTime(verifiedVehicle.verificationTime)}</dd>
             </div>
           </dl>
 

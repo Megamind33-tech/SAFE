@@ -1,0 +1,111 @@
+.permissions-intro-screen {
+  background: linear-gradient(180deg, #f4fff9 0%, #edf7f2 48%, #f8faf9 100%);
+  padding-top: var(--safe-top);
+  padding-bottom: calc(18px + var(--safe-bottom));
+}
+
+.permissions-intro__scroll {
+  padding: 18px 22px 24px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.permissions-intro__header {
+  margin-bottom: 18px;
+}
+
+.permissions-intro__title {
+  margin: 0 0 10px;
+  font-size: 22px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: #0f172a;
+  font-weight: 900;
+}
+
+.permissions-intro__message {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #475569;
+  font-weight: 600;
+}
+
+.permissions-intro__cards {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.permissions-intro__card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px 16px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid rgba(0, 122, 61, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 45, 28, 0.06);
+}
+
+.permissions-intro__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: #007a3d;
+  background: rgba(0, 122, 61, 0.08);
+  flex: 0 0 auto;
+}
+
+.permissions-intro__card-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.permissions-intro__card-top {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.permissions-intro__card-title {
+  font-size: 16px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.permissions-intro__status {
+  font-size: 12px;
+  font-weight: 800;
+  color: #007a3d;
+  background: rgba(0, 122, 61, 0.08);
+  border: 1px solid rgba(0, 122, 61, 0.14);
+  padding: 4px 10px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.permissions-intro__card-text {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #475569;
+  font-weight: 600;
+}
+
+.permissions-intro__actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+@media (max-width: 360px) {
+  .permissions-intro__scroll {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}

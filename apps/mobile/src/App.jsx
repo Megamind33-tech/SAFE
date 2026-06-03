@@ -63,6 +63,8 @@ import { createSupportReport } from './services/helpSafety.js';
 import SettingsScreen from './screens/SettingsScreen.jsx';
 import QRScannerScreen from './screens/QRScannerScreen.jsx';
 import VehicleVerifiedScreen from './screens/VehicleVerifiedScreen.jsx';
+import PermissionsIntroScreen from './screens/PermissionsIntroScreen.jsx';
+import LiveMapScreen from './screens/LiveMapScreen.jsx';
 import PaymentBrandIcon from './components/PaymentBrandIcon.jsx';
 import { getPaymentMethods, resolveDefaultCheckoutId } from './services/paymentMethods.js';
 import {
@@ -92,6 +94,7 @@ import {
 } from './utils/qrQa.js';
 import { extractQrCodeFromLocation, replaceLocationAfterQrLaunch } from './utils/qrLaunch.js';
 import { verifyQrCode } from './services/qr.js';
+import { hasSeenPermissionsIntro, isAndroidNative } from './utils/firstRunPermissions.js';
 
 const bgImage = zambiaScene;
 
@@ -258,7 +261,8 @@ function App() {
         if (code) setPendingQrCode(code);
         return;
       }
-      if (hashBase === 'liveTrip') setScreen('liveTrip');
+      if (hashBase === 'liveMap') setScreen('liveMap');
+      else if (hashBase === 'liveTrip') setScreen('liveTrip');
       else if (hashBase === 'viewPolicy') setScreen('viewPolicy');
       else if (hashBase === 'qrScanner') setScreen('qrScanner');
       else if (hashBase === 'vehicleVerified') {
@@ -382,7 +386,7 @@ function App() {
     setViewPolicyReturn(returnTo);
     setScreen('viewPolicy');
   };
-  const openLiveTrip = () => setScreen('liveTrip');
+  const openLiveTrip = () => setScreen('liveMap');
   const openQrScanner = () => setScreen('qrScanner');
   const openClaimFlow = (opts = {}) => {
     setClaimFlowOpts(typeof opts === 'object' ? opts : {});
@@ -395,7 +399,17 @@ function App() {
   const invalidateClaimsCache = () => {
     writeCachedClaims(null);
   };
-  const showBottomNav = !['splash', 'onboarding1', 'onboarding2', 'onboarding3', 'login', 'signup', 'chat', 'offline'].includes(screen);
+  const showBottomNav = ![
+    'splash',
+    'onboarding1',
+    'onboarding2',
+    'onboarding3',
+    'login',
+    'signup',
+    'permissionsIntro',
+    'chat',
+    'offline',
+  ].includes(screen);
 
   const screenProps = {
     historyReturn,
@@ -454,6 +468,7 @@ function App() {
         {screen === 'onboarding3' && <OnboardingThree {...screenProps} />}
         {screen === 'login' && <LoginScreen {...screenProps} />}
         {screen === 'signup' && <SignupScreen {...screenProps} />}
+        {screen === 'permissionsIntro' && <PermissionsIntroScreen setScreen={setScreen} />}
         {screen === 'home' && <HomeScreen {...screenProps} goCover={goCover} />}
         {screen === 'active' && (
           <CoverScreen
@@ -533,6 +548,7 @@ function App() {
           />
         )}
         {screen === 'viewPolicy' && <ViewPolicyScreen {...screenProps} />}
+        {screen === 'liveMap' && <LiveMapScreen {...screenProps} />}
         {screen === 'liveTrip' && <LiveTripScreen {...screenProps} />}
         {screen === 'history' && (
           <CoverHistoryScreen
@@ -623,7 +639,7 @@ function App() {
 }
 
 function navState(screen) {
-  if (['home', 'liveTrip'].includes(screen)) return 'home';
+  if (['home', 'liveMap', 'liveTrip'].includes(screen)) return 'home';
   if (['choose', 'payment', 'active', 'viewPolicy', 'coverPlans', 'coverReview', 'coverPay', 'coverStatus'].includes(screen)) return 'cover';
   if (['qrScanner', 'vehicleVerified'].includes(screen)) return 'verify';
   if (['claim', 'claimFlow', 'claimDetail'].includes(screen)) return 'claims';
@@ -833,14 +849,14 @@ function LoginScreen({ setScreen, setSession, auth, refreshPassengerData }) {
               } catch {
                 /* keep login payload user if profile fetch fails */
               }
-              if (refreshPassengerData) {
-                await refreshPassengerData(data.token);
-              }
-              setSession({ token: data.token, user, ready: true });
-              setScreen('home');
-            } catch (e) {
-              setError(e?.message || 'Login failed. Please check your credentials.');
-            } finally {
+               if (refreshPassengerData) {
+                 await refreshPassengerData(data.token);
+               }
+               setSession({ token: data.token, user, ready: true });
+               setScreen(isAndroidNative() && !hasSeenPermissionsIntro() ? 'permissionsIntro' : 'home');
+             } catch (e) {
+               setError(e?.message || 'Login failed. Please check your credentials.');
+             } finally {
               setBusy(false);
             }
           }}
@@ -923,14 +939,14 @@ function SignupScreen({ setScreen, setSession, auth }) {
             event.preventDefault();
             setError('');
             setBusy(true);
-            try {
-              const data = await auth.registerPassenger({ phone, password, fullName });
-              auth.saveToken(data.token);
-              setSession({ token: data.token, user: data.user ?? null, ready: true });
-              setScreen('home');
-            } catch (e) {
-              setError(e?.message || 'Sign up failed. Please try again.');
-            } finally {
+             try {
+               const data = await auth.registerPassenger({ phone, password, fullName });
+               auth.saveToken(data.token);
+               setSession({ token: data.token, user: data.user ?? null, ready: true });
+               setScreen(isAndroidNative() && !hasSeenPermissionsIntro() ? 'permissionsIntro' : 'home');
+             } catch (e) {
+               setError(e?.message || 'Sign up failed. Please try again.');
+             } finally {
               setBusy(false);
             }
           }}

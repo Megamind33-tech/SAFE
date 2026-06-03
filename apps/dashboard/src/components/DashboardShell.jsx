@@ -71,12 +71,12 @@ export default function DashboardShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const token = loadDashboardToken();
-  const { user, permissions, loading } = useDashboardSession();
+  const { user, permissions, loading, refresh } = useDashboardSession();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     if (!token && location.pathname !== '/login') {
-      navigate('/login', { replace: true });
+      navigate('/login', { replace: true, state: { from: location.pathname } });
     }
   }, [token, location.pathname, navigate]);
 
@@ -95,7 +95,8 @@ export default function DashboardShell() {
 
   function handleLogout() {
     clearDashboardToken();
-    navigate('/login', { replace: true });
+    refresh();
+    navigate('/login', { replace: true, state: { from: '/' } });
   }
 
   function closeMobileNav() {

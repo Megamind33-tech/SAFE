@@ -66,6 +66,14 @@ export function serializeVehicleRow(vehicle: {
     isSuspended: fleetSuspended,
     operationalStatus: fleetSuspended ? 'suspended' : qrStatus === 'active' ? 'active' : 'inactive',
     coverCount: vehicle._count?.tripCovers ?? 0,
+    lastLocation:
+      vehicle.lastLat != null && vehicle.lastLng != null
+        ? {
+            lat: vehicle.lastLat,
+            lng: vehicle.lastLng,
+            recordedAt: vehicle.locationAt?.toISOString() ?? null,
+          }
+        : null,
     locationAt: vehicle.locationAt?.toISOString() ?? null,
     createdAt: vehicle.createdAt.toISOString(),
   };

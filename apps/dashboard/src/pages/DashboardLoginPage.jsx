@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { dashboardLogin, saveDashboardToken } from '../api/dashboardApi.js';
+import { useDashboardSession } from '../context/DashboardSessionContext.jsx';
 
 export default function DashboardLoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { refresh } = useDashboardSession();
+  const from = typeof location.state?.from === 'string' ? location.state.from : '/';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -16,7 +20,8 @@ export default function DashboardLoginPage() {
     try {
       const data = await dashboardLogin({ identifier: email, password });
       saveDashboardToken(data.token);
-      navigate('/');
+      await refresh();
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err?.message || 'Login failed');
     } finally {

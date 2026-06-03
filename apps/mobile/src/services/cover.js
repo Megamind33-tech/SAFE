@@ -45,16 +45,49 @@ export async function fetchCoverActive(token) {
 }
 
 export async function purchaseCover(token, payload) {
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8080';
-  const res = await fetch(`${API_BASE}/api/mobile/cover/purchase`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      ...(token ? { authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json().catch(() => ({}));
+  const configuredBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8080';
+  const isAndroidNative =
+    typeof globalThis !== 'undefined' && globalThis.Capacitor?.getPlatform?.() === 'android';
+  const fallbackBase =
+    isAndroidNative && /127\.0\.0\.1|localhost/.test(configuredBase)
+      ? configuredBase.replace(/127\.0\.0\.1|localhost/, '10.0.2.2')
+      : '';
+
+  async function run(apiBase) {
+    const res = await fetch(`${apiBase}/api/mobile/cover/purchase`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    return { res, data };
+  }
+
+  function isNetworkFailure(error) {
+    const message = String(error?.message || '').toLowerCase();
+    return (
+      message.includes('failed to fetch') ||
+      message.includes('networkerror') ||
+      message.includes('load failed') ||
+      message.includes('network request failed')
+    );
+  }
+
+  let res;
+  let data;
+  try {
+    ({ res, data } = await run(configuredBase));
+  } catch (err) {
+    if (fallbackBase && isNetworkFailure(err)) {
+      ({ res, data } = await run(fallbackBase));
+    } else {
+      throw err;
+    }
+  }
+
   if (res.status === 501 && data?.purchase?.status === 'not_configured') {
     return data;
   }

@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { MapContainer, Marker, TileLayer, Popup, useMap } from 'react-leaflet';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { useSearchParams } from 'react-router-dom';
-import { dashboardTrips, loadDashboardToken } from '../api/dashboardApi.js';
+import { Activity, Bus, Clock3, MapPin, RadioTower, RefreshCw, Route as RouteIcon, Search, ShieldCheck } from 'lucide-react';
+import { dashboardTrips, dashboardVehicles, loadDashboardToken } from '../api/dashboardApi.js';
 import {
   Card,
-  DataTable,
   DetailPanel,
   EmptyState,
   ErrorCard,
@@ -16,7 +16,6 @@ import {
 } from '../components/admin/ui.jsx';
 import { fmtDateTime } from '../lib/format.js';
 
-// Leaflet default icon fix (webpack/vite strips the default URL)
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -24,256 +23,556 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-const liveIcon = L.divIcon({
-  className: '',
-  html: `<div style="width:16px;height:16px;border-radius:50%;background:#16a34a;border:3px solid #fff;box-shadow:0 0 0 2px #16a34a,0 2px 6px rgba(0,0,0,.35)"></div>`,
-  iconSize: [16, 16],
-  iconAnchor: [8, 8],
-  popupAnchor: [0, -10],
-});
+const TOMTOM_API_KEY = import.meta.env.VITE_TOMTOM_API_KEY?.trim() ?? '';
+const TOMTOM_TILE_URL = TOMTOM_API_KEY
+  ? `https://api.tomtom.com/map/1/tile/basic/main/{z}/{x}/{y}.png?key=${encodeURIComponent(TOMTOM_API_KEY)}`
+  : '';
+const FALLBACK_TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 
-const staleIcon = L.divIcon({
-  className: '',
-  html: `<div style="width:16px;height:16px;border-radius:50%;background:#f59e0b;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"></div>`,
-  iconSize: [16, 16],
-  iconAnchor: [8, 8],
-  popupAnchor: [0, -10],
-});
+const ROUTE_LINES = [
+  {
+    id: 'matero-town',
+    names: ['Matero', 'Town'],
+    color: '#007a3d',
+    coordinates: [
+      [-15.359, 28.262],
+      [-15.374, 28.277],
+      [-15.392, 28.29],
+      [-15.416, 28.283],
+    ],
+  },
+  {
+    id: 'chelstone-town',
+    names: ['Chelstone', 'Town'],
+    color: '#2563eb',
+    coordinates: [
+      [-15.386, 28.397],
+      [-15.397, 28.36],
+      [-15.412, 28.317],
+      [-15.416, 28.283],
+    ],
+  },
+  {
+    id: 'kanyama-town',
+    names: ['Kanyama', 'Town'],
+    color: '#f59e0b',
+    coordinates: [
+      [-15.417, 28.238],
+      [-15.417, 28.258],
+      [-15.416, 28.283],
+    ],
+  },
+  {
+    id: 'mandevu-town',
+    names: ['Mandevu', 'Town'],
+    color: '#7c3aed',
+    coordinates: [
+      [-15.372, 28.302],
+      [-15.39, 28.297],
+      [-15.416, 28.283],
+    ],
+  },
+];
 
-const endedIcon = L.divIcon({
-  className: '',
-  html: `<div style="width:14px;height:14px;border-radius:50%;background:#94a3b8;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)"></div>`,
-  iconSize: [14, 14],
-  iconAnchor: [7, 7],
-  popupAnchor: [0, -9],
-});
+const STATUS_META = {
+  live: { label: 'Live GPS', shortLabel: 'Live', color: '#16a34a', ring: '#86efac', bg: '#f0fdf4' },
+  stale: { label: 'GPS stale', shortLabel: 'Stale', color: '#d97706', ring: '#fde68a', bg: '#fffbeb' },
+  last_known: { label: 'Last known GPS', shortLabel: 'Known', color: '#2563eb', ring: '#bfdbfe', bg: '#eff6ff' },
+  location_pending: { label: 'Waiting for GPS', shortLabel: 'Waiting', color: '#64748b', ring: '#cbd5e1', bg: '#f8fafc' },
+  suspended: { label: 'Suspended', shortLabel: 'Hold', color: '#dc2626', ring: '#fecaca', bg: '#fef2f2' },
+};
 
-function markerIcon(trip) {
-  if (trip.isLive) return liveIcon;
-  if (trip.isStale) return staleIcon;
-  return endedIcon;
+function vehicleIcon(status) {
+  const meta = STATUS_META[status] ?? STATUS_META.location_pending;
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:36px;height:36px;border-radius:12px;background:${meta.color};border:3px solid #fff;box-shadow:0 0 0 3px ${meta.ring},0 12px 26px rgba(15,23,42,.28);display:grid;place-items:center;color:white;font-weight:900;font-size:16px;letter-spacing:-.04em">S</div>`,
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -18],
+  });
 }
 
-function FitMarkers({ points }) {
+function formatRoute(route) {
+  if (!route) return 'Unassigned route';
+  return `${route.origin} -> ${route.destination}`;
+}
+
+function formatRouteCode(route) {
+  if (!route) return 'UNASSIGNED';
+  return `${route.origin?.slice(0, 3) ?? '---'}-${route.destination?.slice(0, 3) ?? '---'}`.toUpperCase();
+}
+
+function formatSignalTime(value) {
+  if (!value) return 'No GPS ping yet';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'No GPS ping yet';
+  const diffMs = Date.now() - date.getTime();
+  const minutes = Math.max(0, Math.round(diffMs / 60_000));
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  return fmtDateTime(value);
+}
+
+function hasCoordinate(location) {
+  return location?.lat != null && location?.lng != null;
+}
+
+function seededLusakaPoint(index) {
+  const points = [
+    [-15.4167, 28.2814],
+    [-15.395, 28.281],
+    [-15.374, 28.277],
+    [-15.386, 28.397],
+    [-15.417, 28.238],
+    [-15.372, 28.302],
+    [-15.409, 28.335],
+    [-15.438, 28.312],
+  ];
+  return points[index % points.length];
+}
+
+function normalizePolyline(polyline) {
+  if (!Array.isArray(polyline)) return [];
+  return polyline
+    .map((point) => {
+      if (Array.isArray(point) && point.length >= 2) return [point[0], point[1]];
+      if (point?.lat != null && point?.lng != null) return [point.lat, point.lng];
+      return null;
+    })
+    .filter(Boolean);
+}
+
+function routeForVehicle(vehicle) {
+  const routeName = formatRoute(vehicle.route).toLowerCase();
+  return ROUTE_LINES.find((line) =>
+    line.names.every((name) => routeName.includes(name.toLowerCase())),
+  );
+}
+
+function buildVehicleObservation(vehicle, trips, index) {
+  const matchingTrips = trips.filter((trip) => trip.vehiclePlate === vehicle.plateNumber);
+  const liveTrip =
+    matchingTrips.find((trip) => trip.isLive) ??
+    matchingTrips.find((trip) => trip.isStale) ??
+    matchingTrips[0] ??
+    null;
+  const tripLocation = liveTrip?.currentLocation;
+  const storedLocation = vehicle.lastLocation;
+  const hasRealLocation = hasCoordinate(tripLocation) || hasCoordinate(storedLocation);
+  const fallbackPoint = seededLusakaPoint(index);
+  const position = hasCoordinate(tripLocation)
+    ? [tripLocation.lat, tripLocation.lng]
+    : hasCoordinate(storedLocation)
+      ? [storedLocation.lat, storedLocation.lng]
+      : fallbackPoint;
+
+  let status = 'location_pending';
+  if (vehicle.isSuspended) status = 'suspended';
+  else if (liveTrip?.isLive) status = 'live';
+  else if (liveTrip?.isStale) status = 'stale';
+  else if (hasCoordinate(storedLocation)) status = 'last_known';
+
+  return {
+    id: vehicle.id,
+    plateNumber: vehicle.plateNumber,
+    busId: vehicle.busId,
+    route: vehicle.route,
+    routeName: formatRoute(vehicle.route),
+    routeCode: formatRouteCode(vehicle.route),
+    partner: vehicle.partner,
+    driver: vehicle.driver,
+    qr: vehicle.qr,
+    qrStatus: vehicle.qrStatus,
+    coverCount: vehicle.coverCount,
+    operationalStatus: vehicle.operationalStatus,
+    status,
+    statusLabel: STATUS_META[status]?.label ?? status,
+    position,
+    hasRealLocation,
+    coordinateSource: hasCoordinate(tripLocation) ? 'Passenger trip GPS' : hasCoordinate(storedLocation) ? 'Vehicle last known GPS' : 'Awaiting live location',
+    lastLocationAt: tripLocation?.recordedAt ?? storedLocation?.recordedAt ?? vehicle.locationAt ?? liveTrip?.lastLocationAt ?? null,
+    trip: liveTrip,
+    activeTripCount: matchingTrips.filter((trip) => trip.isLive).length,
+    routeLine: normalizePolyline(liveTrip?.routePolyline).length ? normalizePolyline(liveTrip.routePolyline) : routeForVehicle(vehicle)?.coordinates ?? [],
+    routeColor: routeForVehicle(vehicle)?.color ?? '#007a3d',
+  };
+}
+
+function FitVehicles({ vehicles, selectedVehicle }) {
   const map = useMap();
   const prev = useRef('');
+
   useEffect(() => {
+    const points = selectedVehicle ? [selectedVehicle.position] : vehicles.map((vehicle) => vehicle.position);
     if (!points.length) return;
-    const key = points.map((p) => `${p[0]},${p[1]}`).join('|');
+    const key = points.map((point) => point.join(',')).join('|');
     if (key === prev.current) return;
     prev.current = key;
     if (points.length === 1) {
-      map.setView(points[0], 13);
+      map.setView(points[0], 14);
     } else {
-      map.fitBounds(L.latLngBounds(points), { padding: [40, 40], maxZoom: 14 });
+      map.fitBounds(L.latLngBounds(points), { padding: [48, 48], maxZoom: 14 });
     }
-  }, [map, points]);
+  }, [map, vehicles, selectedVehicle]);
+
   return null;
 }
 
-function TripsMap({ trips, selected, onSelect }) {
-  const mapPoints = useMemo(
-    () =>
-      trips
-        .filter((t) => t.currentLocation?.lat != null)
-        .map((t) => [t.currentLocation.lat, t.currentLocation.lng]),
-    [trips]
-  );
-
-  const defaultCenter = mapPoints[0] ?? [-15.395, 28.281];
+function OpsVehicleMap({ vehicles, selectedVehicle, onSelect }) {
+  const defaultCenter = selectedVehicle?.position ?? vehicles[0]?.position ?? [-15.4167, 28.2814];
+  const visibleRouteLines = vehicles
+    .filter((vehicle) => vehicle.routeLine.length)
+    .map((vehicle) => ({
+      id: vehicle.id,
+      coordinates: vehicle.routeLine,
+      color: vehicle.routeColor,
+      active: selectedVehicle?.id === vehicle.id || vehicle.status === 'live',
+    }));
 
   return (
-    <MapContainer
-      center={defaultCenter}
-      zoom={13}
-      style={{ height: '100%', width: '100%', minHeight: 340, borderRadius: '0.75rem' }}
-      scrollWheelZoom
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      {trips
-        .filter((t) => t.currentLocation?.lat != null)
-        .map((t) => (
+    <div className="relative h-[560px] min-h-[420px] overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-sm">
+      <MapContainer center={defaultCenter} zoom={13} style={{ height: '100%', width: '100%' }} scrollWheelZoom>
+        <TileLayer
+          attribution={TOMTOM_API_KEY ? '&copy; TomTom' : '&copy; OpenStreetMap contributors &copy; CARTO'}
+          url={TOMTOM_API_KEY ? TOMTOM_TILE_URL : FALLBACK_TILE_URL}
+        />
+        {visibleRouteLines.map((line) => (
+          <Polyline
+            key={line.id}
+            positions={line.coordinates}
+            pathOptions={{
+              color: line.color,
+              weight: line.active ? 5 : 3,
+              opacity: line.active ? 0.9 : 0.38,
+            }}
+          />
+        ))}
+        {vehicles.map((vehicle) => (
           <Marker
-            key={t.id}
-            position={[t.currentLocation.lat, t.currentLocation.lng]}
-            icon={markerIcon(t)}
-            eventHandlers={{ click: () => onSelect(t) }}
+            key={vehicle.id}
+            position={vehicle.position}
+            icon={vehicleIcon(vehicle.status)}
+            zIndexOffset={selectedVehicle?.id === vehicle.id ? 900 : vehicle.status === 'live' ? 700 : 300}
+            eventHandlers={{ click: () => onSelect(vehicle.id) }}
           >
             <Popup>
-              <div style={{ fontSize: 13, lineHeight: 1.5 }}>
-                <strong>{t.vehiclePlate || '—'}</strong>
-                <br />
-                {t.passenger?.fullName || t.passenger?.phone || 'Passenger'}
-                <br />
-                <span style={{ color: t.isLive ? '#16a34a' : t.isStale ? '#d97706' : '#64748b' }}>
-                  {t.isLive ? 'Live' : t.isStale ? 'Stale location' : t.displayStatus}
-                </span>
+              <div className="min-w-40 text-xs leading-5">
+                <strong>{vehicle.plateNumber}</strong>
+                <div>{vehicle.routeName}</div>
+                <div>{vehicle.partner?.name ?? 'No operator linked'}</div>
+                <div style={{ color: STATUS_META[vehicle.status]?.color }}>{vehicle.statusLabel}</div>
               </div>
             </Popup>
           </Marker>
         ))}
-      <FitMarkers points={mapPoints} />
-    </MapContainer>
+        <FitVehicles vehicles={vehicles} selectedVehicle={selectedVehicle} />
+      </MapContainer>
+      <div className="absolute left-4 top-4 z-[1000] flex flex-wrap gap-2">
+        <span className="inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-2 text-xs font-black text-safe-ink shadow-sm">
+          <RadioTower size={14} /> Linked vehicle monitor
+        </span>
+        <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50/95 px-3 py-2 text-xs font-black text-emerald-800 shadow-sm">
+          <Activity size={14} /> Refreshes every 10s
+        </span>
+        {!TOMTOM_API_KEY ? (
+          <span className="inline-flex items-center gap-2 rounded-full bg-slate-900/85 px-3 py-2 text-xs font-black text-white shadow-sm">
+            Fallback map
+          </span>
+        ) : null}
+      </div>
+      <div className="absolute bottom-4 left-4 right-4 z-[1000] flex flex-wrap gap-2 rounded-2xl bg-white/95 p-3 shadow-lg backdrop-blur">
+        {Object.entries(STATUS_META).map(([key, meta]) => (
+          <span key={key} className="inline-flex items-center gap-2 text-xs font-bold text-slate-600">
+            <span className="h-2.5 w-2.5 rounded-full" style={{ background: meta.color }} />
+            {meta.shortLabel}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function VehicleList({ vehicles, selectedId, onSelect }) {
+  if (!vehicles.length) {
+    return <EmptyState title="No linked vehicles" description="No vehicles match this operations filter yet." />;
+  }
+
+  return (
+    <div className="max-h-[560px] space-y-2 overflow-y-auto pr-1">
+      {vehicles.map((vehicle) => (
+        <button
+          key={vehicle.id}
+          type="button"
+          onClick={() => onSelect(vehicle.id)}
+          className={`group relative w-full overflow-hidden rounded-2xl border p-0 text-left transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:shadow-lg ${
+            selectedId === vehicle.id ? 'border-safe-electric bg-white shadow-lg ring-1 ring-safe-electric/20' : 'border-slate-200 bg-white shadow-sm'
+          }`}
+        >
+          <div className="absolute inset-y-0 left-0 w-1.5" style={{ background: STATUS_META[vehicle.status]?.color }} />
+          <div className="px-4 py-3 pl-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <strong className="text-[15px] font-black leading-tight tracking-tight text-safe-ink">{vehicle.plateNumber}</strong>
+                  <span className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] font-black tracking-wide text-slate-500">
+                    {vehicle.routeCode}
+                  </span>
+                </div>
+                <p className="mt-1 truncate text-xs font-bold text-slate-700">{vehicle.routeName}</p>
+              </div>
+              <span
+                className="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide"
+                style={{ background: STATUS_META[vehicle.status]?.bg, color: STATUS_META[vehicle.status]?.color }}
+              >
+                {STATUS_META[vehicle.status]?.shortLabel ?? vehicle.statusLabel}
+              </span>
+            </div>
+
+            <div className="mt-3 space-y-1.5">
+              <div className="flex items-center justify-between gap-3 text-[11px]">
+                <span className="truncate font-semibold text-slate-500">{vehicle.partner?.name ?? 'No operator linked'}</span>
+                <span className="shrink-0 font-mono font-black text-slate-400">{vehicle.busId ?? 'NO BUS ID'}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3 text-[11px]">
+                <span className="truncate text-slate-500">Driver: <strong className="font-bold text-slate-700">{vehicle.driver?.fullName ?? 'Unassigned'}</strong></span>
+                <span className="shrink-0 text-slate-500">{formatSignalTime(vehicle.lastLocationAt)}</span>
+              </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-[1fr_auto] items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+              <div className="min-w-0">
+                <div className="truncate text-[11px] font-bold text-slate-600">{vehicle.coordinateSource}</div>
+                <div className="mt-0.5 font-mono text-[10px] text-slate-400">
+                  {vehicle.position[0].toFixed(4)}, {vehicle.position[1].toFixed(4)}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">Policy</div>
+                <div className="text-[11px] font-black text-safe-ink">{vehicle.trip?.policyId?.slice(-8) ?? '—'}</div>
+              </div>
+            </div>
+          </div>
+        </button>
+      ))}
+    </div>
   );
 }
 
 export default function LiveTripsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const bucket = searchParams.get('bucket') || 'active';
+  const bucket = searchParams.get('bucket') || 'all';
+  const [vehicles, setVehicles] = useState([]);
   const [trips, setTrips] = useState([]);
-  const [selected, setSelected] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const token = loadDashboardToken();
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!token) return;
     setLoading(true);
-    dashboardTrips(token, bucket === 'all' ? undefined : bucket)
-      .then((d) => setTrips(d.trips || []))
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [token, bucket]);
+    try {
+      const [vehicleRes, tripRes] = await Promise.all([
+        dashboardVehicles(token, { status: 'all', qrStatus: 'all' }),
+        dashboardTrips(token, 'all'),
+      ]);
+      setVehicles(vehicleRes.vehicles || []);
+      setTrips(tripRes.trips || []);
+      setError('');
+    } catch (err) {
+      setError(err.message || 'Failed to load live operations data');
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
 
-  // Auto-refresh active trips every 15 s
   useEffect(() => {
-    if (bucket !== 'active') return;
-    const id = setInterval(() => {
-      if (!token) return;
-      dashboardTrips(token, 'active')
-        .then((d) => setTrips(d.trips || []))
-        .catch(() => {});
-    }, 15_000);
+    load();
+  }, [load]);
+
+  useEffect(() => {
+    const id = setInterval(load, 10_000);
     return () => clearInterval(id);
-  }, [token, bucket]);
+  }, [load]);
 
-  const columns = [
-    { key: 'policy', label: 'Policy', render: (t) => t.policyId || t.coverId?.slice(-8) || '—' },
-    { key: 'passenger', label: 'Passenger', render: (t) => t.passenger?.fullName || t.passenger?.phone || '—' },
-    { key: 'vehicle', label: 'Vehicle', render: (t) => t.vehiclePlate || '—' },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (t) => <StatusBadge status={t.isLive ? 'live' : t.isStale ? 'stale' : t.displayStatus} />,
-    },
-    { key: 'started', label: 'Started', render: (t) => fmtDateTime(t.startedAt) },
-    { key: 'location', label: 'Last location', render: (t) => fmtDateTime(t.lastLocationAt) },
-  ];
+  const observedVehicles = useMemo(
+    () => vehicles.map((vehicle, index) => buildVehicleObservation(vehicle, trips, index)),
+    [vehicles, trips],
+  );
 
-  const tripsWithLocation = trips.filter((t) => t.currentLocation?.lat != null);
-  const showMap = !loading && !error && tripsWithLocation.length > 0;
+  const filteredVehicles = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return observedVehicles.filter((vehicle) => {
+      const bucketMatch = bucket === 'all' || vehicle.status === bucket;
+      const searchMatch =
+        !query ||
+        vehicle.plateNumber.toLowerCase().includes(query) ||
+        vehicle.routeName.toLowerCase().includes(query) ||
+        vehicle.partner?.name?.toLowerCase().includes(query) ||
+        vehicle.driver?.fullName?.toLowerCase().includes(query);
+      return bucketMatch && searchMatch;
+    });
+  }, [observedVehicles, bucket, search]);
+
+  const selectedVehicle =
+    filteredVehicles.find((vehicle) => vehicle.id === selectedId) ??
+    observedVehicles.find((vehicle) => vehicle.id === selectedId) ??
+    filteredVehicles[0] ??
+    null;
+
+  useEffect(() => {
+    if (!selectedId && filteredVehicles[0]) setSelectedId(filteredVehicles[0].id);
+  }, [filteredVehicles, selectedId]);
+
+  const metrics = useMemo(
+    () => ({
+      total: observedVehicles.length,
+      live: observedVehicles.filter((vehicle) => vehicle.status === 'live').length,
+      stale: observedVehicles.filter((vehicle) => vehicle.status === 'stale').length,
+      pending: observedVehicles.filter((vehicle) => vehicle.status === 'location_pending').length,
+    }),
+    [observedVehicles],
+  );
 
   return (
-    <div className="space-y-4 max-w-[1600px] mx-auto">
+    <div className="mx-auto max-w-[1800px] space-y-4">
       <PageHeader
-        title="Live trips"
-        description="Trip tracking from passenger mobile sessions. Green = live, amber = stale location."
+        title="Live operations"
+        description="Observe all linked SAFE vehicles, route activity, operator links, and live passenger trip locations from one console."
+        actions={
+          <button type="button" onClick={load} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black text-safe-ink shadow-sm">
+            <RefreshCw size={14} /> Refresh
+          </button>
+        }
       />
 
-      {error ? <ErrorCard message={error} /> : null}
+      {error ? <ErrorCard message={error} onRetry={load} /> : null}
 
-      <FilterTabs
-        value={bucket}
-        onChange={(v) => setSearchParams(v === 'active' ? {} : { bucket: v })}
-        options={[
-          { value: 'active', label: 'Active' },
-          { value: 'stale', label: 'Stale location' },
-          { value: 'ended', label: 'Ended' },
-          { value: 'all', label: 'All' },
-        ]}
-      />
-
-      {showMap ? (
-        <Card padding={false}>
-          <div style={{ height: 360, position: 'relative' }}>
-            <TripsMap trips={trips} selected={selected} onSelect={setSelected} />
-            <div
-              style={{
-                position: 'absolute',
-                top: 10,
-                right: 10,
-                zIndex: 1000,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 4,
-                background: 'rgba(255,255,255,0.92)',
-                borderRadius: 8,
-                padding: '6px 10px',
-                fontSize: 12,
-                boxShadow: '0 1px 6px rgba(0,0,0,.15)',
-              }}
-            >
-              <span>
-                <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#16a34a', marginRight: 5 }} />
-                Live
-              </span>
-              <span>
-                <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#f59e0b', marginRight: 5 }} />
-                Stale
-              </span>
-              <span>
-                <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#94a3b8', marginRight: 5 }} />
-                Ended
-              </span>
-            </div>
-          </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Card>
+          <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Linked vehicles</div>
+          <div className="mt-2 text-3xl font-black text-safe-ink">{metrics.total}</div>
         </Card>
-      ) : !loading && !error && trips.length === 0 ? null : null}
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <Card className="xl:col-span-2" padding={false}>
-          {loading ? (
-            <LoadingBlock />
-          ) : (
-            <DataTable
-              columns={columns}
-              rows={trips}
-              onRowClick={setSelected}
-              emptyTitle="No trips in this bucket"
-            />
-          )}
+        <Card>
+          <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Live now</div>
+          <div className="mt-2 text-3xl font-black text-emerald-600">{metrics.live}</div>
         </Card>
-
-        {!selected ? (
-          <Card>
-            <EmptyState
-              title="Trip detail"
-              description="Select a trip row or map marker to inspect passenger, cover, and last known location."
-            />
-          </Card>
-        ) : (
-          <DetailPanel title={selected.policyId || 'Trip detail'} onClose={() => setSelected(null)}>
-            <div className="space-y-2 text-sm">
-              <div className="flex gap-2">
-                <StatusBadge status={selected.isLive ? 'live' : selected.isStale ? 'stale' : selected.displayStatus} />
-                {!selected.isLive && selected.isStale ? (
-                  <span className="text-xs text-amber-700 font-semibold">Last known location</span>
-                ) : null}
-              </div>
-              <div><strong>Passenger:</strong> {selected.passenger?.fullName || selected.passenger?.phone || '—'}</div>
-              <div><strong>Vehicle:</strong> {selected.vehiclePlate || '—'}</div>
-              <div><strong>Cover status:</strong> {selected.coverStatus}</div>
-              <div><strong>Payment:</strong> {selected.paymentStatus || '—'}</div>
-              <div><strong>Started:</strong> {fmtDateTime(selected.startedAt)}</div>
-              <div><strong>Last location:</strong> {fmtDateTime(selected.lastLocationAt)}</div>
-              <div><strong>Expires:</strong> {fmtDateTime(selected.expiresAt)}</div>
-              {selected.currentLocation ? (
-                <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs font-mono">
-                  {selected.currentLocation.lat.toFixed(5)}, {selected.currentLocation.lng.toFixed(5)}
-                  {selected.currentLocation.recordedAt ? (
-                    <div className="text-slate-500 mt-1">Recorded {fmtDateTime(selected.currentLocation.recordedAt)}</div>
-                  ) : null}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-500">No coordinates recorded yet.</p>
-              )}
-            </div>
-          </DetailPanel>
-        )}
+        <Card>
+          <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Stale GPS</div>
+          <div className="mt-2 text-3xl font-black text-amber-500">{metrics.stale}</div>
+        </Card>
+        <Card>
+          <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Awaiting GPS</div>
+          <div className="mt-2 text-3xl font-black text-slate-500">{metrics.pending}</div>
+        </Card>
       </div>
+
+      <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+        <div className="relative min-w-0 flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search plate, route, driver, or operator..."
+            className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm font-semibold outline-none focus:border-safe-electric focus:bg-white"
+          />
+        </div>
+        <FilterTabs
+          value={bucket}
+          onChange={(value) => setSearchParams(value === 'all' ? {} : { bucket: value })}
+          options={[
+            { value: 'all', label: 'All' },
+            { value: 'live', label: 'Live' },
+            { value: 'stale', label: 'Stale' },
+            { value: 'last_known', label: 'Last known' },
+            { value: 'location_pending', label: 'Pending GPS' },
+            { value: 'suspended', label: 'Suspended' },
+          ]}
+        />
+      </div>
+
+      {loading ? (
+        <Card><LoadingBlock /></Card>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[360px_minmax(0,1fr)_360px]">
+          <Card>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-lg font-black text-safe-ink">Linked vehicles</div>
+                <div className="text-xs font-semibold text-slate-500">{filteredVehicles.length} visible in this view</div>
+              </div>
+              <ShieldCheck className="text-safe-electric" size={22} />
+            </div>
+            <VehicleList vehicles={filteredVehicles} selectedId={selectedVehicle?.id} onSelect={setSelectedId} />
+          </Card>
+
+          <Card padding={false}>
+            <OpsVehicleMap vehicles={filteredVehicles} selectedVehicle={selectedVehicle} onSelect={setSelectedId} />
+          </Card>
+
+          {!selectedVehicle ? (
+            <Card>
+              <EmptyState title="Vehicle detail" description="Select a linked vehicle to inspect operator, route, QR, and GPS freshness." />
+            </Card>
+          ) : (
+            <DetailPanel title={selectedVehicle.plateNumber} onClose={() => setSelectedId(null)}>
+              <div className="space-y-4 text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusBadge status={selectedVehicle.status} />
+                  <StatusBadge status={selectedVehicle.qrStatus} />
+                </div>
+                <div className="rounded-3xl bg-slate-50 p-4">
+                  <div className="grid grid-cols-[44px_1fr] gap-3">
+                    <div className="grid h-11 w-11 place-items-center rounded-2xl bg-safe-electric text-white">
+                      <Bus size={20} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black uppercase tracking-widest text-slate-400">Route</div>
+                      <div className="mt-1 font-black text-safe-ink">{selectedVehicle.routeName}</div>
+                      <div className="mt-1 text-xs font-semibold text-slate-500">{selectedVehicle.partner?.name ?? 'No operator linked'}</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid gap-3 text-sm">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="mt-0.5 text-safe-electric" size={16} />
+                    <div>
+                      <strong>Location source:</strong> {selectedVehicle.coordinateSource}
+                      <div className="mt-1 font-mono text-xs text-slate-500">
+                        {selectedVehicle.position[0].toFixed(5)}, {selectedVehicle.position[1].toFixed(5)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Clock3 className="mt-0.5 text-safe-electric" size={16} />
+                    <div><strong>Last updated:</strong> {fmtDateTime(selectedVehicle.lastLocationAt)}</div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <RouteIcon className="mt-0.5 text-safe-electric" size={16} />
+                    <div><strong>Driver:</strong> {selectedVehicle.driver?.fullName ?? 'Not assigned'}</div>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-slate-200 p-3 text-xs text-slate-600">
+                  <div><strong>SAFE QR:</strong> {selectedVehicle.qr?.code ?? 'No QR linked'}</div>
+                  <div><strong>Covers sold:</strong> {selectedVehicle.coverCount ?? 0}</div>
+                  <div><strong>Active trips:</strong> {selectedVehicle.activeTripCount}</div>
+                  <div><strong>Policy:</strong> {selectedVehicle.trip?.policyId ?? 'No live passenger trip'}</div>
+                </div>
+                <Link
+                  to={`/vehicles?selected=${selectedVehicle.id}`}
+                  className="inline-flex w-full items-center justify-center rounded-2xl bg-safe-ink px-4 py-3 text-sm font-black text-white"
+                >
+                  Open vehicle record
+                </Link>
+              </div>
+            </DetailPanel>
+          )}
+        </div>
+      )}
     </div>
   );
 }

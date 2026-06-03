@@ -23,7 +23,7 @@ export const NAV_ITEMS = [
   { to: '/covers', label: 'Covers', permission: 'covers.view' },
   { to: '/claims', label: 'Claims', permission: 'claims.view' },
   { to: '/payments', label: 'Payments', permission: 'payments.view' },
-  { to: '/live-trips', label: 'Live trips', permission: 'trips.view' },
+  { to: '/live-trips', label: 'Live ops', permission: 'trips.view' },
   { to: '/qr-scans', label: 'QR scans', permission: 'qr.scans.view' },
   { to: '/support', label: 'Support', permission: 'support.view' },
   { to: '/users', label: 'Passengers', permission: 'users.view' },

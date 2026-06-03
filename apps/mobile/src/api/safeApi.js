@@ -1,22 +1,14 @@
 // On Android native, 127.0.0.1/localhost refers to the device itself, not the
 // dev machine. The emulator reaches the host via 10.0.2.2. Physical devices
-// need VITE_API_BASE_URL set to a LAN IP or staging/production HTTPS URL.
+// can use a LAN IP / staging HTTPS URL (recommended), or ADB reverse for local dev.
 // Capacitor injects the global `Capacitor` object synchronously before any JS runs.
-const API_BASE = (() => {
-  const configured = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8080';
-  if (
-    typeof globalThis !== 'undefined' &&
-    globalThis.Capacitor?.getPlatform?.() === 'android' &&
-    /127\.0\.0\.1|localhost/.test(configured)
-  ) {
-    console.warn(
-      '[SAFE] Android emulator: substituting 10.0.2.2 for localhost. ' +
-        'Set VITE_API_BASE_URL to a staging/LAN URL for physical device builds.'
-    );
-    return configured.replace(/127\.0\.0\.1|localhost/, '10.0.2.2');
-  }
-  return configured;
-})();
+const CONFIGURED_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8080';
+const IS_ANDROID_NATIVE =
+  typeof globalThis !== 'undefined' && globalThis.Capacitor?.getPlatform?.() === 'android';
+const ANDROID_EMULATOR_FALLBACK_BASE =
+  IS_ANDROID_NATIVE && /127\.0\.0\.1|localhost/.test(CONFIGURED_API_BASE)
+    ? CONFIGURED_API_BASE.replace(/127\.0\.0\.1|localhost/, '10.0.2.2')
+    : '';
 
 function sanitizeErrorMessage(msg) {
   const raw = String(msg || '').trim();
@@ -37,8 +29,8 @@ function sanitizeErrorMessage(msg) {
 }
 
 export async function request(path, { method = 'GET', token, body } = {}) {
-  try {
-    const res = await fetch(`${API_BASE}${path}`, {
+  async function run(apiBase) {
+    const res = await fetch(`${apiBase}${path}`, {
       method,
       headers: {
         'content-type': 'application/json',
@@ -53,7 +45,32 @@ export async function request(path, { method = 'GET', token, body } = {}) {
       throw new Error(sanitizeErrorMessage(rawError));
     }
     return data;
+  }
+
+  function isNetworkFailure(error) {
+    const message = String(error?.message || '').toLowerCase();
+    return (
+      message.includes('failed to fetch') ||
+      message.includes('networkerror') ||
+      message.includes('load failed') ||
+      message.includes('network request failed')
+    );
+  }
+
+  try {
+    return await run(CONFIGURED_API_BASE);
   } catch (err) {
+    if (ANDROID_EMULATOR_FALLBACK_BASE && isNetworkFailure(err)) {
+      try {
+        console.warn(
+          '[SAFE] Android network fallback: retrying with 10.0.2.2. ' +
+            'Set VITE_API_BASE_URL to a LAN/staging URL for physical device builds (or use ADB reverse).'
+        );
+        return await run(ANDROID_EMULATOR_FALLBACK_BASE);
+      } catch (retryErr) {
+        throw new Error(sanitizeErrorMessage(retryErr.message));
+      }
+    }
     throw new Error(sanitizeErrorMessage(err.message));
   }
 }

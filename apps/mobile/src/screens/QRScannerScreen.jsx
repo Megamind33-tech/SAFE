@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { Html5Qrcode } from 'html5-qrcode';
 import { ArrowLeft, CameraOff } from 'lucide-react';
 import { normalizeManualCode, verifyQrCode } from '../services/qr.js';
@@ -7,6 +8,21 @@ import coverVerificationArt from '../assets/real/cover_verification_clean.png';
 import safeShieldArt from '../assets/real/safe_shield_clean.png';
 
 const READER_ID = 'qr-reader';
+
+function classifyCameraError(err) {
+  const name = typeof err === 'object' && err ? err.name : '';
+  const message = typeof err === 'string' ? err : err?.message || '';
+
+  if (name === 'NotAllowedError' || name === 'PermissionDeniedError') return 'denied';
+  if (name === 'NotFoundError' || name === 'DevicesNotFoundError') return 'no_camera';
+  if (name === 'NotReadableError' || name === 'TrackStartError') return 'unavailable';
+  if (name === 'SecurityError' || name === 'TypeError') return 'unsupported';
+
+  const m = String(message || '').toLowerCase();
+  if (m.includes('permission') && (m.includes('denied') || m.includes('not allowed'))) return 'denied';
+  if (m.includes('notfound') || m.includes('device not found') || m.includes('no device')) return 'no_camera';
+  return 'unknown';
+}
 
 export default function QRScannerScreen({
   session,
@@ -19,7 +35,11 @@ export default function QRScannerScreen({
   qaForceDenied = false,
 }) {
   const [mode, setMode] = useState(initialMode);
-  const [permission, setPermission] = useState(qaForceDenied ? 'denied' : qaForcePermission ? 'prompt' : 'checking');
+  const [permission, setPermission] = useState(() => {
+    if (qaForceDenied) return 'denied';
+    if (qaForcePermission) return 'prompt';
+    return 'checking';
+  });
   const [manualCode, setManualCode] = useState(initialCode);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -72,58 +92,71 @@ export default function QRScannerScreen({
     [onVerified, session.token, setScreen, stopScanner],
   );
 
-  useEffect(() => {
-    if (initialInvalidState) setInvalidState(initialInvalidState);
-  }, [initialInvalidState]);
+  const requestCameraAccess = useCallback(async () => {
+    if (mode !== 'scan') return;
 
-  useEffect(() => {
-    if (invalidState && invalidState.status !== 'verified') return undefined;
-    if (mode !== 'scan' || qaForcePermission || qaForceDenied) return undefined;
+    setError('');
+    setInvalidState(null);
 
-    let cancelled = false;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setPermission('unsupported');
+      return;
+    }
+
+    await stopScanner();
+
+    // Ensure the reader element exists in the DOM before starting.
+    flushSync(() => setPermission('starting'));
+
     const scanner = new Html5Qrcode(READER_ID, { verbose: false });
     scannerRef.current = scanner;
 
-    async function start() {
-      try {
-        if (!navigator.mediaDevices?.getUserMedia) {
-          if (!cancelled) setPermission('unsupported');
-          return;
-        }
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        stream.getTracks().forEach((track) => track.stop());
-        if (cancelled) return;
-        setPermission('granted');
-        await scanner.start(
-          { facingMode: 'environment' },
-          { fps: 8, qrbox: { width: 220, height: 220 } },
-          async (decodedText) => {
-            if (handledRef.current) return;
-            handledRef.current = true;
-            await handleVerify(decodedText);
-            handledRef.current = false;
-          },
-          () => {},
-        );
-      } catch (err) {
-        if (cancelled) return;
-        const name = err?.name || '';
-        if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-          setPermission('denied');
-        } else {
-          setPermission('unsupported');
-          setError('Camera is not available on this device.');
-        }
-      }
+    try {
+      await scanner.start(
+        { facingMode: 'environment' },
+        { fps: 8, qrbox: { width: 220, height: 220 } },
+        async (decodedText) => {
+          if (handledRef.current) return;
+          handledRef.current = true;
+          await handleVerify(decodedText);
+          handledRef.current = false;
+        },
+        () => {},
+      );
+      setPermission('granted');
+    } catch (err) {
+      await stopScanner();
+      const kind = classifyCameraError(err);
+      if (kind === 'denied') setPermission('denied');
+      else if (kind === 'no_camera') setPermission('no_camera');
+      else if (kind === 'unavailable') setPermission('unavailable');
+      else setPermission('unsupported');
     }
+  }, [handleVerify, mode, stopScanner]);
 
-    start();
-
-    return () => {
-      cancelled = true;
+  useEffect(() => {
+    if (mode !== 'scan') {
       stopScanner();
-    };
-  }, [handleVerify, invalidState, mode, qaForceDenied, qaForcePermission, stopScanner]);
+      return;
+    }
+    if (qaForceDenied) {
+      setPermission('denied');
+      return;
+    }
+    if (qaForcePermission) {
+      setPermission('prompt');
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setPermission('unsupported');
+      return;
+    }
+    setPermission('prompt');
+  }, [mode, qaForceDenied, qaForcePermission, stopScanner]);
+
+  useEffect(() => {
+    if (initialInvalidState) setInvalidState(initialInvalidState);
+  }, [initialInvalidState]);
 
   if (busy) {
     return (
@@ -225,18 +258,43 @@ export default function QRScannerScreen({
             <h2 className="qr-intro__title">Scan the SAFE QR code</h2>
             <p className="qr-intro__sub">Point your camera at the QR sticker inside the vehicle before boarding.</p>
 
-            {(permission === 'denied' || permission === 'unsupported') ? (
+            {(permission !== 'granted' && permission !== 'starting') ? (
               <div className="qr-permission-card">
                 <img className="qr-permission-art" src={safeShieldArt} alt="" aria-hidden="true" />
-                <h2 className="qr-permission-title">Camera access needed</h2>
+                <h2 className="qr-permission-title">
+                  {permission === 'denied'
+                    ? 'Camera permission denied'
+                    : permission === 'no_camera'
+                      ? 'Camera not available'
+                      : permission === 'unsupported'
+                        ? 'Camera not supported'
+                        : permission === 'unavailable'
+                          ? 'Camera unavailable'
+                          : 'Camera permission needed'}
+                </h2>
                 <p className="qr-permission-body">
                   {permission === 'denied'
-                    ? 'Camera access is turned off. Enable it in your device settings to scan the QR code, or enter the vehicle code manually.'
-                    : 'A camera is not available on this device. Use manual entry to verify your vehicle.'}
+                    ? 'Camera access is turned off for SAFE. Enable it in your device settings, then try again.'
+                    : permission === 'no_camera'
+                      ? 'A camera is not available on this device. Use manual entry to verify your vehicle.'
+                      : permission === 'unsupported'
+                        ? 'This device/browser does not support camera scanning. Use manual entry to verify your vehicle.'
+                        : permission === 'unavailable'
+                          ? 'Your camera is currently unavailable. Close other apps using the camera and try again, or enter the vehicle code manually.'
+                          : 'Allow camera access to scan the SAFE QR sticker.'}
                 </p>
                 <div className="qr-actions">
-                  <button type="button" className="qr-btn qr-btn--primary" onClick={() => setMode('manual')}>
-                    Enter vehicle code
+                  {(permission === 'prompt' || permission === 'checking') ? (
+                    <button type="button" className="qr-btn qr-btn--primary" onClick={requestCameraAccess}>
+                      Allow camera access
+                    </button>
+                  ) : permission === 'denied' ? (
+                    <button type="button" className="qr-btn qr-btn--primary" onClick={requestCameraAccess}>
+                      Try again
+                    </button>
+                  ) : null}
+                  <button type="button" className="qr-btn qr-btn--secondary" onClick={() => setMode('manual')}>
+                    Enter vehicle code manually
                   </button>
                 </div>
               </div>
@@ -246,11 +304,11 @@ export default function QRScannerScreen({
                 <div className="qr-scanner-corner qr-scanner-corner--tr" aria-hidden="true" />
                 <div className="qr-scanner-corner qr-scanner-corner--bl" aria-hidden="true" />
                 <div className="qr-scanner-corner qr-scanner-corner--br" aria-hidden="true" />
-                {(permission === 'prompt' || permission === 'checking') ? (
+                {permission === 'starting' ? (
                   <div className="qr-scanner-placeholder">
                     <CameraOff size={36} aria-hidden="true" />
-                    <p>Camera permission needed</p>
-                    <p>Allow camera access to scan the vehicle QR code.</p>
+                    <p>Starting camera…</p>
+                    <p>If prompted, allow camera access to continue.</p>
                   </div>
                 ) : null}
                 <div id={READER_ID} />

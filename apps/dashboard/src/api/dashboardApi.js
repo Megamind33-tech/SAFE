@@ -1,5 +1,15 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8080';
 
+class ApiError extends Error {
+  constructor(message, { status, code, payload } = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+    this.payload = payload;
+  }
+}
+
 async function request(path, { method = 'GET', token, body } = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     method,
@@ -12,7 +22,11 @@ async function request(path, { method = 'GET', token, body } = {}) {
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data?.error || `Request failed (${res.status})`);
+    throw new ApiError(data?.error || `Request failed (${res.status})`, {
+      status: res.status,
+      code: data?.code,
+      payload: data,
+    });
   }
   return data;
 }
